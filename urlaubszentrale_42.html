@@ -1,0 +1,3417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Urlaubszentrale | Rudolf Hilgenroth GmbH & Co. KG</title>
+
+<!-- ===================== FIREBASE SDK (compat, no build step) ===================== -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<!-- SheetJS fuer Excel-Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- jsPDF fuer farbigen PDF-Export der Anwesenheitsliste -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  :root{
+    --red:#c8102e;
+    --red-dark:#96001f;
+    --black:#181818;
+    --gray-900:#232323;
+    --gray-700:#4a4a4a;
+    --gray-400:#8a8a8a;
+    --gray-200:#e2e2e2;
+    --gray-100:#f4f4f4;
+    --white:#ffffff;
+    --ok:#1a7a3c;
+    --ok-bg:#e6f4ea;
+    --warn:#b8860b;
+    --warn-bg:#fdf3d9;
+    --bad:#b3001f;
+    --bad-bg:#fbe4e7;
+    --gold:#8a5a00;
+    --gold-bg:#fdeecb;
+    --radius:6px;
+    --shadow:0 2px 10px rgba(0,0,0,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:var(--gray-100);
+    color:var(--black);
+    min-height:100vh;
+  }
+  .mono{font-family:Consolas,Menlo,Monaco,'Courier New',monospace;}
+  header.topbar{
+    background:var(--black);
+    color:var(--white);
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:var(--shadow);
+    position:sticky; top:0; z-index:20;
+    flex-wrap:wrap; gap:10px;
+  }
+  header.topbar .brand{
+    display:flex; align-items:center; gap:12px;
+  }
+  header.topbar .brand .bar{
+    width:6px; height:28px; background:var(--red); display:inline-block; border-radius:2px;
+  }
+  header.topbar h1{
+    font-size:18px; margin:0; font-weight:800; letter-spacing:0.3px;
+  }
+  header.topbar .sub{
+    font-size:12px; color:var(--gray-400); font-weight:500;
+  }
+  header.topbar .user-info{
+    display:flex; align-items:center; gap:14px; font-size:14px;
+  }
+  header.topbar .user-info .name{font-weight:700;}
+  header.topbar .user-info .standort{
+    font-family:Consolas,Menlo,Monaco,'Courier New',monospace; font-size:11px; color:var(--gray-400);
+    border:1px solid #444; padding:2px 8px; border-radius:20px;
+  }
+  header.topbar .user-info .rolle-badge{
+    font-family:Consolas,Menlo,Monaco,'Courier New',monospace; font-size:10px; color:var(--black); background:var(--red);
+    padding:2px 8px; border-radius:20px; font-weight:700;
+  }
+  button{
+    font-family:Arial,Helvetica,sans-serif; cursor:pointer; border:none; border-radius:var(--radius);
+    font-weight:700; font-size:14px; padding:10px 18px; transition:filter .15s, transform .1s;
+  }
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn-primary{background:var(--red); color:var(--white);}
+  .btn-primary:hover{filter:brightness(1.1);}
+  .btn-secondary{background:var(--white); color:var(--black); border:1.5px solid var(--gray-200);}
+  .btn-secondary:hover{background:var(--gray-100);}
+  .btn-dark{background:var(--black); color:var(--white);}
+  .btn-dark:hover{filter:brightness(1.3);}
+  .btn-danger{background:var(--bad); color:var(--white);}
+  .btn-ok{background:var(--ok); color:var(--white);}
+  .btn-gold{background:var(--gold); color:var(--white);}
+  .btn-small{padding:6px 12px; font-size:12.5px;}
+  .btn-link{background:none; color:var(--red); font-weight:700; padding:4px 0; font-size:13px;}
+
+  .container{max-width:1100px; margin:0 auto; padding:24px 20px 80px;}
+  .kalender-breakout{
+    width:96vw; max-width:1500px;
+    margin-left:50%; transform:translateX(-50%);
+  }
+  .card{
+    background:var(--white); border-radius:8px; box-shadow:var(--shadow);
+    padding:24px; margin-bottom:22px; border-top:4px solid var(--red);
+  }
+  .card h2{margin-top:0; font-size:19px; font-weight:800; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  .card h2 .accent{color:var(--red);}
+  .card h2 .title-txt{display:flex; align-items:center; gap:8px;}
+
+  label{display:block; font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--gray-700); margin:14px 0 5px;}
+  label:first-child{margin-top:0;}
+  input[type=date], input[type=email], input[type=password], input[type=text], input[type=number], select, textarea{
+    width:100%; padding:11px 12px; border:1.5px solid var(--gray-200); border-radius:var(--radius);
+    font-size:15px; font-family:Consolas,Menlo,Monaco,'Courier New',monospace; background:var(--white); color:var(--black);
+  }
+  textarea{font-family:Arial,Helvetica,sans-serif; min-height:70px; resize:vertical;}
+  select{font-family:Arial,Helvetica,sans-serif;}
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--red);}
+
+  .row{display:flex; gap:16px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:180px;}
+
+  .checkbox-row{display:flex; align-items:center; gap:8px; margin-top:10px; font-size:14px;}
+  .checkbox-row input{width:auto;}
+
+  .tage-preview{
+    margin-top:16px; padding:14px 16px; background:var(--gray-100); border-radius:var(--radius);
+    display:flex; justify-content:space-between; align-items:center; font-size:14px;
+  }
+  .tage-preview .val{font-family:Consolas,Menlo,Monaco,'Courier New',monospace; font-size:22px; font-weight:700; color:var(--red);}
+
+  .badge{
+    display:inline-block; padding:3px 11px; border-radius:20px; font-size:12px; font-weight:700;
+    font-family:Consolas,Menlo,Monaco,'Courier New',monospace; letter-spacing:0.3px;
+  }
+  .badge-offen{background:var(--warn-bg); color:var(--warn);}
+  .badge-genehmigt{background:var(--ok-bg); color:var(--ok);}
+  .badge-abgelehnt{background:var(--bad-bg); color:var(--bad);}
+  .badge-rolle{background:var(--gold-bg); color:var(--gold);}
+  .badge-sou{background:#e0e7ff; color:#3730a3;}
+
+  .urlaub-konto{
+    background:linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+    border:1px solid var(--gray-200); border-radius:10px; padding:22px 26px;
+    margin-bottom:20px; box-shadow:var(--shadow);
+    border-left:5px solid var(--red);
+  }
+  .konto-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px;}
+  .konto-header h3{margin:0; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-700); font-weight:800;}
+  .konto-header .jahr{font-family:Consolas,Menlo,Monaco,monospace; color:var(--red); font-weight:700; font-size:15px;}
+  .konto-hauptzahl{display:flex; align-items:baseline; gap:12px; margin-bottom:16px;}
+  .konto-hauptzahl .zahl{font-family:Consolas,Menlo,Monaco,monospace; font-size:44px; font-weight:800; color:var(--black); line-height:1;}
+  .konto-hauptzahl .zahl.warn{color:var(--warn);}
+  .konto-hauptzahl .zahl.bad{color:var(--bad);}
+  .konto-hauptzahl .einheit{font-size:15px; color:var(--gray-700); font-weight:600;}
+  .konto-progress{margin-bottom:16px;}
+  .progress-bar{
+    width:100%; height:10px; background:var(--gray-200); border-radius:20px; overflow:hidden;
+    position:relative;
+  }
+  .progress-fill{
+    height:100%; background:linear-gradient(90deg, #2d8b4f 0%, #4ba770 100%);
+    border-radius:20px; transition:width .4s ease;
+  }
+  .progress-fill.warn{background:linear-gradient(90deg, var(--warn) 0%, #d19b1e 100%);}
+  .progress-fill.bad{background:linear-gradient(90deg, var(--bad) 0%, #d43a55 100%);}
+  .progress-labels{display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:var(--gray-700); font-family:Consolas,Menlo,Monaco,monospace;}
+  .konto-details{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px;
+    padding-top:14px; border-top:1px solid var(--gray-200);
+  }
+  .konto-details > div{display:flex; flex-direction:column; gap:2px;}
+  .konto-details .label{font-size:11px; text-transform:uppercase; letter-spacing:0.4px; color:var(--gray-400); font-weight:700;}
+  .konto-details .wert{font-family:Consolas,Menlo,Monaco,monospace; font-size:18px; font-weight:700; color:var(--black);}
+
+  .jahres-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:16px;
+    margin-top:8px;
+  }
+  .mini-monat{
+    background:var(--white); border:1px solid var(--gray-200); border-radius:8px; padding:14px;
+    box-shadow:var(--shadow);
+  }
+  .mini-monat h4{
+    margin:0 0 10px; font-size:14px; font-weight:700; text-align:center;
+    color:var(--black); text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .mini-monat table{border-collapse:separate; border-spacing:2px; width:100%; table-layout:fixed;}
+  .mini-monat th{
+    font-size:10px; text-transform:uppercase; color:var(--gray-400); font-weight:700;
+    text-align:center; padding:2px 0; letter-spacing:0.3px; border:none;
+  }
+  .mini-monat th.we-h{color:var(--gray-400);}
+  .mini-monat td{
+    text-align:center; padding:0; height:22px; font-size:11px;
+    font-family:Consolas,Menlo,Monaco,monospace; color:var(--gray-700);
+    border-radius:3px; background:var(--white); border:1px solid var(--gray-200);
+  }
+  .mini-monat td.leer{background:transparent; border-color:transparent;}
+  .mini-monat td.we{background:#f7f7f7; color:var(--gray-400); border-color:#eee;}
+  .mini-monat td.feiertag{background:#ececec; border-color:#ddd;}
+  .mini-monat td.today{box-shadow:inset 0 0 0 2px var(--red);}
+  .mini-monat td.genehmigt{background:#2d8b4f; color:#fff; font-weight:700; border-color:#256f3f;}
+  .mini-monat td.offen{background:#fdf3d9; color:var(--warn); font-weight:700; border:1px dashed var(--warn);}
+  .mini-monat td.sou{background:#4338ca; color:#fff; font-weight:700; border-color:#312991;}
+  .mini-monat td.betriebsurlaub{background:#2b6cb0; color:#fff; font-weight:700; border-color:#1e4e82;}
+  .mini-monat-summary{
+    margin-top:8px; padding-top:8px; border-top:1px solid var(--gray-200);
+    display:flex; justify-content:space-between; font-size:11.5px; color:var(--gray-700);
+  }
+  .mini-monat-summary strong{font-family:Consolas,Menlo,Monaco,monospace; color:var(--black);}
+
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th{
+    text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:0.4px;
+    color:var(--gray-700); padding:8px 10px; border-bottom:2px solid var(--gray-200); white-space:nowrap;
+  }
+  td{padding:10px; border-bottom:1px solid var(--gray-200); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  td.mono, th.mono{font-family:Consolas,Menlo,Monaco,'Courier New',monospace;}
+  .empty-state{text-align:center; color:var(--gray-400); padding:30px 10px; font-size:14px;}
+  .table-scroll{overflow-x:auto;}
+
+  .login-wrap{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+    background:linear-gradient(160deg, var(--black) 0%, #2a2a2a 60%, var(--red-dark) 130%);
+  }
+  .login-card{
+    background:var(--white); border-radius:10px; padding:36px 32px; width:100%; max-width:380px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35); border-top:5px solid var(--red);
+  }
+  .login-card .logo-row{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .login-card .logo-row .bar{width:7px; height:32px; background:var(--red); border-radius:2px;}
+  .login-card h1{font-size:20px; margin:0 0 2px; font-weight:800;}
+  .login-card .sub{font-size:13px; color:var(--gray-700); margin-bottom:24px;}
+  .error-msg{
+    background:var(--bad-bg); color:var(--bad); padding:10px 12px; border-radius:var(--radius);
+    font-size:13px; margin-top:12px; font-weight:600;
+  }
+  .success-msg{background:var(--ok-bg); color:var(--ok); padding:10px 12px; border-radius:var(--radius); font-size:13px; margin-top:12px; font-weight:600;}
+
+  .onboarding-overlay{
+    position:fixed; inset:0; background:rgba(20,20,20,0.6); display:flex; align-items:center; justify-content:center;
+    z-index:50; padding:20px;
+  }
+  .onboarding-card{
+    background:var(--white); border-radius:10px; padding:30px; max-width:420px; width:100%;
+    border-top:5px solid var(--red); box-shadow:0 20px 50px rgba(0,0,0,0.35);
+  }
+
+  .tabs{display:flex; gap:6px; margin-bottom:20px; border-bottom:2px solid var(--gray-200); flex-wrap:wrap;}
+  .tab{
+    padding:10px 18px; font-weight:700; font-size:14px; cursor:pointer; color:var(--gray-700);
+    border-bottom:3px solid transparent; margin-bottom:-2px;
+  }
+  .tab.active{color:var(--red); border-bottom-color:var(--red);}
+
+  .filter-row{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;}
+  .filter-row select{width:auto; min-width:160px;}
+
+  .hidden{display:none !important;}
+  .spinner{
+    width:18px; height:18px; border:3px solid var(--gray-200); border-top-color:var(--red);
+    border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+    color:var(--gray-700); font-weight:600;
+  }
+  .note{font-size:12.5px; color:var(--gray-400); margin-top:6px;}
+  .footer-note{text-align:center; color:var(--gray-400); font-size:12px; margin-top:30px;}
+
+  .kal-wrap{
+    background:var(--white); padding:8px; border-radius:8px; border:1px solid var(--gray-200);
+    width:100%;
+  }
+  .kal-grid{border-collapse:separate; border-spacing:2px; font-size:12px; width:100%; table-layout:fixed;}
+  .kal-grid thead th{
+    background:transparent; text-align:center; padding:4px 1px; border:none; overflow:hidden;
+  }
+  .kal-grid thead th.day-num{
+    font-family:Consolas,Menlo,Monaco,monospace; font-size:clamp(9px,1.1vw,12.5px); color:var(--black);
+    font-weight:600; background:var(--white);
+  }
+  .kal-grid thead th.day-name{
+    font-size:clamp(7px,0.8vw,9.5px); color:var(--gray-400); font-weight:600;
+    letter-spacing:0.3px; text-transform:uppercase; background:var(--white);
+    padding-top:0; padding-bottom:6px;
+  }
+  .kal-grid thead th.day-num.we-h{color:var(--gray-400);}
+  .kal-grid thead th.day-num.today-h{
+    color:var(--white); background:var(--red); border-radius:4px; padding:4px 2px;
+  }
+  .kal-grid th.name-col, .kal-grid td.name-col{
+    position:sticky; left:0; background:var(--white); z-index:3; text-align:left; font-weight:600;
+    width:140px; padding:8px 8px 8px 4px; font-size:clamp(11px,1.1vw,13.5px); border-right:2px solid var(--gray-200);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .kal-grid th.name-col{color:var(--gray-700); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;}
+  .kal-grid tbody td{
+    text-align:center; padding:0; border:1px solid var(--gray-200);
+    border-radius:5px; height:28px;
+    font-family:Consolas,Menlo,Monaco,monospace; font-size:clamp(9px,1vw,13px); color:var(--gray-400);
+    transition:transform .1s; overflow:hidden;
+  }
+  .kal-grid tbody td:hover{transform:scale(1.25); z-index:1; position:relative; box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+  .kal-grid tbody td.we{background:#f7f7f7; border-color:#eee;}
+  .kal-grid tbody td.feiertag{background:#ececec; border-color:#ddd; color:var(--gray-700);}
+  .kal-grid tbody td.today{box-shadow:inset 0 0 0 2px var(--red);}
+  .kal-grid tbody td.genehmigt{background:#2d8b4f; color:#fff; font-weight:700; border-color:#256f3f;}
+  .kal-grid tbody td.offen{background:#fdf3d9; color:var(--warn); font-weight:700; border:1.5px dashed var(--warn);}
+  .kal-grid tbody td.sou{background:#4338ca; color:#fff; font-weight:700; border-color:#312991;}
+  .kal-grid tbody td.sou-offen{background:#e0e7ff; color:#3730a3; font-weight:700; border:1.5px dashed #4338ca;}
+  .kal-grid tbody td.betriebsurlaub{background:#2b6cb0; color:#fff; font-weight:700; border-color:#1e4e82;}
+  .legend{display:flex; gap:16px; margin-top:14px; font-size:12.5px; flex-wrap:wrap; padding:10px 12px; background:var(--gray-100); border-radius:6px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px; color:var(--gray-700); font-weight:500;}
+  .legend .box{width:14px; height:14px; border-radius:3px; display:inline-block; border:1px solid transparent;}
+
+  .settings-section{border-top:1px solid var(--gray-200); padding-top:18px; margin-top:18px;}
+  .settings-section:first-of-type{border-top:none; padding-top:0; margin-top:0;}
+  .settings-section h3{font-size:15px; margin:0 0 12px;}
+  .inline-form{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;}
+  .inline-form > div{flex:1; min-width:140px;}
+  .roles-check-row{display:flex; gap:18px; margin-top:8px; flex-wrap:wrap;}
+  .roles-check-row label{display:flex; align-items:center; gap:6px; text-transform:none; font-weight:600; font-size:13px; color:var(--black); margin:0;}
+  .roles-check-row input{width:auto;}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOADING ===================== -->
+<div id="loadingScreen" class="loading-screen">
+  <div class="spinner"></div>
+  <div>Urlaubszentrale wird geladen…</div>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="loginScreen" class="login-wrap hidden">
+  <div class="login-card">
+    <div class="logo-row"><span class="bar"></span><h1>Urlaubszentrale</h1></div>
+    <div class="sub">Rudolf Hilgenroth GmbH & Co. KG</div>
+    <label>E-Mail-Adresse</label>
+    <input type="email" id="loginEmail" autocomplete="username" placeholder="max.mustermann@hilgenroth.de">
+    <label>Passwort</label>
+    <input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••">
+    <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="handleLogin()">Anmelden</button>
+    <div id="loginError" class="error-msg hidden"></div>
+    <div class="note">Zugangsdaten wurden dir von der Verwaltung per Mail zugeschickt. Bei Problemen bitte an die Verwaltung wenden.</div>
+  </div>
+</div>
+
+<!-- ===================== PASSWORT ÄNDERN (Pflicht bei Erstanmeldung) ===================== -->
+<div id="pwChangeOverlay" class="onboarding-overlay hidden">
+  <div class="onboarding-card">
+    <h2 style="margin-top:0;">🔒 Neues Passwort festlegen</h2>
+    <p style="font-size:14px; color:var(--gray-700);">Du meldest dich gerade mit einem vorläufigen Start-Passwort an. Bitte lege jetzt dein persönliches Passwort fest.</p>
+    <label>Neues Passwort</label>
+    <input type="password" id="pwChangeNeu" autocomplete="new-password" placeholder="mind. 6 Zeichen">
+    <label>Neues Passwort bestätigen</label>
+    <input type="password" id="pwChangeWiederholt" autocomplete="new-password" placeholder="Wiederholung">
+    <button class="btn-primary" style="width:100%; margin-top:18px;" onclick="handlePasswortAendern()">Passwort speichern</button>
+    <div id="pwChangeError" class="error-msg hidden"></div>
+    <div style="text-align:center; margin-top:14px;">
+      <button class="btn-link" onclick="handleLogout()">Abmelden</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ONBOARDING (Namenszuordnung) ===================== -->
+<div id="onboardingOverlay" class="onboarding-overlay hidden">
+  <div class="onboarding-card">
+    <h2 style="margin-top:0;">Willkommen 👋</h2>
+    <p style="font-size:14px; color:var(--gray-700);">Bevor es losgeht: Wer bist du? Diese Zuordnung wird einmalig gespeichert.</p>
+    <label>Mein Name</label>
+    <select id="onboardingSelect">
+      <option value="">– bitte wählen –</option>
+    </select>
+    <button class="btn-primary" style="width:100%; margin-top:18px;" onclick="handleOnboardingSave()">Bestätigen</button>
+    <div id="onboardingError" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- ===================== KORREKTUR BEANTRAGEN (Mitarbeiter) ===================== -->
+<div id="korrekturOverlay" class="onboarding-overlay hidden">
+  <div class="onboarding-card" style="max-width:540px;">
+    <h2 style="margin-top:0;">Korrektur beantragen</h2>
+    <div id="korrekturSubtitle" class="note" style="margin-bottom:14px;"></div>
+    <label>Was soll geändert werden?</label>
+    <select id="korrekturAktion" onchange="toggleKorrekturFelder()">
+      <option value="loeschen">Ich war doch nicht im Urlaub – Antrag löschen</option>
+      <option value="anpassen">Zeitraum korrigieren</option>
+    </select>
+    <div id="korrekturAnpassenFelder" class="hidden">
+      <div class="row">
+        <div>
+          <label>Neues Startdatum</label>
+          <input type="date" id="korrekturNeuStart">
+        </div>
+        <div>
+          <label>Neues Enddatum</label>
+          <input type="date" id="korrekturNeuEnde">
+        </div>
+      </div>
+      <div class="row">
+        <div class="checkbox-row">
+          <input type="checkbox" id="korrekturHalbStart">
+          <label style="margin:0; text-transform:none; font-weight:600;" for="korrekturHalbStart">Starttag: halber Tag</label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="korrekturHalbEnde">
+          <label style="margin:0; text-transform:none; font-weight:600;" for="korrekturHalbEnde">Endtag: halber Tag</label>
+        </div>
+      </div>
+    </div>
+    <label>Begründung <span style="color:var(--bad);">*</span></label>
+    <textarea id="korrekturGrund" placeholder="z. B. Ich war doch da / Krankmeldung / Termin verlegt…"></textarea>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn-primary" style="flex:1;" onclick="submitKorrektur()">Korrektur anfragen</button>
+      <button class="btn-secondary" onclick="closeKorrekturModal()">Abbrechen</button>
+    </div>
+    <div id="korrekturError" class="error-msg hidden"></div>
+    <div id="korrekturSuccess" class="success-msg hidden"></div>
+  </div>
+</div>
+
+<!-- ===================== ADMIN: ANTRAG BEARBEITEN ===================== -->
+<div id="editOverlay" class="onboarding-overlay hidden">
+  <div class="onboarding-card" style="max-width:520px;">
+    <h2 style="margin-top:0;">Antrag bearbeiten</h2>
+    <div id="editSubtitle" class="note" style="margin-bottom:14px;"></div>
+    <div class="row">
+      <div>
+        <label>Startdatum</label>
+        <input type="date" id="editStart" onchange="updateEditTagePreview()">
+      </div>
+      <div>
+        <label>Enddatum</label>
+        <input type="date" id="editEnde" onchange="updateEditTagePreview()">
+      </div>
+    </div>
+    <div class="row">
+      <div class="checkbox-row">
+        <input type="checkbox" id="editHalbTagStart" onchange="updateEditTagePreview()">
+        <label style="margin:0; text-transform:none; font-weight:600;" for="editHalbTagStart">Starttag: halber Tag</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="editHalbTagEnde" onchange="updateEditTagePreview()">
+        <label style="margin:0; text-transform:none; font-weight:600;" for="editHalbTagEnde">Endtag: halber Tag</label>
+      </div>
+    </div>
+    <label>Status</label>
+    <select id="editStatus">
+      <option value="offen">Offen</option>
+      <option value="genehmigt">Genehmigt</option>
+      <option value="abgelehnt">Abgelehnt</option>
+    </select>
+    <label>Art</label>
+    <select id="editArt">
+      <option value="urlaub">Urlaub</option>
+      <option value="sonderurlaub">Sonderurlaub (SOU)</option>
+    </select>
+    <label>Bemerkung</label>
+    <textarea id="editBemerkung"></textarea>
+    <div class="tage-preview">
+      <span>Berechnete Urlaubstage:</span>
+      <span class="val mono" id="editTagePreviewVal">0</span>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn-primary" style="flex:1;" onclick="submitEdit()">Änderungen speichern</button>
+      <button class="btn-secondary" onclick="closeEditModal()">Abbrechen</button>
+    </div>
+    <div id="editError" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <span class="bar"></span>
+      <div>
+        <h1>Urlaubszentrale</h1>
+        <div class="sub">Rudolf Hilgenroth GmbH & Co. KG</div>
+      </div>
+    </div>
+    <div class="user-info">
+      <span class="name" id="userNameDisplay"></span>
+      <span class="standort mono" id="userStandortDisplay"></span>
+      <span class="rolle-badge hidden" id="rolleBadge"></span>
+      <button class="btn-secondary btn-small" onclick="handleLogout()">Abmelden</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="tabs" id="tabBar">
+      <div class="tab active" id="antragTabBtn" data-tab="antrag" onclick="switchTab('antrag')">Neuer Antrag</div>
+      <div class="tab" id="meineTabBtn" data-tab="meine" onclick="switchTab('meine')">Meine Anträge</div>
+      <div class="tab" id="meinKalenderTabBtn" data-tab="meinkalender" onclick="switchTab('meinkalender')">Mein Kalender</div>
+      <div class="tab hidden" id="anwesenheitTabBtn" data-tab="anwesenheit" onclick="switchTab('anwesenheit')">Anwesenheitsliste</div>
+      <div class="tab hidden" id="genehmigenTab" data-tab="genehmigen" onclick="switchTab('genehmigen')">Genehmigen</div>
+      <div class="tab hidden" id="korrekturenTab" data-tab="korrekturen" onclick="switchTab('korrekturen')">Korrekturen <span id="korrekturenBadge" class="badge badge-offen hidden" style="margin-left:4px;">0</span></div>
+      <div class="tab hidden" id="monatTab" data-tab="monat" onclick="switchTab('monat')">Monatsübersicht</div>
+      <div class="tab hidden" id="resturlaubTab" data-tab="resturlaub" onclick="switchTab('resturlaub')">Resturlaub</div>
+      <div class="tab hidden" id="kalenderTab" data-tab="kalender" onclick="switchTab('kalender')">Kalender</div>
+      <div class="tab hidden" id="einstellungenTab" data-tab="einstellungen" onclick="switchTab('einstellungen')">Einstellungen</div>
+    </div>
+
+    <!-- TAB: Neuer Antrag -->
+    <div id="tab-antrag" class="tab-content">
+      <div class="card">
+        <h2><span class="title-txt">Neuen <span class="accent">Urlaubsantrag</span> stellen</span></h2>
+        <div id="antragMitarbeiterWrapper" class="hidden">
+          <label>Für Mitarbeiter</label>
+          <select id="antragMitarbeiterSelect" onchange="updateTagePreview()"></select>
+          <div class="note">Als Admin kannst du hier den Antrag für einen anderen Mitarbeiter stellen.</div>
+        </div>
+        <label>Art des Antrags</label>
+        <select id="antragArt" onchange="updateTagePreview()">
+          <option value="urlaub">Urlaub</option>
+          <option value="sonderurlaub">Sonderurlaub (SOU)</option>
+        </select>
+        <div class="row">
+          <div>
+            <label>Startdatum</label>
+            <input type="date" id="antragStart" onchange="updateTagePreview()">
+          </div>
+          <div>
+            <label>Enddatum</label>
+            <input type="date" id="antragEnde" onchange="updateTagePreview()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="checkbox-row">
+            <input type="checkbox" id="halbTagStart" onchange="updateTagePreview()">
+            <label style="margin:0; text-transform:none; font-weight:600;" for="halbTagStart">Starttag: nur halber Tag</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="halbTagEnde" onchange="updateTagePreview()">
+            <label style="margin:0; text-transform:none; font-weight:600;" for="halbTagEnde">Endtag: nur halber Tag</label>
+          </div>
+        </div>
+        <label>Bemerkung (optional)</label>
+        <textarea id="antragBemerkung" placeholder="z. B. Grund, Vertretung, Sonderfall…"></textarea>
+
+        <div class="tage-preview">
+          <span id="tagePreviewLabel">Beantragte Urlaubstage (Wochenenden &amp; NRW-Feiertage automatisch ausgeschlossen):</span>
+          <span class="val mono" id="tagePreviewVal">0</span>
+        </div>
+
+        <button class="btn-primary" style="margin-top:18px;" onclick="submitAntrag()">Antrag absenden</button>
+        <div id="antragError" class="error-msg hidden"></div>
+        <div id="antragSuccess" class="success-msg hidden"></div>
+      </div>
+    </div>
+
+    <!-- TAB: Meine Anträge -->
+    <div id="tab-meine" class="tab-content hidden">
+      <div id="urlaubKonto" class="urlaub-konto hidden"></div>
+      <div class="card">
+        <h2><span class="title-txt">Meine <span class="accent">Anträge</span></span></h2>
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Zeitraum</th><th class="mono">Tage</th><th>Art</th><th>Status</th><th>Bemerkung</th><th>Gestellt am</th><th></th></tr>
+          </thead>
+          <tbody id="meineAntraegeBody"></tbody>
+        </table>
+        </div>
+        <div id="meineAntraegeEmpty" class="empty-state hidden">Noch keine Anträge gestellt.</div>
+      </div>
+    </div>
+
+    <!-- TAB: Mein Kalender -->
+    <div id="tab-meinkalender" class="tab-content hidden">
+      <div class="card">
+        <h2>
+          <span class="title-txt">Mein <span class="accent">Kalender</span></span>
+          <select id="meinKalenderJahr" onchange="renderMeinKalender()" style="width:auto;"></select>
+        </h2>
+        <div id="meinKalenderGrid" class="jahres-grid"></div>
+        <div class="legend">
+          <span><span class="box" style="background:#2d8b4f;"></span> Urlaub genehmigt</span>
+          <span><span class="box" style="background:#fdf3d9; border-color:var(--warn);"></span> Urlaub offen</span>
+          <span><span class="box" style="background:#4338ca;"></span> Sonderurlaub</span>
+          <span><span class="box" style="background:#2b6cb0;"></span> Betriebsurlaub</span>
+          <span><span class="box" style="background:#ececec;"></span> Feiertag</span>
+          <span><span class="box" style="border:2px solid var(--red); background:var(--white);"></span> Heute</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Anwesenheitsliste (nur Busemann) -->
+    <div id="tab-anwesenheit" class="tab-content hidden">
+      <div class="card">
+        <h2>
+          <span class="title-txt">Meine <span class="accent">Anwesenheitsliste</span></span>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="anwMonat" onchange="renderAnwesenheit()" style="width:auto;"></select>
+            <select id="anwJahr" onchange="renderAnwesenheit()" style="width:auto;"></select>
+            <button class="btn-primary btn-small" onclick="anwMailSenden()">📧 Als Mail senden</button>
+            <button class="btn-secondary btn-small" onclick="exportAnwesenheitPDF()">📄 PDF-Export</button>
+          </div>
+        </h2>
+        <!-- Empfänger-Einstellung -->
+        <div style="margin-bottom:12px; padding:10px 14px; background:var(--gray-100); border-radius:6px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="font-size:12.5px; font-weight:700; color:var(--gray-700);">📬 Empfänger:</span>
+          <input type="text" id="anwEmpfaenger" placeholder="z.B. grisail@rudolf-hilgenroth.de" style="flex:1; min-width:220px; max-width:380px; font-size:13px;" oninput="anwEmpfaengerSpeichern()">
+          <span class="note" style="margin:0;">Mehrere Adressen mit Komma trennen</span>
+        </div>
+        <div class="note" style="margin-bottom:12px;">
+          Trage täglich deinen Status ein. Urlaub wird automatisch vorausgefüllt. Leere Felder = noch nicht eingetragen.
+        </div>
+        <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div id="anwUndoLeiste" style="display:none; align-items:center; gap:10px;">
+            <button class="btn-secondary btn-small" onclick="anwUndo()" id="anwUndoBtn">↩️ Rückgängig</button>
+            <span class="note" style="margin:0;" id="anwUndoInfo"></span>
+          </div>
+          <button class="btn-secondary btn-small" onclick="anwMonatZuruecksetzen()" style="margin-left:auto;">🗑️ Ganzen Monat leeren</button>
+        </div>
+        <div id="anwMehrfachToolbar" style="display:none; margin-bottom:10px; padding:10px 14px; background:#fff8e1; border:1.5px solid #f0c040; border-radius:8px; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="font-weight:700; font-size:13px;" id="anwAuswahlAnzahl">0 ausgewählt</span>
+          <span style="color:var(--gray-700); font-size:12px; font-weight:600;">für Tag:</span>
+          <select id="anwMehrfachTag" style="width:auto; font-size:13px; padding:4px 8px;"></select>
+          <span style="color:var(--gray-400); font-size:12px;">→ Status:</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;" id="anwMehrfachButtons"></div>
+          <button class="btn-secondary btn-small" onclick="anwAuswahlAufheben()">✕ Auswahl aufheben</button>
+        </div>
+        <div id="anwesenheitGrid"></div>
+        <div class="legend" style="margin-top:14px;">
+          <span><span class="box" style="background:#C6EFCE;"></span> X – anwesend</span>
+          <span><span class="box" style="background:#DDEEFF;"></span> U – Urlaub</span>
+          <span><span class="box" style="background:#FFE0E0;"></span> K – krank</span>
+          <span><span class="box" style="background:#FFEB9C;"></span> KK – Kinder-krank</span>
+          <span><span class="box" style="background:#FFD966;"></span> SOU – Sonderurlaub</span>
+          <span><span class="box" style="background:#E8D5F5;"></span> EZ – Elternzeit</span>
+          <span><span class="box" style="background:#EBEBEB;"></span> F – Freistellung</span>
+          <span><span class="box" style="background:#BDD7EE;"></span> BU – Betriebsurlaub</span>
+        </div>
+        <div id="anwesenheitSummen" style="margin-top:14px; padding:12px; background:var(--gray-100); border-radius:6px; font-size:13px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB: Genehmigen -->
+    <div id="tab-genehmigen" class="tab-content hidden">
+      <div class="card">
+        <h2>
+          <span class="title-txt">Anträge <span class="accent">genehmigen</span></span>
+          <button class="btn-secondary btn-small export-btn hidden" onclick="exportGenehmigenExcel()">📥 Excel-Export</button>
+        </h2>
+        <div class="filter-row">
+          <select id="adminFilterStatus" onchange="renderAdminList()">
+            <option value="alle">Alle Status</option>
+            <option value="offen">Offen</option>
+            <option value="genehmigt">Genehmigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+          </select>
+          <select id="adminFilterArt" onchange="renderAdminList()">
+            <option value="alle">Alle Arten</option>
+            <option value="urlaub">Urlaub</option>
+            <option value="sonderurlaub">Sonderurlaub</option>
+          </select>
+          <select id="adminFilterMitarbeiter" onchange="renderAdminList()">
+            <option value="alle">Alle Mitarbeiter</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Mitarbeiter</th><th>Zeitraum</th><th class="mono">Tage</th><th>Art</th><th>Status</th><th>Bemerkung</th><th>Aktion</th></tr>
+          </thead>
+          <tbody id="adminAntraegeBody"></tbody>
+        </table>
+        </div>
+        <div id="adminAntraegeEmpty" class="empty-state hidden">Keine Anträge gefunden.</div>
+      </div>
+    </div>
+
+    <!-- TAB: Korrekturen -->
+    <div id="tab-korrekturen" class="tab-content hidden">
+      <div class="card">
+        <h2><span class="title-txt"><span class="accent">Korrektur</span>anfragen von Mitarbeitern</span></h2>
+        <div class="note" style="margin-bottom:12px;">Anfragen von Mitarbeitern, die einen bereits genehmigten Antrag ändern oder löschen möchten.</div>
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Mitarbeiter</th><th>Antrag</th><th>Anfrage</th><th>Begründung</th><th>Gestellt</th><th>Aktion</th></tr>
+          </thead>
+          <tbody id="korrekturenBody"></tbody>
+        </table>
+        </div>
+        <div id="korrekturenEmpty" class="empty-state hidden">Keine offenen Korrekturanfragen.</div>
+      </div>
+    </div>
+
+    <!-- TAB: Monatsübersicht -->
+    <div id="tab-monat" class="tab-content hidden">
+      <div class="card">
+        <h2>
+          <span class="title-txt"><span class="accent">Monats</span>übersicht</span>
+          <button class="btn-secondary btn-small export-btn hidden" onclick="exportMonatsuebersichtExcel()">📥 Excel-Export</button>
+        </h2>
+        <div class="filter-row">
+          <label style="margin:0; text-transform:none; font-weight:600;">Jahr:</label>
+          <select id="monatJahr" onchange="renderMonatsuebersicht()"></select>
+          <label style="margin:0; text-transform:none; font-weight:600;">Monat:</label>
+          <select id="monatMonatFilter" onchange="renderMonatsuebersicht()">
+            <option value="alle">Alle Monate</option>
+            <option value="0">Januar</option>
+            <option value="1">Februar</option>
+            <option value="2">März</option>
+            <option value="3">April</option>
+            <option value="4">Mai</option>
+            <option value="5">Juni</option>
+            <option value="6">Juli</option>
+            <option value="7">August</option>
+            <option value="8">September</option>
+            <option value="9">Oktober</option>
+            <option value="10">November</option>
+            <option value="11">Dezember</option>
+          </select>
+        </div>
+        <div class="table-scroll">
+        <table>
+          <thead id="monatThead"></thead>
+          <tbody id="monatBody"></tbody>
+        </table>
+        </div>
+        <div class="note">Zählt genehmigte Anträge, aufgeteilt auf den jeweiligen Kalendermonat (auch bei Anträgen, die über Monatsgrenzen laufen).</div>
+      </div>
+    </div>
+
+    <!-- TAB: Resturlaub -->
+    <div id="tab-resturlaub" class="tab-content hidden">
+      <div class="card">
+        <h2>
+          <span class="title-txt"><span class="accent">Resturlaub</span>-Übersicht</span>
+          <button class="btn-secondary btn-small export-btn hidden" onclick="exportResturlaubExcel()">📥 Excel-Export</button>
+        </h2>
+        <div class="filter-row">
+          <label style="margin:0; text-transform:none; font-weight:600;">Jahr:</label>
+          <select id="resturlaubJahr" onchange="renderResturlaub()"></select>
+        </div>
+        <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Mitarbeiter</th><th>Standort</th><th class="mono">Rest Vorjahr</th><th class="mono">Anspruch</th><th class="mono">Genommen (genehmigt)</th><th class="mono">Resturlaub</th></tr>
+          </thead>
+          <tbody id="resturlaubBody"></tbody>
+        </table>
+        </div>
+        <div class="note">"Genommen" zählt nur genehmigte Anträge mit Startdatum im gewählten Jahr, die bereits in dieser App gestellt wurden. Ältere/historische Urlaubstage aus 2026 (vor Einführung der App) sind ggf. nicht erfasst — bitte mit der bisherigen Excel abgleichen.</div>
+      </div>
+    </div>
+
+    <!-- TAB: Kalender -->
+    <div id="tab-kalender" class="tab-content hidden">
+      <div class="card kalender-breakout">
+        <h2>
+          <span class="title-txt">Team-<span class="accent">Kalender</span></span>
+          <button class="btn-secondary btn-small export-btn hidden" onclick="exportKalenderExcel()">📥 Excel-Export</button>
+        </h2>
+        <div class="filter-row">
+          <label style="margin:0; text-transform:none; font-weight:600;">Monat:</label>
+          <select id="kalenderMonat" onchange="renderKalender()"></select>
+          <label style="margin:0; text-transform:none; font-weight:600;">Jahr:</label>
+          <select id="kalenderJahr" onchange="renderKalender()"></select>
+        </div>
+        <div class="kal-wrap">
+          <table class="kal-grid" id="kalenderTable"></table>
+        </div>
+        <div class="legend">
+          <span><span class="box" style="background:#2d8b4f;"></span> Urlaub genehmigt</span>
+          <span><span class="box" style="background:#fdf3d9; border-color:var(--warn);"></span> Urlaub offen</span>
+          <span><span class="box" style="background:#4338ca;"></span> Sonderurlaub genehmigt</span>
+          <span><span class="box" style="background:#e0e7ff; border-color:#4338ca;"></span> Sonderurlaub offen</span>
+          <span><span class="box" style="background:#2b6cb0;"></span> Betriebsurlaub</span>
+          <span><span class="box" style="background:#ececec;"></span> Feiertag</span>
+          <span><span class="box" style="background:#f7f7f7;"></span> Wochenende</span>
+          <span><span class="box" style="border:2px solid var(--red); background:var(--white);"></span> Heute</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Einstellungen -->
+    <div id="tab-einstellungen" class="tab-content hidden">
+      <div class="card">
+        <h2><span class="title-txt">⚙️ <span class="accent">Einstellungen</span></span></h2>
+
+        <div class="settings-section">
+          <h3>Mitarbeiterverwaltung</h3>
+          <div class="note" style="margin-bottom:10px;">Wenn du hier die E-Mail-Adresse eines Mitarbeiters einträgst, wird er beim Login automatisch erkannt und muss seinen Namen nicht mehr auswählen.</div>
+          <div class="table-scroll">
+          <table>
+            <thead><tr><th>Name</th><th>Standort</th><th>E-Mail (Auto-Login)</th><th>Passwort</th><th>Arbeitstage</th><th></th></tr></thead>
+            <tbody id="einstellungenMitarbeiterBody"></tbody>
+          </table>
+          </div>
+          <div class="inline-form" style="margin-top:14px;">
+            <div><label>Name</label><input type="text" id="neuerMaName" placeholder="Vorname Nachname"></div>
+            <div><label>Standort</label>
+              <select id="neuerMaStandort">
+                <option value="RH Sundern">RH Sundern</option>
+                <option value="RH Hellefeld">RH Hellefeld</option>
+              </select>
+            </div>
+            <div><label>E-Mail (optional)</label><input type="email" id="neuerMaEmail" placeholder="name@rudolf-hilgenroth.de"></div>
+            <div style="flex:0;"><button class="btn-primary" onclick="mitarbeiterHinzufuegen()">Hinzufügen</button></div>
+          </div>
+          <div id="mitarbeiterListeNote" class="note hidden"></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Urlaubsanspruch &amp; Rest aus Vorjahr</h3>
+          <div class="filter-row">
+            <label style="margin:0; text-transform:none; font-weight:600;">Jahr:</label>
+            <select id="stammdatenJahr" onchange="renderStammdatenEditor()"></select>
+          </div>
+          <div class="table-scroll">
+          <table>
+            <thead><tr><th>Mitarbeiter</th><th class="mono">Rest Vorjahr</th><th class="mono">Anspruch (Jahr)</th><th></th></tr></thead>
+            <tbody id="stammdatenBody"></tbody>
+          </table>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Rollen &amp; Berechtigungen</h3>
+          <div class="note" style="margin-bottom:10px;">Admin: Anträge genehmigen, Resturlaub- &amp; Kalenderübersicht. Export: zusätzlich Excel-Export. Superadmin: zusätzlich Zugriff auf diese Einstellungen.</div>
+          <div class="table-scroll">
+          <table>
+            <thead><tr><th>E-Mail</th><th>Rollen</th><th></th></tr></thead>
+            <tbody id="rollenBody"></tbody>
+          </table>
+          </div>
+          <div class="inline-form" style="margin-top:14px;">
+            <div><label>E-Mail</label><input type="text" id="neueRolleEmail" placeholder="name@rudolf-hilgenroth.de"></div>
+          </div>
+          <div class="roles-check-row">
+            <label><input type="checkbox" id="neueRolleAdmin"> Admin</label>
+            <label><input type="checkbox" id="neueRolleExport"> Export</label>
+            <label><input type="checkbox" id="neueRolleFuerAndere"> Für andere eintragen</label>
+            <label><input type="checkbox" id="neueRolleSuperadmin"> Superadmin</label>
+            <label><input type="checkbox" id="neueRolleNurUebersicht"> Nur Übersicht (kein eigenes Urlaubskonto)</label>
+            <button class="btn-primary btn-small" onclick="rolleSpeichern()">Speichern</button>
+          </div>
+          <div id="rollenError" class="error-msg hidden"></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>🔔 Push-Benachrichtigungen (ntfy.sh)</h3>
+          <div class="note" style="margin-bottom:10px;">Push-Benachrichtigungen bei neuen Korrekturanfragen aufs Handy. Wähle einen schwer zu erratenden Topic-Namen (z.&nbsp;B. eine UUID), installiere die <a href="https://ntfy.sh/" target="_blank" style="color:var(--red);">ntfy-App</a> und abonniere den Topic dort.</div>
+          <div class="inline-form">
+            <div style="flex:2;"><label>Topic-Name</label><input type="text" id="ntfyTopic" placeholder="z.B. hilgenroth-urlaub-xyz123abc"></div>
+            <div style="flex:0;"><button class="btn-primary" onclick="ntfyTopicSpeichern()">Speichern</button></div>
+            <div style="flex:0;"><button class="btn-secondary" onclick="ntfyTest()">Test-Push senden</button></div>
+          </div>
+          <div id="ntfyStatus" class="note"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer-note">Rudolf Hilgenroth GmbH & Co. KG · Interne Urlaubszentrale</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   FIREBASE-KONFIGURATION
+   ========================================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBd3e88rV6TfTPL43P5f4XXWU_6s1JJQx0",
+  authDomain: "urlaubs-planer.firebaseapp.com",
+  databaseURL: "https://urlaubs-planer-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "urlaubs-planer",
+  storageBucket: "urlaubs-planer.firebasestorage.app",
+  messagingSenderId: "434983070559",
+  appId: "1:434983070559:web:fab05d7c3c9268fca124ea"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+/* =========================================================================
+   MITARBEITERLISTE (Fallback, falls in Firebase /mitarbeiterListe noch nichts
+   hinterlegt ist. Superadmin kann die Liste unter Einstellungen pflegen.)
+   ========================================================================= */
+const MITARBEITER_FALLBACK = [
+  {name:"Jan Bräutigam", standort:"RH Sundern"},
+  {name:"Christoph Brüggemann", standort:"RH Sundern"},
+  {name:"Anette Busemann", standort:"RH Sundern"},
+  {name:"Robin Gatzemeier", standort:"RH Sundern"},
+  {name:"Rüdiger Greve", standort:"RH Sundern"},
+  {name:"Pascal Grisail", standort:"RH Sundern"},
+  {name:"Sebastian Hauschulte", standort:"RH Sundern"},
+  {name:"Walter Husteden", standort:"RH Sundern"},
+  {name:"Christoph Kremer", standort:"RH Sundern"},
+  {name:"Andrea Liedhegener", standort:"RH Sundern"},
+  {name:"Stefan Lucas", standort:"RH Sundern"},
+  {name:"Dennis Maag", standort:"RH Sundern"},
+  {name:"Daniela Miederhoff", standort:"RH Sundern"},
+  {name:"Dominik Schulte", standort:"RH Sundern"},
+  {name:"Matthias Struwe", standort:"RH Sundern"},
+  {name:"Andreas Tschernisch", standort:"RH Sundern"},
+  {name:"Jonas Werthschulte", standort:"RH Sundern"},
+  {name:"Vera Henneke", standort:"RH Hellefeld"},
+  {name:"Andre Niepel", standort:"RH Hellefeld"}
+];
+
+// Stammdaten-Fallback (Anspruch / Rest aus Vorjahr) fuer 2026, aus der bisherigen Excel uebernommen.
+// Bitte in den Einstellungen pruefen - v.a. Werthschulte/Henneke/Niepel waren in der Quelle unvollstaendig.
+const STAMMDATEN_FALLBACK_2026 = {
+  "Jan Bräutigam": {restVorjahr:4, anspruch:30},
+  "Christoph Brüggemann": {restVorjahr:13, anspruch:30},
+  "Anette Busemann": {restVorjahr:62, anspruch:30},
+  "Robin Gatzemeier": {restVorjahr:2, anspruch:30},
+  "Rüdiger Greve": {restVorjahr:-4, anspruch:30},
+  "Pascal Grisail": {restVorjahr:0, anspruch:22},
+  "Sebastian Hauschulte": {restVorjahr:53, anspruch:30},
+  "Walter Husteden": {restVorjahr:15, anspruch:24},
+  "Christoph Kremer": {restVorjahr:14, anspruch:30},
+  "Andrea Liedhegener": {restVorjahr:22, anspruch:30},
+  "Stefan Lucas": {restVorjahr:12.5, anspruch:30},
+  "Dennis Maag": {restVorjahr:7.5, anspruch:30},
+  "Daniela Miederhoff": {restVorjahr:9, anspruch:12},
+  "Dominik Schulte": {restVorjahr:21.5, anspruch:30},
+  "Matthias Struwe": {restVorjahr:0, anspruch:24},
+  "Andreas Tschernisch": {restVorjahr:2.5, anspruch:30},
+  "Jonas Werthschulte": {restVorjahr:2, anspruch:30},
+  "Vera Henneke": {restVorjahr:0, anspruch:30},
+  "Andre Niepel": {restVorjahr:0, anspruch:30}
+};
+
+let MITARBEITER = MITARBEITER_FALLBACK.slice();
+
+// Arbeitstage-Fallback fuer Mitarbeiter mit reduzierter Wochenarbeitszeit.
+// Format: JS-Wochentag-Nummern (1=Montag ... 5=Freitag). Ohne Eintrag = Mo-Fr (Standard).
+const ARBEITSTAGE_FALLBACK = {
+  "Daniela Miederhoff": [2,3,4], // Dienstag - Donnerstag
+  "Walter Husteden": [1,2,3,4]  // Montag - Donnerstag
+};
+function getArbeitstage(name){
+  const m = MITARBEITER.find(x=>x.name===name);
+  if(m && Array.isArray(m.arbeitstage) && m.arbeitstage.length) return m.arbeitstage;
+  if(ARBEITSTAGE_FALLBACK[name]) return ARBEITSTAGE_FALLBACK[name];
+  return [1,2,3,4,5];
+}
+
+/* =========================================================================
+   ROLLEN-FALLBACK
+   Falls in Firebase unter "berechtigungen" fuer eine E-Mail noch nichts
+   hinterlegt ist, gelten diese Werte. Firebase-Eintraege haben Vorrang.
+   ========================================================================= */
+const HARDCODED_ROLES = {
+  'grisail@rudolf-hilgenroth.de': {admin:true, export:true, superadmin:true},
+  'busemann@rudolf-hilgenroth.de': {admin:true, export:true, nurUebersicht:true, fuerAndereEintragen:true},
+  'r59.hilgenroth@web.de': {admin:true, nurUebersicht:true}
+};
+
+/* =========================================================================
+   NRW-FEIERTAGE (inkl. beweglicher Feiertage per Gauss'scher Osterformel)
+   ========================================================================= */
+function osterSonntag(jahr){
+  const a = jahr % 19, b = Math.floor(jahr/100), c = jahr % 100;
+  const d = Math.floor(b/4), e = b % 4, f = Math.floor((b+8)/25), g = Math.floor((b-f+1)/3);
+  const h = (19*a + b - d - g + 15) % 30;
+  const i = Math.floor(c/4), k = c % 4, l = (32 + 2*e + 2*i - h - k) % 7;
+  const m = Math.floor((a + 11*h + 22*l)/451);
+  const monat = Math.floor((h + l - 7*m + 114)/31);
+  const tag = ((h + l - 7*m + 114) % 31) + 1;
+  return new Date(jahr, monat-1, tag);
+}
+function addTage(datum, n){
+  const d = new Date(datum);
+  d.setDate(d.getDate()+n);
+  return d;
+}
+function toKey(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0');
+}
+const BETRIEBSRUHE_TAGE = ["12-24", "12-31"];
+
+// Betriebsurlaub (jedes Jahr wiederkehrend) - Format MM-DD
+const BETRIEBSURLAUB_RANGES = [
+  {startMD: '07-27', endeMD: '08-07'}
+];
+function istBetriebsurlaub(d){
+  const md = String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  return BETRIEBSURLAUB_RANGES.some(r => {
+    if(r.startMD <= r.endeMD) return md >= r.startMD && md <= r.endeMD;
+    return md >= r.startMD || md <= r.endeMD;
+  });
+}
+
+function feiertageFuerJahr(jahr){
+  const ostern = osterSonntag(jahr);
+  const set = new Set();
+  set.add(toKey(new Date(jahr,0,1)));
+  set.add(toKey(addTage(ostern,-2)));
+  set.add(toKey(addTage(ostern,1)));
+  set.add(toKey(new Date(jahr,4,1)));
+  set.add(toKey(addTage(ostern,39)));
+  set.add(toKey(addTage(ostern,50)));
+  set.add(toKey(addTage(ostern,60)));
+  set.add(toKey(new Date(jahr,9,3)));
+  set.add(toKey(new Date(jahr,10,1)));
+  set.add(toKey(new Date(jahr,11,25)));
+  set.add(toKey(new Date(jahr,11,26)));
+  BETRIEBSRUHE_TAGE.forEach(md=>set.add(jahr+"-"+md));
+  return set;
+}
+const feiertageCache = {};
+function getFeiertage(jahr){
+  if(!feiertageCache[jahr]) feiertageCache[jahr] = feiertageFuerJahr(jahr);
+  return feiertageCache[jahr];
+}
+function istFeiertagOderWochenende(d){
+  const wochentag = d.getDay();
+  if(wochentag===0 || wochentag===6) return true;
+  return getFeiertage(d.getFullYear()).has(toKey(d));
+}
+function istFeiertag(d){
+  const wochentag = d.getDay();
+  if(wochentag===0 || wochentag===6) return false;
+  return getFeiertage(d.getFullYear()).has(toKey(d));
+}
+
+function berechneUrlaubstage(startStr, endeStr, halbStart, halbEnde, arbeitstage){
+  if(!startStr || !endeStr) return 0;
+  arbeitstage = arbeitstage || [1,2,3,4,5];
+  const start = new Date(startStr+"T00:00:00");
+  const ende = new Date(endeStr+"T00:00:00");
+  if(ende < start) return 0;
+  let tage = 0;
+  let cur = new Date(start);
+  while(cur <= ende){
+    if(!istFeiertagOderWochenende(cur) && arbeitstage.includes(cur.getDay())){
+      let wert = 1;
+      const istStart = toKey(cur) === toKey(start);
+      const istEnde = toKey(cur) === toKey(ende);
+      if(istStart && halbStart) wert = 0.5;
+      if(istEnde && halbEnde) wert = (istStart && halbStart) ? wert : 0.5;
+      tage += wert;
+    }
+    cur = addTage(cur,1);
+  }
+  return tage;
+}
+
+function emailKey(email){
+  return (email||'').trim().toLowerCase().replace(/\./g, ',');
+}
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+let currentUser = null;
+let currentProfile = null;
+let berechtigung = {admin:false, export:false, superadmin:false};
+let meineAntraegeCache = [];
+let alleAntraegeCache = [];
+let stammdatenCache = {};
+let rollenCache = {};
+let pwStatusCache = {};
+let korrekturenCache = [];
+let ntfyTopic = null;
+
+/* =========================================================================
+   AUTH FLOW
+   ========================================================================= */
+auth.onAuthStateChanged(async (user)=>{
+  if(user){
+    currentUser = user;
+    const key = emailKey(user.email);
+    try{
+      const pwSnap = await db.ref('passwortAendernErforderlich/'+key).get();
+      if(pwSnap.exists() && pwSnap.val() === true){
+        zeigePasswortAendern();
+        return;
+      }
+    }catch(err){
+      console.error('Passwort-Status konnte nicht geprüft werden:', err);
+    }
+    await ladeProfil(user.uid);
+  } else {
+    currentUser = null;
+    zeigeLogin();
+  }
+});
+
+function zeigePasswortAendern(){
+  hide('loadingScreen'); hide('loginScreen'); hide('onboardingOverlay'); hide('app');
+  document.getElementById('pwChangeNeu').value = '';
+  document.getElementById('pwChangeWiederholt').value = '';
+  hide('pwChangeError');
+  show('pwChangeOverlay');
+}
+async function handlePasswortAendern(){
+  hide('pwChangeError');
+  const neu = document.getElementById('pwChangeNeu').value;
+  const wdh = document.getElementById('pwChangeWiederholt').value;
+  if(!neu || neu.length < 6){
+    zeigeFehler('pwChangeError','Das Passwort muss mindestens 6 Zeichen lang sein.');
+    return;
+  }
+  if(neu !== wdh){
+    zeigeFehler('pwChangeError','Die Passwörter stimmen nicht überein.');
+    return;
+  }
+  try{
+    await currentUser.updatePassword(neu);
+    await db.ref('passwortAendernErforderlich/'+emailKey(currentUser.email)).set(false);
+    hide('pwChangeOverlay');
+    await ladeProfil(currentUser.uid);
+  }catch(err){
+    let msg = 'Fehler: '+err.message;
+    if(err.code === 'auth/requires-recent-login'){
+      msg = 'Aus Sicherheitsgründen bitte einmal ab- und wieder anmelden, dann erneut versuchen.';
+    }
+    zeigeFehler('pwChangeError', msg);
+  }
+}
+
+function zeigeLoading(){
+  hide('loginScreen'); hide('onboardingOverlay'); hide('app'); hide('pwChangeOverlay');
+  show('loadingScreen');
+}
+function zeigeLogin(){
+  hide('loadingScreen'); hide('onboardingOverlay'); hide('app'); hide('pwChangeOverlay');
+  show('loginScreen');
+}
+function zeigeOnboarding(){
+  hide('loadingScreen'); hide('loginScreen'); hide('app'); hide('pwChangeOverlay');
+  const sel = document.getElementById('onboardingSelect');
+  sel.innerHTML = '<option value="">– bitte wählen –</option>';
+  MITARBEITER.forEach((m,idx)=>{
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = m.name + " (" + m.standort + ")";
+    sel.appendChild(opt);
+  });
+  show('onboardingOverlay');
+}
+function zeigeApp(){
+  hide('loadingScreen'); hide('loginScreen'); hide('onboardingOverlay'); hide('pwChangeOverlay');
+  show('app');
+  document.getElementById('userNameDisplay').textContent = currentProfile.name;
+  const standortEl = document.getElementById('userStandortDisplay');
+  if(currentProfile.standort){
+    standortEl.textContent = currentProfile.standort;
+    standortEl.classList.remove('hidden');
+  } else {
+    standortEl.classList.add('hidden');
+  }
+
+  const effAdmin = berechtigung.admin || berechtigung.superadmin;
+  const effExport = berechtigung.export || berechtigung.superadmin;
+  const effSuperadmin = berechtigung.superadmin;
+  const nurUebersicht = !!berechtigung.nurUebersicht;
+
+  const kannFuerAndere = !!(berechtigung.fuerAndereEintragen || berechtigung.superadmin);
+  // "Neuer Antrag" zeigen wenn: normaler Mitarbeiter ODER Admin mit fuerAndereEintragen
+  const zeigeAntragTab = !nurUebersicht || kannFuerAndere;
+  document.getElementById('antragTabBtn').classList.toggle('hidden', !zeigeAntragTab);
+  document.getElementById('meineTabBtn').classList.toggle('hidden', nurUebersicht);
+  document.getElementById('meinKalenderTabBtn').classList.toggle('hidden', nurUebersicht);
+  const istBusemann = (currentUser && (currentUser.email||'').toLowerCase() === 'busemann@rudolf-hilgenroth.de');
+  document.getElementById('anwesenheitTabBtn').classList.toggle('hidden', !istBusemann);
+  document.getElementById('genehmigenTab').classList.toggle('hidden', !effAdmin);
+  document.getElementById('korrekturenTab').classList.toggle('hidden', !effAdmin);
+  document.getElementById('monatTab').classList.toggle('hidden', !effAdmin);
+  document.getElementById('resturlaubTab').classList.toggle('hidden', !effAdmin);
+  document.getElementById('kalenderTab').classList.toggle('hidden', !effAdmin);
+  document.getElementById('einstellungenTab').classList.toggle('hidden', !effSuperadmin);
+  document.querySelectorAll('.export-btn').forEach(b=>b.classList.toggle('hidden', !effExport));
+
+  const badge = document.getElementById('rolleBadge');
+  if(effSuperadmin){ badge.textContent='SUPERADMIN'; badge.classList.remove('hidden'); }
+  else if(effAdmin){ badge.textContent='ADMIN'; badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
+
+  // Dropdown fuer "Antrag fuer Mitarbeiter" ein-/ausblenden und befuellen
+  const wrapper = document.getElementById('antragMitarbeiterWrapper');
+  if(kannFuerAndere){
+    wrapper.classList.remove('hidden');
+    const sel = document.getElementById('antragMitarbeiterSelect');
+    sel.innerHTML = '';
+    const liste = MITARBEITER.slice().sort((a,b)=> a.name.localeCompare(b.name,'de'));
+    liste.forEach(m=>{
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name + ' (' + m.standort + ')';
+      opt.dataset.standort = m.standort;
+      if(!nurUebersicht && currentProfile && m.name === currentProfile.name) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } else {
+    wrapper.classList.add('hidden');
+  }
+
+  if(nurUebersicht){
+    switchTab(effAdmin ? 'genehmigen' : (kannFuerAndere ? 'antrag' : 'meine'));
+  } else {
+    ladeMeineAntraege();
+    ladeStammdaten();
+  }
+  ladeNtfyTopic();
+  if(effAdmin){
+    befuelleJahresauswahl();
+    ladeAlleAntraege();
+    ladeKorrekturen();
+  }
+  if(effSuperadmin){
+    ladeMitarbeiterListe();
+    ladeRollen();
+    ladePasswortStatus();
+  }
+}
+function show(id){ document.getElementById(id).classList.remove('hidden'); }
+function hide(id){ document.getElementById(id).classList.add('hidden'); }
+
+function nameAusEmail(email){
+  const local = (email||'').split('@')[0];
+  return local.split(/[._-]/).map(t=> t.charAt(0).toUpperCase()+t.slice(1)).join(' ');
+}
+
+async function ladeProfil(uid){
+  zeigeLoading();
+  try{
+    const key = emailKey(currentUser.email);
+    const emailLower = (currentUser.email||'').trim().toLowerCase();
+    const rolleSnap = await db.ref('berechtigungen/'+key).get();
+    if(rolleSnap.exists()){
+      berechtigung = Object.assign({admin:false,export:false,superadmin:false,nurUebersicht:false}, rolleSnap.val());
+    } else if(HARDCODED_ROLES[emailLower]){
+      berechtigung = Object.assign({admin:false,export:false,superadmin:false,nurUebersicht:false}, HARDCODED_ROLES[emailLower]);
+    } else {
+      berechtigung = {admin:false,export:false,superadmin:false,nurUebersicht:false};
+    }
+
+    // Reine Uebersichts-/Chef-Accounts (z.B. Vorgesetzte ohne eigenes Urlaubskonto):
+    // ueberspringen Namenszuordnung und Antrags-Tabs komplett.
+    if(berechtigung.nurUebersicht){
+      currentProfile = {name: nameAusEmail(currentUser.email), standort: ''};
+      zeigeApp();
+      return;
+    }
+
+    const profilSnap = await db.ref('mitarbeiterZuordnung/'+uid).get();
+
+    // Mitarbeiterliste vorab laden (fuer Onboarding-Dropdown), Fallback falls leer
+    const listeSnap = await db.ref('mitarbeiterListe').get();
+    if(listeSnap.exists()){
+      const val = listeSnap.val();
+      MITARBEITER = Object.keys(val).map(k=>val[k]);
+    } else {
+      MITARBEITER = MITARBEITER_FALLBACK.slice();
+    }
+
+    if(profilSnap.exists()){
+      currentProfile = profilSnap.val();
+      zeigeApp();
+    } else {
+      // Auto-Zuweisung: Wenn die Login-E-Mail in mitarbeiterListe hinterlegt ist,
+      // Namen direkt uebernehmen und Onboarding ueberspringen.
+      const emailLower = (currentUser.email||'').trim().toLowerCase();
+      const zugewiesen = MITARBEITER.find(m => (m.email||'').toLowerCase() === emailLower);
+      if(zugewiesen){
+        currentProfile = {name: zugewiesen.name, standort: zugewiesen.standort, email: currentUser.email};
+        try{ await db.ref('mitarbeiterZuordnung/'+uid).set(currentProfile); }catch(e){}
+        zeigeApp();
+      } else {
+        zeigeOnboarding();
+      }
+    }
+  }catch(err){
+    console.error(err);
+    zeigeLogin();
+    zeigeFehler('loginError', 'Fehler beim Laden des Profils: '+err.message);
+  }
+}
+
+function handleLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+  hide('loginError');
+  if(!email || !pw){
+    zeigeFehler('loginError','Bitte E-Mail und Passwort eingeben.');
+    return;
+  }
+  auth.signInWithEmailAndPassword(email, pw).catch(err=>{
+    zeigeFehler('loginError', uebersetzeFehler(err));
+  });
+}
+function handleLogout(){
+  auth.signOut();
+}
+function uebersetzeFehler(err){
+  const map = {
+    'auth/invalid-email':'Ungültige E-Mail-Adresse.',
+    'auth/user-not-found':'Kein Konto mit dieser E-Mail gefunden.',
+    'auth/wrong-password':'Falsches Passwort.',
+    'auth/invalid-credential':'E-Mail oder Passwort falsch.',
+    'auth/too-many-requests':'Zu viele Versuche. Bitte kurz warten.'
+  };
+  return map[err.code] || ('Anmeldung fehlgeschlagen: '+err.message);
+}
+function zeigeFehler(elId, msg){
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function handleOnboardingSave(){
+  const sel = document.getElementById('onboardingSelect');
+  hide('onboardingError');
+  if(sel.value === ""){
+    zeigeFehler('onboardingError','Bitte wähle deinen Namen aus.');
+    return;
+  }
+  const m = MITARBEITER[sel.value];
+  const profil = {name:m.name, standort:m.standort, email:currentUser.email};
+  try{
+    await db.ref('mitarbeiterZuordnung/'+currentUser.uid).set(profil);
+    currentProfile = profil;
+    zeigeApp();
+  }catch(err){
+    zeigeFehler('onboardingError','Speichern fehlgeschlagen: '+err.message);
+  }
+}
+
+/* =========================================================================
+   TABS
+   ========================================================================= */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('hidden'));
+  document.getElementById('tab-'+name).classList.remove('hidden');
+  if(name==='kalender') renderKalender();
+  if(name==='meinkalender') renderMeinKalender();
+  if(name==='anwesenheit'){ renderAnwesenheit(); anwEmpfaengerLaden(); }
+  if(name==='resturlaub') renderResturlaub();
+  if(name==='monat') renderMonatsuebersicht();
+}
+
+/* =========================================================================
+   ANTRAG STELLEN
+   ========================================================================= */
+function ermittleZielMitarbeiter(){
+  const kannFuerAndere = !!(berechtigung.fuerAndereEintragen || berechtigung.superadmin);
+  if(kannFuerAndere){
+    const sel = document.getElementById('antragMitarbeiterSelect');
+    if(sel && sel.value){
+      return {name: sel.value, standort: sel.selectedOptions[0].dataset.standort || ''};
+    }
+  }
+  return currentProfile ? {name: currentProfile.name, standort: currentProfile.standort} : null;
+}
+
+function updateTagePreview(){
+  const start = document.getElementById('antragStart').value;
+  const ende = document.getElementById('antragEnde').value;
+  const halbStart = document.getElementById('halbTagStart').checked;
+  const halbEnde = document.getElementById('halbTagEnde').checked;
+  const art = document.getElementById('antragArt').value;
+  const ziel = ermittleZielMitarbeiter();
+  const arbeitstage = getArbeitstage(ziel ? ziel.name : null);
+  const tage = berechneUrlaubstage(start, ende, halbStart, halbEnde, arbeitstage);
+  document.getElementById('tagePreviewVal').textContent = tage.toString().replace('.', ',');
+  document.getElementById('tagePreviewLabel').textContent = art==='sonderurlaub'
+    ? 'Beantragte Sonderurlaubstage (zählt nicht auf den Resturlaub):'
+    : 'Beantragte Urlaubstage (Wochenenden & NRW-Feiertage automatisch ausgeschlossen):';
+}
+
+async function submitAntrag(){
+  hide('antragError'); hide('antragSuccess');
+  const start = document.getElementById('antragStart').value;
+  const ende = document.getElementById('antragEnde').value;
+  const halbStart = document.getElementById('halbTagStart').checked;
+  const halbEnde = document.getElementById('halbTagEnde').checked;
+  const art = document.getElementById('antragArt').value;
+  const bemerkung = document.getElementById('antragBemerkung').value.trim();
+
+  if(!start || !ende){
+    zeigeFehler('antragError','Bitte Start- und Enddatum angeben.');
+    return;
+  }
+  if(new Date(ende) < new Date(start)){
+    zeigeFehler('antragError','Das Enddatum liegt vor dem Startdatum.');
+    return;
+  }
+
+  const kannFuerAndere = !!(berechtigung.fuerAndereEintragen || berechtigung.superadmin);
+  const ziel = ermittleZielMitarbeiter();
+  if(!ziel || !ziel.name){
+    zeigeFehler('antragError','Kein Mitarbeiter ausgewählt.');
+    return;
+  }
+  const zielName = ziel.name;
+  const zielStandort = ziel.standort;
+
+  const tage = berechneUrlaubstage(start, ende, halbStart, halbEnde, getArbeitstage(zielName));
+  if(tage <= 0){
+    zeigeFehler('antragError','Der gewählte Zeitraum enthält keine Werktage für diesen Mitarbeiter.');
+    return;
+  }
+
+  const istFuerAnderen = kannFuerAndere && currentProfile && zielName !== currentProfile.name;
+
+  const antrag = {
+    uid: currentUser.uid,
+    name: zielName,
+    standort: zielStandort || '',
+    start, ende,
+    halbTagStart: halbStart,
+    halbTagEnde: halbEnde,
+    tage,
+    art: art || 'urlaub',
+    bemerkung: bemerkung || null,
+    status: 'offen',
+    erstelltAm: firebase.database.ServerValue.TIMESTAMP,
+    erstelltVon: istFuerAnderen ? (currentProfile ? currentProfile.name : currentUser.email) : null,
+    entschiedenAm: null,
+    entschiedenVon: null,
+    entscheidungKommentar: null
+  };
+
+  try{
+    await db.ref('antraege').push(antrag);
+
+    // Push-Benachrichtigung an Admin(s)
+    const zeitraum = formatDatum(start) + (start!==ende ? '–'+formatDatum(ende) : '');
+    const artTxt = art==='sonderurlaub' ? 'Sonderurlaub' : 'Urlaub';
+    const erstellerHinweis = istFuerAnderen ? ' (eingetragen von '+(currentProfile?currentProfile.name:currentUser.email)+')' : '';
+    const kurztext = zielName+' hat '+artTxt+' beantragt: '+zeitraum+' ('+tage.toString().replace('.',',')+' Tag(e))'+erstellerHinweis;
+    sendeNtfy('🆕 Neuer Urlaubsantrag', kurztext, 'default');
+
+    const ok = document.getElementById('antragSuccess');
+    ok.textContent = (art==='sonderurlaub' ? 'Sonderurlaubsantrag' : 'Antrag') + ' erfolgreich gestellt (' + tage.toString().replace('.',',') + ' Tag(e)). Status: offen.';
+    ok.classList.remove('hidden');
+    document.getElementById('antragStart').value = '';
+    document.getElementById('antragEnde').value = '';
+    document.getElementById('halbTagStart').checked = false;
+    document.getElementById('halbTagEnde').checked = false;
+    document.getElementById('antragArt').value = 'urlaub';
+    document.getElementById('antragBemerkung').value = '';
+    updateTagePreview();
+  }catch(err){
+    zeigeFehler('antragError','Fehler beim Absenden: '+err.message);
+  }
+}
+
+/* =========================================================================
+   MEINE ANTRAEGE
+   ========================================================================= */
+function ladeMeineAntraege(){
+  db.ref('antraege').on('value', snap=>{
+    meineAntraegeCache = [];
+    snap.forEach(child=>{
+      const a = {id:child.key, ...child.val()};
+      // Meine Anträge = alle Anträge, die auf meinen Namen laufen
+      // (egal wer sie erstellt hat, wichtig wenn Admin/Superadmin für sich selbst welche einträgt).
+      if(currentProfile && a.name === currentProfile.name){
+        meineAntraegeCache.push(a);
+      }
+    });
+    meineAntraegeCache.sort((a,b)=> (b.erstelltAm||0) - (a.erstelltAm||0));
+    renderMeineAntraege();
+    renderUrlaubKonto();
+    renderMeinKalender();
+  });
+}
+function renderMeinKalender(){
+  const grid = document.getElementById('meinKalenderGrid');
+  if(!grid) return;
+  const sel = document.getElementById('meinKalenderJahr');
+  // Jahresauswahl befuellen wenn leer
+  if(sel && sel.options.length===0){
+    const jetzt = new Date().getFullYear();
+    [jetzt-1, jetzt, jetzt+1].forEach(j=>{
+      const o = document.createElement('option');
+      o.value = j; o.textContent = j;
+      if(j===jetzt) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+  const jahr = parseInt(sel.value) || new Date().getFullYear();
+  const monate = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const wochentagKurz = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const heute = new Date();
+
+  grid.innerHTML = '';
+  for(let m=0; m<12; m++){
+    const box = document.createElement('div');
+    box.className = 'mini-monat';
+    let html = '<h4>'+monate[m]+'</h4><table><thead><tr>';
+    wochentagKurz.forEach((wt,idx)=>{
+      const cls = (idx>=5) ? 'we-h' : '';
+      html += '<th class="'+cls+'">'+wt+'</th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    const ersterTag = new Date(jahr, m, 1);
+    const tageImMonat = new Date(jahr, m+1, 0).getDate();
+    // Wochentag von Montag=0 bis Sonntag=6
+    let startOffset = ersterTag.getDay() - 1;
+    if(startOffset < 0) startOffset = 6;
+
+    let tag = 1;
+    let genommen = 0;
+    for(let woche=0; woche<6; woche++){
+      html += '<tr>';
+      for(let wt=0; wt<7; wt++){
+        const zellIdx = woche*7 + wt;
+        if(zellIdx < startOffset || tag > tageImMonat){
+          html += '<td class="leer"></td>';
+        } else {
+          const d = new Date(jahr, m, tag);
+          const key = toKey(d);
+          const isToday = d.getFullYear()===heute.getFullYear() && d.getMonth()===heute.getMonth() && d.getDate()===heute.getDate();
+          let cls = '';
+          if(d.getDay()===0 || d.getDay()===6) cls = 'we';
+          if(istFeiertag(d)) cls = 'feiertag';
+          if(istBetriebsurlaub(d)) cls = 'betriebsurlaub';
+
+          const treffer = meineAntraegeCache.find(a => a.status!=='abgelehnt' && key>=a.start && key<=a.ende);
+          if(treffer){
+            const istSou = treffer.art==='sonderurlaub';
+            cls = treffer.status==='genehmigt' ? (istSou?'sou':'genehmigt') : 'offen';
+            if(treffer.status==='genehmigt' && !istSou){
+              // Fuer die Monatszaehlung: nur wenn nicht bereits als Wochenende/Feiertag gezählt
+              const arbeitstage = getArbeitstage(currentProfile.name);
+              if(!istFeiertagOderWochenende(d) && arbeitstage.includes(d.getDay())){
+                genommen += 1;
+                if((key===treffer.start && treffer.halbTagStart) || (key===treffer.ende && treffer.halbTagEnde)){
+                  genommen -= 0.5;
+                }
+              }
+            }
+          }
+          if(isToday) cls += ' today';
+          html += '<td class="'+cls+'" title="'+formatDatum(key)+(treffer?' · '+labelStatus(treffer.status):'')+'">'+tag+'</td>';
+          tag++;
+        }
+      }
+      html += '</tr>';
+      if(tag > tageImMonat) break;
+    }
+    html += '</tbody></table>';
+    const genFmt = String(genommen).replace('.',',');
+    html += '<div class="mini-monat-summary"><span>Urlaub genommen</span><strong>'+genFmt+' Tag'+(genommen===1?'':'e')+'</strong></div>';
+    box.innerHTML = html;
+    grid.appendChild(box);
+  }
+}
+
+function renderUrlaubKonto(){
+  const box = document.getElementById('urlaubKonto');
+  if(!box) return;
+  if(berechtigung.nurUebersicht || !currentProfile || !currentProfile.name){
+    box.classList.add('hidden');
+    return;
+  }
+  const jahr = new Date().getFullYear();
+  const sd = getStammdatum(String(jahr), currentProfile.name);
+  const restVorjahr = Number(sd.restVorjahr) || 0;
+  const anspruch = Number(sd.anspruch) || 0;
+  const gesamt = restVorjahr + anspruch;
+  const genommen = meineAntraegeCache
+    .filter(a=>a.status==='genehmigt' && (a.art||'urlaub')!=='sonderurlaub' && a.start && a.start.startsWith(String(jahr)))
+    .reduce((sum,a)=>sum+Number(a.tage||0),0);
+  const resturlaub = gesamt - genommen;
+  const anteil = gesamt>0 ? Math.min(100, Math.max(0, (genommen/gesamt)*100)) : 0;
+
+  let zahlCls = '';
+  let progressCls = '';
+  if(resturlaub < 0){ zahlCls = 'bad'; progressCls = 'bad'; }
+  else if(resturlaub <= 5){ zahlCls = 'warn'; progressCls = 'warn'; }
+
+  const fmt = v => String(v).replace('.',',');
+  box.innerHTML =
+    '<div class="konto-header">'+
+      '<h3>Mein Urlaubskonto</h3>'+
+      '<span class="jahr">'+jahr+'</span>'+
+    '</div>'+
+    '<div class="konto-hauptzahl">'+
+      '<span class="zahl '+zahlCls+'">'+fmt(resturlaub)+'</span>'+
+      '<span class="einheit">Tage Resturlaub</span>'+
+    '</div>'+
+    '<div class="konto-progress">'+
+      '<div class="progress-bar"><div class="progress-fill '+progressCls+'" style="width:'+anteil.toFixed(1)+'%;"></div></div>'+
+      '<div class="progress-labels">'+
+        '<span>'+fmt(genommen)+' Tage genommen</span>'+
+        '<span>'+fmt(gesamt)+' Tage insgesamt</span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="konto-details">'+
+      '<div><span class="label">Rest aus Vorjahr</span><span class="wert">'+fmt(restVorjahr)+'</span></div>'+
+      '<div><span class="label">Anspruch '+jahr+'</span><span class="wert">'+fmt(anspruch)+'</span></div>'+
+      '<div><span class="label">Bereits genommen</span><span class="wert">'+fmt(genommen)+'</span></div>'+
+      '<div><span class="label">Verbleibend</span><span class="wert" style="color:var(--red);">'+fmt(resturlaub)+'</span></div>'+
+    '</div>';
+  box.classList.remove('hidden');
+}
+function renderMeineAntraege(){
+  const body = document.getElementById('meineAntraegeBody');
+  body.innerHTML = '';
+  if(meineAntraegeCache.length===0){
+    show('meineAntraegeEmpty');
+    return;
+  }
+  hide('meineAntraegeEmpty');
+  meineAntraegeCache.forEach(a=>{
+    const tr = document.createElement('tr');
+    const zeitraum = formatDatum(a.start) + (a.start!==a.ende ? ' – '+formatDatum(a.ende) : '') +
+      (a.halbTagStart || a.halbTagEnde ? ' <span class="note" style="margin:0;">(halbe Tage)</span>' : '') +
+      (a.erstelltVon && a.uid !== currentUser.uid ? '<br><span class="note" style="margin:0;">eingetragen von '+a.erstelltVon+'</span>' : '');
+    const gestellt = a.erstelltAm ? new Date(a.erstelltAm).toLocaleDateString('de-DE') : '–';
+    const kannZurueckziehen = a.status==='offen' && a.uid===currentUser.uid;
+    const kannKorrigieren = a.status==='genehmigt' && (a.name === (currentProfile && currentProfile.name));
+    let aktionCell = '';
+    if(kannZurueckziehen) aktionCell = '<button class="btn-secondary btn-small" onclick="zurueckziehen(\''+a.id+'\')">Zurückziehen</button>';
+    if(kannKorrigieren) aktionCell = '<button class="btn-secondary btn-small" onclick="openKorrekturModal(\''+a.id+'\')">Korrektur anfragen</button>';
+    tr.innerHTML =
+      '<td>'+zeitraum+'</td>'+
+      '<td class="mono">'+String(a.tage).replace('.',',')+'</td>'+
+      '<td>'+labelArt(a.art)+'</td>'+
+      '<td><span class="badge badge-'+a.status+'">'+labelStatus(a.status)+'</span></td>'+
+      '<td>'+(a.bemerkung || '<span class="note" style="margin:0;">–</span>')+'</td>'+
+      '<td class="mono">'+gestellt+'</td>'+
+      '<td>'+aktionCell+'</td>';
+    body.appendChild(tr);
+  });
+}
+async function zurueckziehen(id){
+  if(!confirm('Diesen Antrag wirklich zurückziehen?')) return;
+  try{
+    await db.ref('antraege/'+id).remove();
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+function labelStatus(s){
+  return {offen:'Offen', genehmigt:'Genehmigt', abgelehnt:'Abgelehnt'}[s] || s;
+}
+function labelArt(a){
+  return a==='sonderurlaub' ? '<span class="badge badge-sou">SOU</span>' : '<span class="note" style="margin:0;">Urlaub</span>';
+}
+function formatDatum(str){
+  if(!str) return '–';
+  const [j,m,t] = str.split('-');
+  return t+'.'+m+'.'+j;
+}
+
+/* =========================================================================
+   GENEHMIGEN (Admin)
+   ========================================================================= */
+function ladeAlleAntraege(){
+  db.ref('antraege').on('value', snap=>{
+    alleAntraegeCache = [];
+    snap.forEach(child=>{
+      alleAntraegeCache.push({id:child.key, ...child.val()});
+    });
+    alleAntraegeCache.sort((a,b)=> (b.erstelltAm||0) - (a.erstelltAm||0));
+    befuelleMitarbeiterFilter();
+    renderAdminList();
+    renderResturlaub();
+    renderKalender();
+    renderMonatsuebersicht();
+  });
+}
+function befuelleMitarbeiterFilter(){
+  const sel = document.getElementById('adminFilterMitarbeiter');
+  const bisher = new Set(Array.from(sel.options).map(o=>o.value));
+  const namen = [...new Set(alleAntraegeCache.map(a=>a.name))].sort();
+  namen.forEach(n=>{
+    if(!bisher.has(n)){
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    }
+  });
+}
+function renderAdminList(){
+  const statusFilter = document.getElementById('adminFilterStatus').value;
+  const mitarbeiterFilter = document.getElementById('adminFilterMitarbeiter').value;
+  const artFilter = document.getElementById('adminFilterArt').value;
+  const body = document.getElementById('adminAntraegeBody');
+  body.innerHTML = '';
+  const gefiltert = alleAntraegeCache.filter(a=>
+    (statusFilter==='alle' || a.status===statusFilter) &&
+    (mitarbeiterFilter==='alle' || a.name===mitarbeiterFilter) &&
+    (artFilter==='alle' || (a.art||'urlaub')===artFilter)
+  );
+  if(gefiltert.length===0){
+    show('adminAntraegeEmpty');
+    return;
+  }
+  hide('adminAntraegeEmpty');
+  gefiltert.forEach(a=>{
+    const tr = document.createElement('tr');
+    const zeitraum = formatDatum(a.start) + (a.start!==a.ende ? ' – '+formatDatum(a.ende) : '');
+    let aktion = '';
+    if(a.status==='offen'){
+      aktion += '<button class="btn-ok btn-small" onclick="entscheiden(\''+a.id+'\',\'genehmigt\')">Genehmigen</button> '+
+                '<button class="btn-danger btn-small" onclick="entscheiden(\''+a.id+'\',\'abgelehnt\')">Ablehnen</button> ';
+    }
+    aktion += '<button class="btn-secondary btn-small" onclick="openEditModal(\''+a.id+'\')">Bearbeiten</button> '+
+              '<button class="btn-danger btn-small" style="margin-left:4px;" onclick="adminLoeschen(\''+a.id+'\')">Löschen</button>';
+    tr.innerHTML =
+      '<td>'+a.name+'<br><span class="note" style="margin:0;">'+a.standort+'</span></td>'+
+      '<td>'+zeitraum+'</td>'+
+      '<td class="mono">'+String(a.tage).replace('.',',')+'</td>'+
+      '<td>'+labelArt(a.art)+'</td>'+
+      '<td><span class="badge badge-'+a.status+'">'+labelStatus(a.status)+'</span></td>'+
+      '<td>'+(a.bemerkung || '–')+'</td>'+
+      '<td style="white-space:nowrap;">'+aktion+'</td>';
+    body.appendChild(tr);
+  });
+}
+async function entscheiden(id, status){
+  const kommentar = status==='abgelehnt' ? prompt('Kommentar zur Ablehnung (optional):','') : null;
+  try{
+    await db.ref('antraege/'+id).update({
+      status,
+      entschiedenAm: firebase.database.ServerValue.TIMESTAMP,
+      entschiedenVon: currentProfile.name,
+      entscheidungKommentar: kommentar || null
+    });
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+
+/* ---- ADMIN: BEARBEITEN & LOESCHEN ---- */
+let editingAntragId = null;
+let editingAntragName = null;
+
+function openEditModal(id){
+  const a = alleAntraegeCache.find(x=>x.id===id);
+  if(!a) return;
+  editingAntragId = id;
+  editingAntragName = a.name;
+  document.getElementById('editSubtitle').textContent = a.name + ' (' + a.standort + ')';
+  document.getElementById('editStart').value = a.start || '';
+  document.getElementById('editEnde').value = a.ende || '';
+  document.getElementById('editHalbTagStart').checked = !!a.halbTagStart;
+  document.getElementById('editHalbTagEnde').checked = !!a.halbTagEnde;
+  document.getElementById('editStatus').value = a.status || 'offen';
+  document.getElementById('editArt').value = a.art || 'urlaub';
+  document.getElementById('editBemerkung').value = a.bemerkung || '';
+  hide('editError');
+  updateEditTagePreview();
+  show('editOverlay');
+}
+function closeEditModal(){
+  hide('editOverlay');
+  editingAntragId = null;
+  editingAntragName = null;
+}
+function updateEditTagePreview(){
+  const start = document.getElementById('editStart').value;
+  const ende = document.getElementById('editEnde').value;
+  const halbStart = document.getElementById('editHalbTagStart').checked;
+  const halbEnde = document.getElementById('editHalbTagEnde').checked;
+  const tage = berechneUrlaubstage(start, ende, halbStart, halbEnde, getArbeitstage(editingAntragName));
+  document.getElementById('editTagePreviewVal').textContent = tage.toString().replace('.', ',');
+}
+async function submitEdit(){
+  hide('editError');
+  if(!editingAntragId) return;
+  const start = document.getElementById('editStart').value;
+  const ende = document.getElementById('editEnde').value;
+  const halbStart = document.getElementById('editHalbTagStart').checked;
+  const halbEnde = document.getElementById('editHalbTagEnde').checked;
+  const status = document.getElementById('editStatus').value;
+  const art = document.getElementById('editArt').value;
+  const bemerkung = document.getElementById('editBemerkung').value.trim();
+  if(!start || !ende){ zeigeFehler('editError','Bitte Start- und Enddatum angeben.'); return; }
+  if(new Date(ende) < new Date(start)){ zeigeFehler('editError','Enddatum liegt vor dem Startdatum.'); return; }
+  const tage = berechneUrlaubstage(start, ende, halbStart, halbEnde, getArbeitstage(editingAntragName));
+  if(tage <= 0){ zeigeFehler('editError','Der Zeitraum enthält keine Werktage für diesen Mitarbeiter.'); return; }
+  try{
+    await db.ref('antraege/'+editingAntragId).update({
+      start, ende,
+      halbTagStart: halbStart, halbTagEnde: halbEnde,
+      tage,
+      art,
+      bemerkung: bemerkung || null,
+      status,
+      bearbeitetAm: firebase.database.ServerValue.TIMESTAMP,
+      bearbeitetVon: currentProfile.name
+    });
+    closeEditModal();
+  }catch(err){
+    zeigeFehler('editError','Fehler: '+err.message);
+  }
+}
+async function adminLoeschen(id){
+  const a = alleAntraegeCache.find(x=>x.id===id);
+  if(!a) return;
+  const info = a.name+' · '+formatDatum(a.start)+(a.start!==a.ende ? '–'+formatDatum(a.ende) : '')+' · '+String(a.tage).replace('.',',')+' Tag(e)';
+  if(!confirm('Diesen Antrag endgültig löschen?\n\n'+info)) return;
+  try{
+    await db.ref('antraege/'+id).remove();
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+function exportGenehmigenExcel(){
+  const rows = alleAntraegeCache.map(a=>({
+    Mitarbeiter: a.name,
+    Standort: a.standort,
+    Start: formatDatum(a.start),
+    Ende: formatDatum(a.ende),
+    Tage: a.tage,
+    Art: a.art==='sonderurlaub' ? 'Sonderurlaub' : 'Urlaub',
+    Status: labelStatus(a.status),
+    Bemerkung: a.bemerkung || '',
+    'Gestellt am': a.erstelltAm ? new Date(a.erstelltAm).toLocaleDateString('de-DE') : '',
+    'Entschieden von': a.entschiedenVon || '',
+    'Kommentar Entscheidung': a.entscheidungKommentar || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Anträge');
+  XLSX.writeFile(wb, 'Urlaubsantraege_Export_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+/* =========================================================================
+   MONATSUEBERSICHT
+   ========================================================================= */
+// Zerlegt einen genehmigten Antrag in einzelne Werktage mit Wert (1 oder 0.5),
+// damit Anträge über Monatsgrenzen hinweg korrekt aufgeteilt werden können.
+function tageDetailProAntrag(a){
+  const result = [];
+  const arbeitstage = getArbeitstage(a.name);
+  const start = new Date(a.start+"T00:00:00");
+  const ende = new Date(a.ende+"T00:00:00");
+  let cur = new Date(start);
+  while(cur <= ende){
+    if(!istFeiertagOderWochenende(cur) && arbeitstage.includes(cur.getDay())){
+      let wert = 1;
+      const istStart = toKey(cur) === toKey(start);
+      const istEnde = toKey(cur) === toKey(ende);
+      if(istStart && a.halbTagStart) wert = 0.5;
+      if(istEnde && a.halbTagEnde) wert = (istStart && a.halbTagStart) ? wert : 0.5;
+      result.push({datum:new Date(cur), wert});
+    }
+    cur = addTage(cur,1);
+  }
+  return result;
+}
+function berechneMonatsverteilung(name, jahr){
+  const monate = new Array(12).fill(0);
+  alleAntraegeCache
+    .filter(a=>a.name===name && a.status==='genehmigt' && (a.art||'urlaub')!=='sonderurlaub')
+    .forEach(a=>{
+      tageDetailProAntrag(a).forEach(t=>{
+        if(t.datum.getFullYear() === Number(jahr)){
+          monate[t.datum.getMonth()] += t.wert;
+        }
+      });
+    });
+  return monate;
+}
+function nachnameAus(name){
+  const teile = (name||'').trim().split(/\s+/);
+  return teile.length ? teile[teile.length-1] : '';
+}
+function sortiereNachNachname(liste){
+  return liste.slice().sort((a,b)=> nachnameAus(a.name).localeCompare(nachnameAus(b.name),'de',{sensitivity:'base'}));
+}
+function renderMonatsuebersicht(){
+  const body = document.getElementById('monatBody');
+  const thead = document.getElementById('monatThead');
+  if(!body || !thead) return;
+  const jahrSel = document.getElementById('monatJahr');
+  if(!jahrSel.value) return;
+  const jahr = jahrSel.value;
+  const monatFilter = document.getElementById('monatMonatFilter').value;
+  const alleNamen = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const sichtbareMonate = monatFilter==='alle' ? [0,1,2,3,4,5,6,7,8,9,10,11] : [parseInt(monatFilter)];
+
+  // Header: bei Einzelmonat nur eine Datenspalte + Gesamt-im-Jahr-Spalte
+  const einzelmonat = monatFilter !== 'alle';
+  let headerHtml = '<tr><th>Mitarbeiter</th><th>Standort</th>';
+  sichtbareMonate.forEach(idx=>{ headerHtml += '<th class="mono">'+alleNamen[idx]+'</th>'; });
+  if(einzelmonat) headerHtml += '<th class="mono" style="color:var(--gray-400);">Gesamt im Jahr</th>';
+  else headerHtml += '<th class="mono">Gesamt</th>';
+  headerHtml += '</tr>';
+  thead.innerHTML = headerHtml;
+
+  body.innerHTML = '';
+  sortiereNachNachname(MITARBEITER).forEach(m=>{
+    const monate = berechneMonatsverteilung(m.name, jahr);
+    const summeGewaehlterMonate = sichtbareMonate.reduce((s,idx)=>s+monate[idx],0);
+    const gesamtJahr = monate.reduce((s,v)=>s+v,0);
+    const tr = document.createElement('tr');
+    let zellen = '<td>'+m.name+'</td><td>'+m.standort+'</td>';
+    sichtbareMonate.forEach(idx=>{
+      const v = monate[idx];
+      const hervor = v>0 ? ' style="color:var(--ok); font-weight:700;"' : '';
+      zellen += '<td class="mono"'+hervor+'>'+String(v).replace('.',',')+'</td>';
+    });
+    if(einzelmonat){
+      zellen += '<td class="mono" style="font-weight:700; color:var(--gray-400);">'+String(gesamtJahr).replace('.',',')+'</td>';
+    } else {
+      zellen += '<td class="mono" style="font-weight:700;">'+String(summeGewaehlterMonate).replace('.',',')+'</td>';
+    }
+    tr.innerHTML = zellen;
+    body.appendChild(tr);
+  });
+}
+function exportMonatsuebersichtExcel(){
+  const jahr = document.getElementById('monatJahr').value;
+  const monatFilter = document.getElementById('monatMonatFilter').value;
+  const alleNamen = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const sichtbareMonate = monatFilter==='alle' ? [0,1,2,3,4,5,6,7,8,9,10,11] : [parseInt(monatFilter)];
+  const rows = sortiereNachNachname(MITARBEITER).map(m=>{
+    const monate = berechneMonatsverteilung(m.name, jahr);
+    const row = {Mitarbeiter:m.name, Standort:m.standort};
+    sichtbareMonate.forEach(idx=>{ row[alleNamen[idx]] = monate[idx]; });
+    row['Gesamt'] = sichtbareMonate.reduce((s,idx)=>s+monate[idx],0);
+    return row;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  const blattName = monatFilter==='alle' ? 'Monatsübersicht '+jahr : alleNamen[parseInt(monatFilter)]+' '+jahr;
+  XLSX.utils.book_append_sheet(wb, ws, blattName);
+  XLSX.writeFile(wb, 'Monatsuebersicht_'+blattName.replace(' ','_')+'_Export_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+/* =========================================================================
+   RESTURLAUB
+   ========================================================================= */
+function befuelleJahresauswahl(){
+  const jetzt = new Date().getFullYear();
+  const jahre = [jetzt-1, jetzt, jetzt+1];
+  const selR = document.getElementById('resturlaubJahr');
+  const selS = document.getElementById('stammdatenJahr');
+  const selM = document.getElementById('monatJahr');
+  [selR, selS, selM].forEach(sel=>{
+    if(sel.options.length>0) return;
+    jahre.forEach(j=>{
+      const opt = document.createElement('option');
+      opt.value=j; opt.textContent=j;
+      if(j===jetzt) opt.selected=true;
+      sel.appendChild(opt);
+    });
+  });
+}
+function ladeStammdaten(){
+  db.ref('stammdaten').on('value', snap=>{
+    stammdatenCache = snap.exists() ? snap.val() : {};
+    renderResturlaub();
+    renderStammdatenEditor();
+    renderUrlaubKonto();
+  });
+}
+function getStammdatum(jahr, name){
+  if(stammdatenCache[jahr] && stammdatenCache[jahr][name]) return stammdatenCache[jahr][name];
+  if(String(jahr)==='2026' && STAMMDATEN_FALLBACK_2026[name]) return STAMMDATEN_FALLBACK_2026[name];
+  return {restVorjahr:0, anspruch:30};
+}
+function renderResturlaub(){
+  const body = document.getElementById('resturlaubBody');
+  if(!body) return;
+  const jahrSel = document.getElementById('resturlaubJahr');
+  if(!jahrSel.value) return;
+  const jahr = jahrSel.value;
+  body.innerHTML = '';
+  MITARBEITER.forEach(m=>{
+    const sd = getStammdatum(jahr, m.name);
+    const genommen = alleAntraegeCache
+      .filter(a=>a.name===m.name && a.status==='genehmigt' && (a.art||'urlaub')!=='sonderurlaub' && a.start && a.start.startsWith(jahr))
+      .reduce((sum,a)=>sum+Number(a.tage||0),0);
+    const resturlaub = Number(sd.restVorjahr) + Number(sd.anspruch) - genommen;
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+m.name+'</td>'+
+      '<td>'+m.standort+'</td>'+
+      '<td class="mono">'+String(sd.restVorjahr).replace('.',',')+'</td>'+
+      '<td class="mono">'+String(sd.anspruch).replace('.',',')+'</td>'+
+      '<td class="mono">'+String(genommen).replace('.',',')+'</td>'+
+      '<td class="mono" style="font-weight:700;">'+String(resturlaub).replace('.',',')+'</td>';
+    body.appendChild(tr);
+  });
+}
+function exportResturlaubExcel(){
+  const jahr = document.getElementById('resturlaubJahr').value;
+  const rows = MITARBEITER.map(m=>{
+    const sd = getStammdatum(jahr, m.name);
+    const genommen = alleAntraegeCache
+      .filter(a=>a.name===m.name && a.status==='genehmigt' && (a.art||'urlaub')!=='sonderurlaub' && a.start && a.start.startsWith(jahr))
+      .reduce((sum,a)=>sum+Number(a.tage||0),0);
+    const resturlaub = Number(sd.restVorjahr) + Number(sd.anspruch) - genommen;
+    return {
+      Mitarbeiter: m.name, Standort: m.standort,
+      'Rest Vorjahr': sd.restVorjahr, Anspruch: sd.anspruch,
+      'Genommen (genehmigt)': genommen, Resturlaub: resturlaub
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Resturlaub '+jahr);
+  XLSX.writeFile(wb, 'Resturlaub_'+jahr+'_Export_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+/* =========================================================================
+   KALENDER
+   ========================================================================= */
+function befuelleKalenderAuswahl(){
+  const selM = document.getElementById('kalenderMonat');
+  const selJ = document.getElementById('kalenderJahr');
+  if(selM.options.length===0){
+    const monate = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+    monate.forEach((m,idx)=>{
+      const opt = document.createElement('option');
+      opt.value=idx; opt.textContent=m;
+      if(idx===new Date().getMonth()) opt.selected=true;
+      selM.appendChild(opt);
+    });
+  }
+  if(selJ.options.length===0){
+    const jetzt = new Date().getFullYear();
+    [jetzt-1,jetzt,jetzt+1].forEach(j=>{
+      const opt = document.createElement('option');
+      opt.value=j; opt.textContent=j;
+      if(j===jetzt) opt.selected=true;
+      selJ.appendChild(opt);
+    });
+  }
+}
+function renderKalender(){
+  befuelleKalenderAuswahl();
+  const table = document.getElementById('kalenderTable');
+  if(!table) return;
+  const monat = parseInt(document.getElementById('kalenderMonat').value);
+  const jahr = parseInt(document.getElementById('kalenderJahr').value);
+  if(isNaN(monat) || isNaN(jahr)) return;
+  const tageImMonat = new Date(jahr, monat+1, 0).getDate();
+  const wochentagKurz = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const heute = new Date();
+  const istAktMonat = heute.getFullYear()===jahr && heute.getMonth()===monat;
+
+  // Header: Zeile 1 Tageszahl, Zeile 2 Wochentag-Kürzel
+  let thead = '<thead>';
+  thead += '<tr><th class="name-col" rowspan="2">Mitarbeiter</th>';
+  for(let t=1; t<=tageImMonat; t++){
+    const d = new Date(jahr, monat, t);
+    const isToday = istAktMonat && heute.getDate()===t;
+    const isWe = d.getDay()===0 || d.getDay()===6;
+    let cls = 'day-num';
+    if(isToday) cls += ' today-h';
+    else if(isWe) cls += ' we-h';
+    thead += '<th class="'+cls+'">'+t+'</th>';
+  }
+  thead += '</tr><tr>';
+  for(let t=1; t<=tageImMonat; t++){
+    const d = new Date(jahr, monat, t);
+    thead += '<th class="day-name">'+wochentagKurz[d.getDay()]+'</th>';
+  }
+  thead += '</tr></thead>';
+
+  let tbody = '<tbody>';
+  MITARBEITER.forEach(m=>{
+    tbody += '<tr><td class="name-col">'+m.name+'</td>';
+    for(let t=1; t<=tageImMonat; t++){
+      const d = new Date(jahr, monat, t);
+      const key = toKey(d);
+      const isToday = istAktMonat && heute.getDate()===t;
+      let cls = '';
+
+      // Priorität: individueller Antrag > Betriebsurlaub > Feiertag > Wochenende
+      if(d.getDay()===0 || d.getDay()===6) cls = 'we';
+      if(istFeiertag(d)) cls = 'feiertag';
+      if(istBetriebsurlaub(d)) cls = 'betriebsurlaub';
+
+      const treffer = alleAntraegeCache.find(a=> a.name===m.name && a.status!=='abgelehnt' && key>=a.start && key<=a.ende);
+      let inhalt = '';
+      if(treffer){
+        const istSou = treffer.art==='sonderurlaub';
+        cls = treffer.status==='genehmigt' ? (istSou?'sou':'genehmigt') : (istSou?'sou-offen':'offen');
+        const istStart = key===treffer.start, istEnde = key===treffer.ende;
+        if((istStart && treffer.halbTagStart) || (istEnde && treffer.halbTagEnde && !(istStart && treffer.halbTagStart))) inhalt = '½';
+        else inhalt = '●';
+      } else if(cls==='betriebsurlaub'){
+        inhalt = '●';
+      }
+      if(isToday) cls += ' today';
+
+      tbody += '<td class="'+cls+'" title="'+m.name+' – '+formatDatum(key)+(treffer?' · '+(treffer.art==='sonderurlaub'?'Sonderurlaub · ':'')+labelStatus(treffer.status):(cls.includes('betriebsurlaub')?' · Betriebsurlaub':''))+'">'+inhalt+'</td>';
+    }
+    tbody += '</tr>';
+  });
+  tbody += '</tbody>';
+
+  table.innerHTML = thead + tbody;
+}
+function exportKalenderExcel(){
+  const monat = parseInt(document.getElementById('kalenderMonat').value);
+  const jahr = parseInt(document.getElementById('kalenderJahr').value);
+  const tageImMonat = new Date(jahr, monat+1, 0).getDate();
+  const rows = MITARBEITER.map(m=>{
+    const row = {Mitarbeiter: m.name, Standort: m.standort};
+    for(let t=1; t<=tageImMonat; t++){
+      const d = new Date(jahr, monat, t);
+      const key = toKey(d);
+      const treffer = alleAntraegeCache.find(a=> a.name===m.name && a.status!=='abgelehnt' && key>=a.start && key<=a.ende);
+      let wert = '';
+      if(istFeiertag(d)) wert = 'F';
+      else if(d.getDay()===0 || d.getDay()===6) wert = 'WE';
+      if(istBetriebsurlaub(d) && !treffer) wert = 'BU';
+      if(treffer) wert = treffer.status==='genehmigt' ? 'X' : 'x?';
+      row[t] = wert;
+    }
+    return row;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  const monatsName = document.getElementById('kalenderMonat').selectedOptions[0].textContent;
+  XLSX.utils.book_append_sheet(wb, ws, monatsName+' '+jahr);
+  XLSX.writeFile(wb, 'Kalender_'+monatsName+'_'+jahr+'.xlsx');
+}
+
+/* =========================================================================
+   EINSTELLUNGEN (Superadmin)
+   ========================================================================= */
+function ladeMitarbeiterListe(){
+  db.ref('mitarbeiterListe').on('value', snap=>{
+    if(snap.exists()){
+      const val = snap.val();
+      MITARBEITER = Object.keys(val).map(k=>({...val[k], _key:k}));
+      hide('mitarbeiterListeNote');
+    } else {
+      MITARBEITER = MITARBEITER_FALLBACK.map((m,i)=>({...m, _key:null, _fallbackIndex:i}));
+      const note = document.getElementById('mitarbeiterListeNote');
+      note.textContent = 'Es ist noch keine Mitarbeiterliste in Firebase hinterlegt - es wird die Standardliste angezeigt. Sobald du einen Mitarbeiter hinzufügst, wird die Liste in Firebase gespeichert.';
+      note.classList.remove('hidden');
+    }
+    renderMitarbeiterEditor();
+    renderResturlaub();
+    renderKalender();
+    renderMonatsuebersicht();
+  });
+}
+function ladePasswortStatus(){
+  db.ref('passwortAendernErforderlich').on('value', snap=>{
+    pwStatusCache = snap.exists() ? snap.val() : {};
+    renderMitarbeiterEditor();
+  });
+}
+function renderMitarbeiterEditor(){
+  const body = document.getElementById('einstellungenMitarbeiterBody');
+  if(!body) return;
+  body.innerHTML = '';
+  const wochentage = [{n:1,l:'Mo'},{n:2,l:'Di'},{n:3,l:'Mi'},{n:4,l:'Do'},{n:5,l:'Fr'}];
+  MITARBEITER.forEach((m,idx)=>{
+    const tr = document.createElement('tr');
+    const idSafe = 'ma_'+idx;
+    const nameEsc = m.name.replace(/'/g,"\\'");
+    const standortEsc = m.standort.replace(/'/g,"\\'");
+    const emailVal = (m.email || '').replace(/"/g,'&quot;');
+    const loeschBtn = m._key ? '<button class="btn-danger btn-small" onclick="mitarbeiterLoeschen(\''+m._key+'\')">Entfernen</button>' : '<span class="note" style="margin:0;">Standardliste</span>';
+    const keyArg = m._key ? "'"+m._key+"'" : 'null';
+
+    let pwZelle = '<span class="note" style="margin:0;">–</span>';
+    if(m.email){
+      const eKey = emailKey(m.email);
+      const mussAendern = pwStatusCache[eKey] === true;
+      if(mussAendern){
+        pwZelle = '<span class="badge badge-offen" style="margin-right:6px;">Start-Passwort aktiv</span>'+
+          '<button class="btn-secondary btn-small" onclick="pwStatusSetzen(\''+eKey+'\', false)">Als individuell markieren</button>';
+      } else {
+        pwZelle = '<span class="badge badge-genehmigt" style="margin-right:6px;">Individuell</span>'+
+          '<button class="btn-secondary btn-small" onclick="pwStatusSetzen(\''+eKey+'\', true)">Start-Passwort erzwingen</button>';
+      }
+    }
+
+    const aktuelleArbeitstage = getArbeitstage(m.name);
+    let arbeitstageZelle = '<div style="display:flex; gap:8px; flex-wrap:wrap;">';
+    wochentage.forEach(wt=>{
+      const checked = aktuelleArbeitstage.includes(wt.n) ? 'checked' : '';
+      arbeitstageZelle += '<label style="display:flex; align-items:center; gap:3px; font-weight:600; text-transform:none; font-size:12.5px; margin:0;">'+
+        '<input type="checkbox" id="arbtag_'+idSafe+'_'+wt.n+'" '+checked+' style="width:auto;">'+wt.l+'</label>';
+    });
+    arbeitstageZelle += '</div>'+
+      '<button class="btn-secondary btn-small" style="margin-top:6px;" onclick="arbeitstageSpeichern(\''+idSafe+'\',\''+nameEsc+'\',\''+standortEsc+'\','+keyArg+')">Speichern</button>';
+
+    tr.innerHTML =
+      '<td>'+m.name+'</td>'+
+      '<td>'+m.standort+'</td>'+
+      '<td><input type="email" id="mailInput_'+idSafe+'" value="'+emailVal+'" placeholder="name@rudolf-hilgenroth.de" style="font-size:13px;"></td>'+
+      '<td style="white-space:nowrap;">'+pwZelle+'</td>'+
+      '<td style="min-width:170px;">'+arbeitstageZelle+'</td>'+
+      '<td>'+
+        '<button class="btn-primary btn-small" onclick="mitarbeiterEmailSpeichern(\''+idSafe+'\',\''+nameEsc+'\',\''+standortEsc+'\','+keyArg+')">E-Mail speichern</button> '+
+        loeschBtn+
+      '</td>';
+    body.appendChild(tr);
+  });
+}
+async function pwStatusSetzen(eKey, mussAendern){
+  try{
+    await db.ref('passwortAendernErforderlich/'+eKey).set(mussAendern);
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+async function mitarbeiterHinzufuegen(){
+  const name = document.getElementById('neuerMaName').value.trim();
+  const standort = document.getElementById('neuerMaStandort').value;
+  const email = document.getElementById('neuerMaEmail').value.trim().toLowerCase();
+  if(!name){ alert('Bitte einen Namen eingeben.'); return; }
+  try{
+    const snap = await db.ref('mitarbeiterListe').get();
+    if(!snap.exists()){
+      const updates = {};
+      MITARBEITER_FALLBACK.forEach(m=>{
+        const key = db.ref('mitarbeiterListe').push().key;
+        updates[key] = m;
+      });
+      await db.ref('mitarbeiterListe').set(updates);
+    }
+    const eintrag = {name, standort};
+    if(email) eintrag.email = email;
+    await db.ref('mitarbeiterListe').push(eintrag);
+    if(email){
+      await setzeStartPasswortFlagFallsNeu(email);
+    }
+    document.getElementById('neuerMaName').value = '';
+    document.getElementById('neuerMaEmail').value = '';
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+async function setzeStartPasswortFlagFallsNeu(email){
+  const eKey = emailKey(email);
+  const bestehend = await db.ref('passwortAendernErforderlich/'+eKey).get();
+  if(!bestehend.exists()){
+    await db.ref('passwortAendernErforderlich/'+eKey).set(true);
+  }
+}
+async function findeOderErstelleMitarbeiterKey(name, standort, key){
+  let effKey = key;
+  if(!effKey){
+    const snap = await db.ref('mitarbeiterListe').get();
+    if(!snap.exists()){
+      const updates = {};
+      MITARBEITER_FALLBACK.forEach(m=>{
+        const k = db.ref('mitarbeiterListe').push().key;
+        updates[k] = m;
+        if(m.name===name && m.standort===standort) effKey = k;
+      });
+      await db.ref('mitarbeiterListe').set(updates);
+    }
+  }
+  return effKey;
+}
+async function arbeitstageSpeichern(idSafe, name, standort, key){
+  const wochentage = [1,2,3,4,5];
+  const ausgewaehlt = wochentage.filter(n => document.getElementById('arbtag_'+idSafe+'_'+n).checked);
+  if(ausgewaehlt.length === 0){
+    alert('Bitte mindestens einen Arbeitstag auswählen.');
+    return;
+  }
+  try{
+    const effKey = await findeOderErstelleMitarbeiterKey(name, standort, key);
+    if(!effKey){ alert('Konnte Mitarbeiter-Eintrag nicht finden.'); return; }
+    await db.ref('mitarbeiterListe/'+effKey+'/arbeitstage').set(ausgewaehlt);
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+async function mitarbeiterEmailSpeichern(idSafe, name, standort, key){
+  const email = document.getElementById('mailInput_'+idSafe).value.trim().toLowerCase();
+  try{
+    const effKey = await findeOderErstelleMitarbeiterKey(name, standort, key);
+    if(!effKey){ alert('Konnte Mitarbeiter-Eintrag nicht finden.'); return; }
+    if(email){
+      await db.ref('mitarbeiterListe/'+effKey+'/email').set(email);
+      await setzeStartPasswortFlagFallsNeu(email);
+    } else {
+      await db.ref('mitarbeiterListe/'+effKey+'/email').remove();
+    }
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+async function mitarbeiterLoeschen(key){
+  if(!confirm('Diesen Mitarbeiter wirklich entfernen? (Bestehende Anträge bleiben erhalten)')) return;
+  try{
+    await db.ref('mitarbeiterListe/'+key).remove();
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+
+function renderStammdatenEditor(){
+  const body = document.getElementById('stammdatenBody');
+  const jahrSel = document.getElementById('stammdatenJahr');
+  if(!body || !jahrSel.value) return;
+  const jahr = jahrSel.value;
+  body.innerHTML = '';
+  MITARBEITER.forEach(m=>{
+    const sd = getStammdatum(jahr, m.name);
+    const idSafe = m.name.replace(/[^a-zA-Z0-9]/g,'_');
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+m.name+'</td>'+
+      '<td><input type="number" step="0.5" id="rv_'+idSafe+'" value="'+sd.restVorjahr+'" style="width:90px;"></td>'+
+      '<td><input type="number" step="0.5" id="an_'+idSafe+'" value="'+sd.anspruch+'" style="width:90px;"></td>'+
+      '<td><button class="btn-primary btn-small" onclick="stammdatumSpeichern(\''+jahr+'\',\''+m.name.replace(/'/g,"\\'")+'\',\''+idSafe+'\')">Speichern</button></td>';
+    body.appendChild(tr);
+  });
+}
+async function stammdatumSpeichern(jahr, name, idSafe){
+  const rv = parseFloat(document.getElementById('rv_'+idSafe).value) || 0;
+  const an = parseFloat(document.getElementById('an_'+idSafe).value) || 0;
+  try{
+    await db.ref('stammdaten/'+jahr+'/'+name).set({restVorjahr:rv, anspruch:an});
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+
+function ladeRollen(){
+  db.ref('berechtigungen').on('value', snap=>{
+    rollenCache = snap.exists() ? snap.val() : {};
+    renderRollenListe();
+  });
+}
+function renderRollenListe(){
+  const body = document.getElementById('rollenBody');
+  if(!body) return;
+  body.innerHTML = '';
+  const keys = Object.keys(rollenCache);
+  if(keys.length===0){
+    body.innerHTML = '<tr><td colspan="3" class="empty-state">Noch keine Rollen vergeben.</td></tr>';
+    return;
+  }
+  keys.forEach(k=>{
+    const r = rollenCache[k];
+    const emailAnzeige = k.replace(/,/g, '.');
+    const rollenTxt = ['admin','export','fuerAndereEintragen','superadmin','nurUebersicht'].filter(x=>r[x]).map(x=>{
+      if(x==='nurUebersicht') return 'NUR ÜBERSICHT';
+      if(x==='fuerAndereEintragen') return 'FÜR ANDERE EINTRAGEN';
+      return x.toUpperCase();
+    }).join(', ') || '–';
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="mono">'+emailAnzeige+'</td>'+
+      '<td><span class="badge badge-rolle">'+rollenTxt+'</span></td>'+
+      '<td><button class="btn-danger btn-small" onclick="rolleLoeschen(\''+k+'\')">Entfernen</button></td>';
+    body.appendChild(tr);
+  });
+}
+async function rolleSpeichern(){
+  hide('rollenError');
+  const email = document.getElementById('neueRolleEmail').value.trim();
+  if(!email || !email.includes('@')){
+    zeigeFehler('rollenError','Bitte eine gültige E-Mail-Adresse eingeben.');
+    return;
+  }
+  const key = emailKey(email);
+  const rolle = {
+    admin: document.getElementById('neueRolleAdmin').checked,
+    export: document.getElementById('neueRolleExport').checked,
+    fuerAndereEintragen: document.getElementById('neueRolleFuerAndere').checked,
+    superadmin: document.getElementById('neueRolleSuperadmin').checked,
+    nurUebersicht: document.getElementById('neueRolleNurUebersicht').checked
+  };
+  try{
+    await db.ref('berechtigungen/'+key).set(rolle);
+    document.getElementById('neueRolleEmail').value = '';
+    document.getElementById('neueRolleAdmin').checked = false;
+    document.getElementById('neueRolleExport').checked = false;
+    document.getElementById('neueRolleFuerAndere').checked = false;
+    document.getElementById('neueRolleSuperadmin').checked = false;
+    document.getElementById('neueRolleNurUebersicht').checked = false;
+  }catch(err){
+    zeigeFehler('rollenError','Fehler beim Speichern: '+err.message);
+  }
+}
+async function rolleLoeschen(key){
+  if(!confirm('Diese Rolle wirklich entfernen?')) return;
+  try{
+    await db.ref('berechtigungen/'+key).remove();
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+/* =========================================================================
+   NTFY.SH PUSH-BENACHRICHTIGUNGEN
+   ========================================================================= */
+function ladeNtfyTopic(){
+  db.ref('settings/ntfyTopic').on('value', snap=>{
+    ntfyTopic = snap.exists() ? String(snap.val()).trim() : null;
+    const inp = document.getElementById('ntfyTopic');
+    if(inp) inp.value = ntfyTopic || '';
+  });
+}
+async function ntfyTopicSpeichern(){
+  const val = document.getElementById('ntfyTopic').value.trim();
+  const statusEl = document.getElementById('ntfyStatus');
+  try{
+    if(val){
+      const sauber = val.replace(/^https?:\/\/ntfy\.sh\//,'').replace(/^\//,'').split('/')[0];
+      await db.ref('settings/ntfyTopic').set(sauber);
+      statusEl.textContent = 'Topic "'+sauber+'" gespeichert.';
+    } else {
+      await db.ref('settings/ntfyTopic').remove();
+      statusEl.textContent = 'Topic entfernt.';
+    }
+  }catch(err){
+    statusEl.textContent = 'Fehler: '+err.message;
+  }
+}
+async function ntfyTest(){
+  const val = document.getElementById('ntfyTopic').value.trim() || ntfyTopic;
+  const statusEl = document.getElementById('ntfyStatus');
+  if(!val){ statusEl.textContent = 'Bitte erst ein Topic eintragen und speichern.'; return; }
+  const ok = await sendeNtfy('🔔 Test-Benachrichtigung', 'Deine Urlaubszentrale kann dich jetzt benachrichtigen.', 'default', val);
+  statusEl.textContent = ok ? 'Test-Push gesendet. Prüfe deine ntfy-App.' : 'Konnte Push nicht senden (Topic falsch oder Netzwerkfehler).';
+}
+async function sendeNtfy(titel, nachricht, prio, topicOverride){
+  const topic = topicOverride || ntfyTopic;
+  if(!topic) return false;
+  try{
+    // HTTP-Header duerfen laut Browser-Spezifikation keine Emojis/Umlaute (nur ISO-8859-1) -
+    // und ntfy dekodiert einfach percent-encodierte Header NICHT automatisch zurueck.
+    // Loesung laut ntfy-Doku: Titel/Priority/Tags als URL-Query-Parameter statt als Header
+    // uebergeben - die werden korrekt UTF-8-dekodiert angezeigt.
+    const params = new URLSearchParams({
+      title: titel,
+      priority: prio || 'default',
+      tags: 'calendar,office'
+    });
+    await fetch('https://ntfy.sh/'+topic+'?'+params.toString(), {
+      method:'POST',
+      body: nachricht
+    });
+    return true;
+  }catch(err){
+    console.error('ntfy-Fehler:', err);
+    return false;
+  }
+}
+
+/* =========================================================================
+   KORREKTURANFRAGE (Mitarbeiter)
+   ========================================================================= */
+let korrekturAntragId = null;
+function openKorrekturModal(antragId){
+  const a = meineAntraegeCache.find(x=>x.id===antragId);
+  if(!a) return;
+  korrekturAntragId = antragId;
+  const zeitraum = formatDatum(a.start) + (a.start!==a.ende ? ' – '+formatDatum(a.ende) : '');
+  document.getElementById('korrekturSubtitle').innerHTML =
+    'Antrag: <strong>'+zeitraum+'</strong> ('+String(a.tage).replace('.',',')+' Tage · '+labelStatus(a.status)+')';
+  document.getElementById('korrekturAktion').value = 'loeschen';
+  document.getElementById('korrekturNeuStart').value = a.start;
+  document.getElementById('korrekturNeuEnde').value = a.ende;
+  document.getElementById('korrekturHalbStart').checked = !!a.halbTagStart;
+  document.getElementById('korrekturHalbEnde').checked = !!a.halbTagEnde;
+  document.getElementById('korrekturGrund').value = '';
+  toggleKorrekturFelder();
+  hide('korrekturError'); hide('korrekturSuccess');
+  show('korrekturOverlay');
+}
+function closeKorrekturModal(){
+  hide('korrekturOverlay');
+  korrekturAntragId = null;
+}
+function toggleKorrekturFelder(){
+  const aktion = document.getElementById('korrekturAktion').value;
+  document.getElementById('korrekturAnpassenFelder').classList.toggle('hidden', aktion !== 'anpassen');
+}
+async function submitKorrektur(){
+  hide('korrekturError'); hide('korrekturSuccess');
+  if(!korrekturAntragId) return;
+  const aktion = document.getElementById('korrekturAktion').value;
+  const grund = document.getElementById('korrekturGrund').value.trim();
+  if(!grund){
+    zeigeFehler('korrekturError','Bitte eine Begründung angeben.');
+    return;
+  }
+  const original = meineAntraegeCache.find(x=>x.id===korrekturAntragId);
+  if(!original) return;
+
+  const anfrage = {
+    antragId: korrekturAntragId,
+    uid: currentUser.uid,
+    name: currentProfile.name,
+    standort: currentProfile.standort || '',
+    antragInfo: {
+      start: original.start,
+      ende: original.ende,
+      tage: original.tage,
+      art: original.art || 'urlaub',
+      halbTagStart: !!original.halbTagStart,
+      halbTagEnde: !!original.halbTagEnde
+    },
+    aktion,
+    grund,
+    status: 'offen',
+    erstelltAm: firebase.database.ServerValue.TIMESTAMP,
+    entschiedenAm: null,
+    entschiedenVon: null
+  };
+  if(aktion==='anpassen'){
+    anfrage.neuStart = document.getElementById('korrekturNeuStart').value;
+    anfrage.neuEnde = document.getElementById('korrekturNeuEnde').value;
+    anfrage.neuHalbTagStart = document.getElementById('korrekturHalbStart').checked;
+    anfrage.neuHalbTagEnde = document.getElementById('korrekturHalbEnde').checked;
+    if(!anfrage.neuStart || !anfrage.neuEnde){
+      zeigeFehler('korrekturError','Bitte neues Start- und Enddatum angeben.');
+      return;
+    }
+  }
+
+  try{
+    await db.ref('korrekturanfragen').push(anfrage);
+    // ntfy-Push an Admin
+    const zeitraum = formatDatum(original.start)+(original.start!==original.ende?'–'+formatDatum(original.ende):'');
+    const kurztext = aktion==='loeschen'
+      ? currentProfile.name+' möchte Urlaub '+zeitraum+' löschen: '+grund
+      : currentProfile.name+' möchte Urlaub '+zeitraum+' anpassen: '+grund;
+    sendeNtfy('📝 Neue Korrekturanfrage', kurztext, 'high');
+
+    const ok = document.getElementById('korrekturSuccess');
+    ok.textContent = 'Korrekturanfrage gestellt. Du bekommst Bescheid, sobald sie bearbeitet wurde.';
+    ok.classList.remove('hidden');
+    setTimeout(closeKorrekturModal, 1800);
+  }catch(err){
+    zeigeFehler('korrekturError','Fehler: '+err.message);
+  }
+}
+
+/* =========================================================================
+   KORREKTURANFRAGEN (Admin-Ansicht)
+   ========================================================================= */
+function ladeKorrekturen(){
+  db.ref('korrekturanfragen').on('value', snap=>{
+    korrekturenCache = [];
+    snap.forEach(child=>{
+      korrekturenCache.push({id:child.key, ...child.val()});
+    });
+    korrekturenCache.sort((a,b)=> (b.erstelltAm||0) - (a.erstelltAm||0));
+    renderKorrekturen();
+  });
+}
+function renderKorrekturen(){
+  const body = document.getElementById('korrekturenBody');
+  const badge = document.getElementById('korrekturenBadge');
+  if(!body) return;
+  const offen = korrekturenCache.filter(k=>k.status==='offen');
+  if(badge){
+    if(offen.length>0){
+      badge.textContent = offen.length;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+  body.innerHTML = '';
+  if(korrekturenCache.length===0){
+    show('korrekturenEmpty');
+    return;
+  }
+  hide('korrekturenEmpty');
+  korrekturenCache.forEach(k=>{
+    const tr = document.createElement('tr');
+    const info = k.antragInfo || {};
+    const alterZeitraum = formatDatum(info.start)+(info.start!==info.ende?' – '+formatDatum(info.ende):'');
+    let anfrageTxt = '';
+    if(k.aktion==='loeschen'){
+      anfrageTxt = '<span class="badge badge-abgelehnt">Löschen</span>';
+    } else {
+      const neuerZeitraum = formatDatum(k.neuStart)+(k.neuStart!==k.neuEnde?' – '+formatDatum(k.neuEnde):'');
+      anfrageTxt = '<span class="badge badge-offen">Anpassen</span><br><span class="note" style="margin:0;">neu: '+neuerZeitraum+'</span>';
+    }
+    const gestellt = k.erstelltAm ? new Date(k.erstelltAm).toLocaleDateString('de-DE') : '–';
+    let aktion = '';
+    if(k.status==='offen'){
+      aktion = '<button class="btn-ok btn-small" onclick="korrekturUebernehmen(\''+k.id+'\')">Übernehmen</button> '+
+               '<button class="btn-danger btn-small" onclick="korrekturAblehnen(\''+k.id+'\')">Ablehnen</button>';
+    } else {
+      aktion = '<span class="badge badge-'+(k.status==='genehmigt'?'genehmigt':'abgelehnt')+'">'+labelStatus(k.status)+'</span>'+
+               (k.entschiedenVon ? '<br><span class="note" style="margin:0;">von '+k.entschiedenVon+'</span>' : '');
+    }
+    tr.innerHTML =
+      '<td>'+k.name+'<br><span class="note" style="margin:0;">'+(k.standort||'')+'</span></td>'+
+      '<td>'+alterZeitraum+'<br><span class="note" style="margin:0;">'+String(info.tage||'').replace('.',',')+' Tage</span></td>'+
+      '<td>'+anfrageTxt+'</td>'+
+      '<td>'+(k.grund||'')+'</td>'+
+      '<td class="mono">'+gestellt+'</td>'+
+      '<td style="white-space:nowrap;">'+aktion+'</td>';
+    body.appendChild(tr);
+  });
+}
+async function korrekturUebernehmen(id){
+  const k = korrekturenCache.find(x=>x.id===id);
+  if(!k) return;
+  if(!confirm('Korrektur übernehmen? Der Original-Antrag wird '+(k.aktion==='loeschen'?'gelöscht':'angepasst')+'.')) return;
+  try{
+    if(k.aktion==='loeschen'){
+      await db.ref('antraege/'+k.antragId).remove();
+    } else {
+      // Tage neu berechnen mit Arbeitstagen des Mitarbeiters
+      const tage = berechneUrlaubstage(k.neuStart, k.neuEnde, k.neuHalbTagStart, k.neuHalbTagEnde, getArbeitstage(k.name));
+      await db.ref('antraege/'+k.antragId).update({
+        start: k.neuStart,
+        ende: k.neuEnde,
+        halbTagStart: !!k.neuHalbTagStart,
+        halbTagEnde: !!k.neuHalbTagEnde,
+        tage,
+        bearbeitetAm: firebase.database.ServerValue.TIMESTAMP,
+        bearbeitetVon: currentProfile.name + ' (Korrektur)'
+      });
+    }
+    await db.ref('korrekturanfragen/'+id).update({
+      status:'genehmigt',
+      entschiedenAm: firebase.database.ServerValue.TIMESTAMP,
+      entschiedenVon: currentProfile.name
+    });
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+async function korrekturAblehnen(id){
+  if(!confirm('Korrekturanfrage ablehnen? Der Original-Antrag bleibt unverändert.')) return;
+  try{
+    await db.ref('korrekturanfragen/'+id).update({
+      status:'abgelehnt',
+      entschiedenAm: firebase.database.ServerValue.TIMESTAMP,
+      entschiedenVon: currentProfile.name
+    });
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+/* =========================================================================
+   ANWESENHEITSLISTE (nur Busemann)
+   ========================================================================= */
+const ANW_WERTE = ['X','U','K','KK','SOU','EZ','F','BU'];
+const ANW_FARBEN = {
+  X:'#C6EFCE', U:'#DDEEFF', K:'#FFE0E0', KK:'#FFEB9C',
+  SOU:'#FFD966', EZ:'#E8D5F5', F:'#EBEBEB', BU:'#BDD7EE',
+  WE:'#F5F5F5', FT:'#EBEBEB', '':'#ffffff'
+};
+const ANW_FARBEN_TEXT = {
+  X:'#1a5c2a', U:'#1a5276', K:'#7b1818', KK:'#7d5a00',
+  SOU:'#7d4e00', EZ:'#6a1b9a', F:'#555555', BU:'#1a3a5c',
+  WE:'#BBBBBB', FT:'#999999', '':'#CCCCCC'
+};
+
+// Feste Reihenfolge der Anwesenheitsliste (wie in der handschriftlichen Liste)
+const ANW_REIHENFOLGE = [
+  "Jan Bräutigam","Christoph Brüggemann","Anette Busemann","Robin Gatzemeier",
+  "Rüdiger Greve","Pascal Grisail","Sebastian Hauschulte","Walter Husteden",
+  "Christoph Kremer","Andrea Liedhegener","Stefan Lucas","Dennis Maag",
+  "Daniela Miederhoff","Dominik Schulte","Matthias Struwe","Andreas Tschernisch",
+  "Jonas Werthschulte","Vera Henneke","Andre Niepel"
+];
+function sortiereAnwesenheit(liste){
+  return ANW_REIHENFOLGE
+    .map(n => liste.find(m=>m.name===n))
+    .filter(Boolean);
+}
+
+
+// Empfänger in Firebase speichern und laden
+function anwEmpfaengerLaden(){
+  db.ref('settings/anwEmpfaenger').once('value', snap=>{
+    const el = document.getElementById('anwEmpfaenger');
+    if(el && snap.exists()) el.value = snap.val();
+  });
+}
+function anwEmpfaengerSpeichern(){
+  const val = document.getElementById('anwEmpfaenger').value.trim();
+  db.ref('settings/anwEmpfaenger').set(val||null);
+}
+
+async function anwMailSenden(){
+  const monat = parseInt(document.getElementById('anwMonat').value);
+  const jahr  = parseInt(document.getElementById('anwJahr').value);
+  const monate = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const monatName = monate[monat];
+  const tageImMonat = new Date(jahr, monat+1, 0).getDate();
+  const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const empfaenger = document.getElementById('anwEmpfaenger').value.trim() || 'grisail@rudolf-hilgenroth.de';
+  const sortiert = sortiereAnwesenheit(MITARBEITER);
+
+  const snap = await db.ref('anwesenheit/'+jahr+'/'+monat).once('value');
+  const alleGespeichert = snap.exists() ? snap.val() : {};
+
+  // Farbwerte als Inline-CSS fuer Mail-Tabelle
+  const MAIL_BG = {
+    X:'#C6EFCE', U:'#DDEEFF', K:'#FFE0E0', KK:'#FFEB9C',
+    SOU:'#FFD966', EZ:'#E8D5F5', F:'#EBEBEB', '':'#FFFFFF'
+  };
+  const MAIL_FG = {
+    X:'#1a5c2a', U:'#1a5276', K:'#7b1818', KK:'#7d5a00',
+    SOU:'#7d4e00', EZ:'#6a1b9a', F:'#555555', '':'#CCCCCC'
+  };
+
+  // HTML-Tabelle aufbauen (Inline-CSS fuer Mail-Clients)
+  let tbl = `<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse; font-family:Arial,sans-serif; font-size:11px; border-color:#CCCCCC;">`;
+
+  // Titelzeile
+  const colspan = tageImMonat + 3; // Name + Standort + Tage + ΣU + ΣAbw
+  tbl += `<tr><td colspan="${colspan}" style="background:#C8102E; color:#fff; font-size:14px; font-weight:bold; padding:8px 12px; text-align:left;">
+    Anwesenheitsliste ${monatName} ${jahr}
+  </td></tr>`;
+
+  // Header: Name | Standort | 1 | 2 | ... | ΣU | ΣAbw
+  tbl += '<tr>';
+  tbl += '<th style="background:#444; color:#fff; padding:4px 8px; min-width:130px; text-align:left;">Mitarbeiter</th>';
+  for(let t=1; t<=tageImMonat; t++){
+    const d = new Date(jahr, monat, t);
+    const we = d.getDay()===0||d.getDay()===6;
+    const ft = istFeiertag(d);
+    const bg = we||ft ? '#AAAAAA' : '#444444';
+    tbl += `<th style="background:${bg}; color:#fff; padding:3px 1px; text-align:center; min-width:20px; font-size:9px;">${t}<br>${WT[d.getDay()]}</th>`;
+  }
+  tbl += '<th style="background:#1a5276; color:#fff; padding:3px 4px; text-align:center;">ΣU</th>';
+  tbl += '<th style="background:#7b1818; color:#fff; padding:3px 4px; text-align:center;">ΣAbw</th>';
+  tbl += '</tr>';
+
+  // Mitarbeiter-Zeilen
+  sortiert.forEach((m, idx)=>{
+    const maKey = m.name.replace(/[.#$[\]\/]/g,'_');
+    const maGes = alleGespeichert[maKey] || {};
+    const rowBg = idx%2===0 ? '#FFFFFF' : '#F9F9F9';
+    tbl += `<tr style="background:${rowBg};">`;
+    tbl += `<td style="padding:4px 8px; font-weight:bold; white-space:nowrap; font-size:11px;">${m.name}</td>`;
+    let sumU=0, sumAbw=0;
+    const arbeitstageM = getArbeitstage(m.name);
+    for(let t=1; t<=tageImMonat; t++){
+      const d = new Date(jahr, monat, t);
+      const we = d.getDay()===0||d.getDay()===6;
+      const ft = istFeiertag(d);
+      const keinArbeitstag = !we && !ft && !arbeitstageM.includes(d.getDay());
+      let wert = maGes[t] || '';
+      if(!wert && !we && !ft && !keinArbeitstag) wert = getAutoWert(m.name, t, monat, jahr);
+      if(we||ft||keinArbeitstag){
+        tbl += `<td style="background:#F0F0F0; text-align:center; color:#CCC; font-size:9px;"></td>`;
+      } else {
+        const basis = anwBasisTyp(wert);
+        const bg = MAIL_BG[basis]||'#FFFFFF';
+        const fg = MAIL_FG[basis]||'#CCCCCC';
+        if(basis==='U') sumU += anwZahlenwert(wert);
+        else if(basis==='K'||basis==='KK'||basis==='SOU'||basis==='EZ') sumAbw += anwZahlenwert(wert);
+        tbl += `<td style="background:${bg}; color:${fg}; text-align:center; font-weight:bold; font-size:9px; padding:2px;">${wert||''}</td>`;
+      }
+    }
+    tbl += `<td style="background:#DDEEFF; color:#1a5276; text-align:center; font-weight:bold; padding:3px;">${sumU?String(sumU).replace('.',','):''}</td>`;
+    tbl += `<td style="background:#FFE0E0; color:#7b1818; text-align:center; font-weight:bold; padding:3px;">${sumAbw?String(sumAbw).replace('.',','):''}</td>`;
+    tbl += '</tr>';
+  });
+  tbl += '</table>';
+
+  // Tabelle in Zwischenablage kopieren (als HTML)
+  try{
+    const blob = new Blob([tbl], {type:'text/html'});
+    const plainBlob = new Blob([`Anwesenheitsliste ${monatName} ${jahr}\nBitte die Tabelle aus der Zwischenablage einfügen (Strg+V).`], {type:'text/plain'});
+    const item = new ClipboardItem({'text/html': blob, 'text/plain': plainBlob});
+    await navigator.clipboard.write([item]);
+
+    // Mail öffnen
+    const betreff = encodeURIComponent(`Anwesenheitsliste ${monatName} ${jahr}`);
+    const body = encodeURIComponent(
+      `Hallo,\n\nanbei die Anwesenheitsliste für ${monatName} ${jahr}.\n\n`+
+      `Bitte die Tabelle unten einfügen (Strg+V nach dem Öffnen der Mail):\n\n`+
+      `[Tabelle wurde in die Zwischenablage kopiert – bitte hier einfügen]\n\n`+
+      `Viele Grüße\nAnette Busemann`
+    );
+    window.location.href = `mailto:${empfaenger}?subject=${betreff}&body=${body}`;
+
+    // Hinweis anzeigen
+    setTimeout(()=>{
+      alert('✅ Die Tabelle wurde in die Zwischenablage kopiert.\n\nNach dem Öffnen von Outlook: Cursor in die Mail-Nachricht klicken und Strg+V drücken – die formatierte Tabelle wird eingefügt.');
+    }, 500);
+  }catch(err){
+    // Fallback: nur Mail öffnen ohne Tabelle
+    alert('Zwischenablage konnte nicht befüllt werden.\nDie Mail wird ohne Tabelle geöffnet – du kannst die Liste manuell aus dem Browser-Tab kopieren (Strg+A, Strg+C).');
+    const betreff = encodeURIComponent(`Anwesenheitsliste ${monatName} ${jahr}`);
+    window.location.href = `mailto:${empfaenger}?subject=${betreff}`;
+  }
+}
+
+
+// Prueft ob ein Tag durch einen genehmigten Urlaubsantrag fest belegt ist
+function istFesterUrlaub(maName, tag, monat, jahr){
+  const d = new Date(jahr, monat, tag);
+  if(d.getDay()===0 || d.getDay()===6 || istFeiertag(d)) return false;
+  // Nur sperren wenn getAutoWert auch wirklich einen anzeigbaren Wert liefert (U oder SOU).
+  // Verhindert leere, gesperrte Zellen (z.B. bei Betriebsurlaub oder Nicht-Arbeitstagen
+  // von Teilzeitkraeften wie Miederhoff Di-Do oder Husteden Mo-Do).
+  const auto = getAutoWert(maName, tag, monat, jahr);
+  return auto === 'U' || auto === 'SOU' || auto === 'U½' || auto === 'SOU½';
+}
+
+
+/* ---- UNDO-Funktion fuer Anwesenheitsliste ---- */
+window._anwUndoStack = [];
+
+// Speichert den aktuellen Zustand der betroffenen Pfade, bevor geaendert wird
+async function anwUndoSnapshot(pfade, beschreibung){
+  const vorher = {};
+  for(const p of pfade){
+    const snap = await db.ref(p).once('value');
+    vorher[p] = snap.exists() ? snap.val() : null;
+  }
+  window._anwUndoStack.push({vorher, beschreibung, zeit: new Date()});
+  // Max. 20 Schritte merken
+  if(window._anwUndoStack.length > 20) window._anwUndoStack.shift();
+  anwUndoLeisteAktualisieren();
+}
+
+function anwUndoLeisteAktualisieren(){
+  const leiste = document.getElementById('anwUndoLeiste');
+  const info   = document.getElementById('anwUndoInfo');
+  if(!leiste) return;
+  const n = window._anwUndoStack.length;
+  if(n === 0){ leiste.style.display = 'none'; return; }
+  leiste.style.display = 'flex';
+  const letzter = window._anwUndoStack[n-1];
+  info.textContent = `Letzte Aktion: ${letzter.beschreibung} (${n} Schritt${n>1?'e':''} rückgängig machbar)`;
+}
+
+async function anwMonatZuruecksetzen(){
+  const monat = parseInt(document.getElementById('anwMonat').value);
+  const jahr  = parseInt(document.getElementById('anwJahr').value);
+  const mNamen = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  if(!confirm(`Wirklich ALLE manuell eingetragenen Werte für ${mNamen[monat]} ${jahr} löschen?\n\nUrlaubstage aus Anträgen bleiben erhalten (die stehen nicht in dieser Tabelle).`)) return;
+  const pfad = 'anwesenheit/'+jahr+'/'+monat;
+  await anwUndoSnapshot([pfad], `Monat ${mNamen[monat]} ${jahr} geleert`);
+  try{
+    await db.ref(pfad).remove();
+    renderAnwesenheit();
+  }catch(err){
+    alert('Fehler: '+err.message);
+  }
+}
+
+async function anwUndo(){
+  if(window._anwUndoStack.length === 0) return;
+  const schritt = window._anwUndoStack.pop();
+  const updates = {};
+  Object.keys(schritt.vorher).forEach(p=>{
+    updates[p] = schritt.vorher[p];
+  });
+  try{
+    await db.ref('/').update(updates);
+    anwUndoLeisteAktualisieren();
+    renderAnwesenheit();
+  }catch(err){
+    alert('Rückgängig fehlgeschlagen: '+err.message);
+  }
+}
+
+function befuelleAnwDropdowns(){
+  const mSel = document.getElementById('anwMonat');
+  const jSel = document.getElementById('anwJahr');
+  if(!mSel || mSel.options.length > 0) return;
+  const monate = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  monate.forEach((m,i)=>{
+    const o = document.createElement('option');
+    o.value = i; o.textContent = m;
+    if(i === new Date().getMonth()) o.selected = true;
+    mSel.appendChild(o);
+  });
+  const jetzt = new Date().getFullYear();
+  [jetzt-1, jetzt, jetzt+1].forEach(j=>{
+    const o = document.createElement('option');
+    o.value = j; o.textContent = j;
+    if(j === jetzt) o.selected = true;
+    jSel.appendChild(o);
+  });
+}
+
+// Anwesenheit wird pro Mitarbeiter und Tag gespeichert:
+// anwesenheit/{jahr}/{monat}/{mitarbeiterName}/{tag}
+function ladeAnwMonatsDaten(jahr, monat, callback){
+  db.ref('anwesenheit/'+jahr+'/'+monat).once('value', snap=>{
+    callback(snap.exists() ? snap.val() : {});
+  });
+}
+
+function speichereAnwTag(jahr, monat, maName, tag, wert){
+  // Mitarbeitername als Key: Sonderzeichen ersetzen
+  const maKey = maName.replace(/[.#$[\]\/]/g,'_');
+  db.ref('anwesenheit/'+jahr+'/'+monat+'/'+maKey+'/'+tag).set(wert || null);
+}
+
+// Prueft ob ein Tag innerhalb eines Antrags ein halber Tag ist (Start-/Endtag mit Haken)
+function istHalberTagImAntrag(antrag, key){
+  const istStart = key===antrag.start, istEnde = key===antrag.ende;
+  if(istStart && antrag.halbTagStart) return true;
+  if(istEnde && antrag.halbTagEnde && !(istStart && antrag.halbTagStart)) return true;
+  return false;
+}
+
+function getAutoWert(maName, tag, monat, jahr){
+  // Automatisch vorausfuellen: Urlaub/Sonderurlaub aus Antraegen, inkl. halber Tage (Suffix '½')
+  const d = new Date(jahr, monat, tag);
+  const we = d.getDay()===0 || d.getDay()===6;
+  const ft = istFeiertag(d);
+  const bu = istBetriebsurlaub(d);
+  const key = toKey(d);
+  if(we) return 'WE';
+  if(ft) return 'FT';
+  // Nicht-Arbeitstage von Teilzeitkraeften (z.B. Miederhoff Di-Do, Husteden Mo-Do)
+  const arbeitstage = getArbeitstage(maName);
+  if(!arbeitstage.includes(d.getDay())) return '';
+  if(bu) return '';  // Betriebsurlaub wird in Anwesenheitsliste nicht angezeigt
+  const urlAntrag = alleAntraegeCache.find(a=>
+    a.name===maName && a.status==='genehmigt' && (a.art||'urlaub')==='urlaub'
+    && key>=a.start && key<=a.ende
+  );
+  if(urlAntrag) return istHalberTagImAntrag(urlAntrag, key) ? 'U½' : 'U';
+  const souAntrag = alleAntraegeCache.find(a=>
+    a.name===maName && a.status==='genehmigt' && a.art==='sonderurlaub'
+    && key>=a.start && key<=a.ende
+  );
+  if(souAntrag) return istHalberTagImAntrag(souAntrag, key) ? 'SOU½' : 'SOU';
+  return '';
+}
+
+// Ermittelt den Basistyp (ohne Halbtag-Suffix) fuer Farben/Kategorien, und den Zahlenwert (1 oder 0.5)
+function anwBasisTyp(wert){ return (wert||'').replace('½',''); }
+function anwZahlenwert(wert){ return (wert||'').includes('½') ? 0.5 : 1; }
+
+function renderAnwesenheit(){
+  const grid = document.getElementById('anwesenheitGrid');
+  if(!grid) return;
+  befuelleAnwDropdowns();
+  const monat = parseInt(document.getElementById('anwMonat').value);
+  const jahr  = parseInt(document.getElementById('anwJahr').value);
+  if(isNaN(monat) || isNaN(jahr)) return;
+
+  grid.innerHTML = '<div style="text-align:center; padding:20px; color:var(--gray-400);">Lade…</div>';
+
+  ladeAnwMonatsDaten(jahr, monat, alleGespeichert=>{
+    const tageImMonat = new Date(jahr, monat+1, 0).getDate();
+    const heute = new Date();
+    const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+    const sortiert = sortiereAnwesenheit(MITARBEITER);
+
+    // Aktuelle Selektion beibehalten
+    const alteAuswahl = new Set(window._anwAuswahl || []);
+    window._anwAuswahl = alteAuswahl;
+
+    let html = '<div style="overflow-x:auto;">';
+    html += '<table style="border-collapse:separate; border-spacing:2px; font-size:11px; width:100%;" id="anwTabelle">';
+    html += '<thead><tr>';
+    // Checkbox-Spalte Header: Alle markieren
+    html += '<th style="padding:3px 4px; background:#DDDDDD; border-radius:4px; width:28px; position:sticky; left:0; z-index:3;">' +
+      '<input type="checkbox" id="anwAlleCheck" onchange="anwAlleMarkieren(this.checked)" title="Alle markieren" style="cursor:pointer;"></th>';
+    html += '<th style="text-align:left; padding:4px 8px; background:#DDDDDD; border-radius:4px; min-width:150px; font-size:11px; position:sticky; left:28px; z-index:2; white-space:nowrap;">Mitarbeiter</th>';
+    for(let t=1; t<=tageImMonat; t++){
+      const d = new Date(jahr, monat, t);
+      const we = d.getDay()===0||d.getDay()===6;
+      const ft = istFeiertag(d);
+      const isToday = d.toDateString()===heute.toDateString();
+      const bg = isToday ? '#C8102E' : (we||ft ? '#CCCCCC' : '#444444');
+      const col = isToday ? '#fff' : (we||ft ? '#888' : '#fff');
+      html += `<th style="text-align:center; padding:3px 1px; background:${bg}; color:${col}; border-radius:4px; min-width:28px; font-size:10px; font-family:Consolas,monospace; cursor:pointer;"
+        onclick="anwTagAlleSetzen(${jahr},${monat},${t})" title="Klick: alle auf diesen Tag setzen">`;
+      html += `${t}<br><span style="font-weight:400; font-size:9px;">${WT[d.getDay()]}</span></th>`;
+    }
+    html += '<th style="text-align:center; padding:3px 4px; background:#444; color:#fff; border-radius:4px; min-width:32px; font-size:10px;">ΣU</th>';
+    html += '<th style="text-align:center; padding:3px 4px; background:#444; color:#fff; border-radius:4px; min-width:36px; font-size:10px;">ΣAbw</th>';
+    html += '</tr></thead><tbody>';
+
+    sortiert.forEach(m=>{
+      const maKey = m.name.replace(/[.#$[\]\\/]/g,'_');
+      const maGespeichert = alleGespeichert[maKey] || {};
+      const isSelected = alteAuswahl.has(maKey);
+      const rowBg = isSelected ? 'background:#fffde7;' : '';
+      html += `<tr style="${rowBg}">`;
+      // Checkbox
+      html += `<td style="text-align:center; padding:0 4px; position:sticky; left:0; z-index:1; background:${isSelected?'#fffde7':'#f8f8f8'};">
+        <input type="checkbox" data-makey="${maKey}" ${isSelected?'checked':''} onchange="anwCheckboxChange(this,'${maKey}')" style="cursor:pointer;"></td>`;
+      // Name
+      html += `<td style="font-size:11.5px; font-weight:600; padding:4px 8px; background:${isSelected?'#fff9c4':'#F8F8F8'}; border-radius:4px; position:sticky; left:28px; z-index:1; white-space:nowrap; border-right:2px solid #DDD;">${m.name}</td>`;
+
+      let sumU=0, sumAbw=0;
+      const arbeitstageM = getArbeitstage(m.name);
+      for(let t=1; t<=tageImMonat; t++){
+        const d = new Date(jahr, monat, t);
+        const we = d.getDay()===0||d.getDay()===6;
+        const ft = istFeiertag(d);
+        const keinArbeitstag = !we && !ft && !arbeitstageM.includes(d.getDay());
+        const isToday = d.toDateString()===heute.toDateString();
+        const festerUrlaub = istFesterUrlaub(m.name, t, monat, jahr);
+        let wert = maGespeichert[t] || '';
+        if(festerUrlaub) wert = getAutoWert(m.name, t, monat, jahr);  // Urlaub hat Vorrang, nicht ueberschreibbar
+        else if(!wert && !keinArbeitstag) wert = getAutoWert(m.name, t, monat, jahr);
+        const basis = anwBasisTyp(wert);
+        const nichtEditierbar = we || ft || festerUrlaub || keinArbeitstag;
+        // Wochenende/Feiertag/kein Arbeitstag grau, Urlaub in Urlaubsfarbe (deutlich sichtbar!), Rest normal
+        const bg   = (we||ft||keinArbeitstag) ? '#F2F2F2' : (ANW_FARBEN[basis]||'#FAFAFA');
+        const txtC = (we||ft||keinArbeitstag) ? '#CCCCCC' : (ANW_FARBEN_TEXT[basis]||'#CCCCCC');
+        const outline = isToday ? 'box-shadow:inset 0 0 0 2px var(--red);' : '';
+        if(basis==='U') sumU += anwZahlenwert(wert);
+        else if(basis==='K'||basis==='KK'||basis==='SOU'||basis==='EZ') sumAbw += anwZahlenwert(wert);
+        if(nichtEditierbar){
+          const anzeige = (we||ft||keinArbeitstag) ? '' : wert;
+          const titel = festerUrlaub
+            ? `${m.name} – ${t}.${monat+1}.${jahr} · ${basis==='SOU'?'Sonderurlaub':'Urlaub'}${wert.includes('½')?' (halber Tag)':''} (fest aus Antrag, nicht änderbar)`
+            : (keinArbeitstag ? `${m.name} arbeitet an diesem Wochentag nicht` : '');
+          const lockStyle = festerUrlaub ? 'border:2px solid #1a5276;' : '';
+          html += `<td title="${titel}" style="text-align:center; background:${bg}; ${outline}${lockStyle} border-radius:3px; height:24px; padding:0;
+            font-size:9px; font-weight:700; color:${txtC}; font-family:Consolas,monospace; cursor:not-allowed;">${anzeige}</td>`;
+        } else {
+          html += `<td style="text-align:center; background:${bg}; ${outline} border-radius:3px; height:24px; padding:0; cursor:pointer;"
+            title="${m.name} – ${t}.${monat+1}.${jahr}"
+            onclick="anwZelleKlick(this,${jahr},${monat},${t},'${maKey.replace(/'/g,"\\'")}','${wert}')">
+            <span style="font-size:10px; font-weight:700; color:${txtC}; font-family:Consolas,monospace; display:block; line-height:24px;">${wert||'–'}</span>
+          </td>`;
+        }
+      }
+      html += `<td style="text-align:center; background:#DDEEFF; border-radius:4px; font-weight:700; font-size:11px; font-family:Consolas,monospace; padding:2px 4px; color:#1a5276;">${sumU?String(sumU).replace('.',','):'–'}</td>`;
+      html += `<td style="text-align:center; background:#FFE0E0; border-radius:4px; font-weight:700; font-size:11px; font-family:Consolas,monospace; padding:2px 4px; color:#7b1818;">${sumAbw?String(sumAbw).replace('.',','):'–'}</td>`;
+      html += '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    grid.innerHTML = html;
+    anwToolbarAktualisieren();
+  });
+}
+
+/* ---- Mehrfachauswahl ---- */
+window._anwAuswahl = new Set();
+
+function anwCheckboxChange(cb, maKey){
+  if(cb.checked) window._anwAuswahl.add(maKey);
+  else window._anwAuswahl.delete(maKey);
+  anwToolbarAktualisieren();
+  // Zeilen-Highlight sofort updaten ohne re-render
+  const row = cb.closest('tr');
+  if(row) row.style.background = cb.checked ? '#fffde7' : '';
+  // "Alle"-Checkbox syncen
+  const alle = document.getElementById('anwAlleCheck');
+  if(alle){
+    const cbs = document.querySelectorAll('#anwTabelle [data-makey]');
+    alle.indeterminate = window._anwAuswahl.size>0 && window._anwAuswahl.size<cbs.length;
+    alle.checked = window._anwAuswahl.size===cbs.length && cbs.length>0;
+  }
+}
+
+function anwAlleMarkieren(checked){
+  window._anwAuswahl = new Set();
+  document.querySelectorAll('#anwTabelle [data-makey]').forEach(cb=>{
+    cb.checked = checked;
+    if(checked) window._anwAuswahl.add(cb.dataset.makey);
+    const row = cb.closest('tr');
+    if(row) row.style.background = checked ? '#fffde7' : '';
+  });
+  anwToolbarAktualisieren();
+}
+
+function anwAuswahlAufheben(){
+  anwAlleMarkieren(false);
+}
+
+function anwToolbarAktualisieren(){
+  const toolbar = document.getElementById('anwMehrfachToolbar');
+  const anzEl   = document.getElementById('anwAuswahlAnzahl');
+  const btnArea  = document.getElementById('anwMehrfachButtons');
+  const tagSel   = document.getElementById('anwMehrfachTag');
+  if(!toolbar) return;
+  const n = window._anwAuswahl.size;
+  if(n===0){ toolbar.style.display='none'; return; }
+  toolbar.style.display='flex';
+  anzEl.textContent = n+' ausgewählt';
+
+  // Tag-Dropdown befuellen (nur Werktage des gewaehlten Monats)
+  const monat = parseInt(document.getElementById('anwMonat').value);
+  const jahr  = parseInt(document.getElementById('anwJahr').value);
+  const tageImMonat = new Date(jahr, monat+1, 0).getDate();
+  const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const heute = new Date();
+  const vorherigerWert = tagSel.value;
+  tagSel.innerHTML = '';
+  for(let t=1; t<=tageImMonat; t++){
+    const d = new Date(jahr, monat, t);
+    if(d.getDay()===0 || d.getDay()===6 || istFeiertag(d)) continue;
+    const o = document.createElement('option');
+    o.value = t;
+    o.textContent = t+'. ('+WT[d.getDay()]+')';
+    tagSel.appendChild(o);
+  }
+  // Vorherige Auswahl beibehalten, sonst heute vorwaehlen
+  if(vorherigerWert && tagSel.querySelector(`option[value="${vorherigerWert}"]`)){
+    tagSel.value = vorherigerWert;
+  } else if(heute.getFullYear()===jahr && heute.getMonth()===monat){
+    const heuteOpt = tagSel.querySelector(`option[value="${heute.getDate()}"]`);
+    if(heuteOpt) tagSel.value = heute.getDate();
+  }
+  // Buttons neu aufbauen
+  btnArea.innerHTML='';
+  const optionen = ['X','U','K','KK','SOU','EZ','F',''];
+  optionen.forEach(v=>{
+    const btn = document.createElement('button');
+    btn.textContent = v||'– löschen';
+    btn.style.cssText = `padding:5px 12px; border:none; border-radius:5px; cursor:pointer;
+      font-size:12px; font-weight:700;
+      background:${v?ANW_FARBEN[v]:'#f5f5f5'}; color:${v?ANW_FARBEN_TEXT[v]:'#999'};`;
+    btn.onclick = ()=> anwMehrfachSetzen(v);
+    btnArea.appendChild(btn);
+  });
+}
+
+function anwMehrfachSetzen(wert){
+  const monat = parseInt(document.getElementById('anwMonat').value);
+  const jahr  = parseInt(document.getElementById('anwJahr').value);
+  const tag   = parseInt(document.getElementById('anwMehrfachTag').value);
+  if(isNaN(tag)){ alert('Bitte einen Tag auswählen.'); return; }
+
+  const updates = {};
+  let uebersprungen = 0;
+  window._anwAuswahl.forEach(maKey=>{
+    // Namen zum maKey finden, um Urlaub und Arbeitstage zu pruefen
+    const ma = MITARBEITER.find(m=>m.name.replace(/[.#$[\]\/]/g,'_')===maKey);
+    if(ma && istFesterUrlaub(ma.name, tag, monat, jahr)){
+      uebersprungen++;
+      return;  // Urlaub nicht ueberschreiben
+    }
+    if(ma){
+      const d = new Date(jahr, monat, tag);
+      if(!getArbeitstage(ma.name).includes(d.getDay())){
+        uebersprungen++;
+        return;  // kein Arbeitstag fuer diesen Mitarbeiter
+      }
+    }
+    updates['anwesenheit/'+jahr+'/'+monat+'/'+maKey+'/'+tag] = wert||null;
+  });
+
+  if(Object.keys(updates).length===0){
+    alert('Alle ausgewählten Mitarbeiter haben an diesem Tag Urlaub oder arbeiten nicht – nichts geändert.');
+    return;
+  }
+
+  const monatsNamen = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const beschreibung = `${Object.keys(updates).length} Mitarbeiter am ${tag}. ${monatsNamen[monat]} → "${wert||'gelöscht'}"`;
+  anwUndoSnapshot(Object.keys(updates), beschreibung).then(()=>{
+    db.ref('/').update(updates).then(()=>{
+      if(uebersprungen>0){
+        alert(uebersprungen+' Mitarbeiter übersprungen (Urlaub kann nicht überschrieben werden).');
+      }
+      anwAuswahlAufheben();
+      renderAnwesenheit();
+    });
+  });
+}
+
+// Klick auf Spalten-Header: alle Mitarbeiter an diesem Tag setzen
+function anwTagAlleSetzen(jahr, monat, tag){
+  const d = new Date(jahr, monat, tag);
+  if(d.getDay()===0||d.getDay()===6||istFeiertag(d)) return;
+  document.querySelectorAll('.anw-popup').forEach(p=>p.remove());
+  const popup = document.createElement('div');
+  popup.className = 'anw-popup';
+  popup.style.cssText = 'position:fixed; background:#fff; border:1.5px solid #CCC; border-radius:8px;' +
+    'box-shadow:0 4px 20px rgba(0,0,0,0.15); z-index:9999; padding:10px; min-width:180px;';
+  const title = document.createElement('div');
+  title.textContent = 'Alle am '+tag+'.'+(monat+1)+'.'+jahr+' setzen:';
+  title.style.cssText='font-size:11px; font-weight:700; color:#666; margin-bottom:8px;';
+  popup.appendChild(title);
+  const btnWrap = document.createElement('div');
+  btnWrap.style.cssText='display:flex; flex-wrap:wrap; gap:4px;';
+  ['X','U','K','KK','SOU','EZ','F',''].forEach(v=>{
+    const btn = document.createElement('button');
+    btn.textContent = v||'– löschen';
+    btn.style.cssText = `padding:5px 10px; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:700;
+      background:${v?ANW_FARBEN[v]:'#f5f5f5'}; color:${v?ANW_FARBEN_TEXT[v]:'#999'};`;
+    btn.onclick = ()=>{
+      const sortiert = sortiereAnwesenheit(MITARBEITER);
+      const updates = {};
+      let uebersprungen = 0;
+      sortiert.forEach(m=>{
+        if(istFesterUrlaub(m.name, tag, monat, jahr)){ uebersprungen++; return; }
+        if(!getArbeitstage(m.name).includes(d.getDay())){ uebersprungen++; return; }
+        const maKey = m.name.replace(/[.#$[\]\/]/g,'_');
+        updates['anwesenheit/'+jahr+'/'+monat+'/'+maKey+'/'+tag] = v||null;
+      });
+      const mNamen = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+      anwUndoSnapshot(Object.keys(updates), `Alle am ${tag}. ${mNamen[monat]} → "${v||'gelöscht'}"`).then(()=>{
+        db.ref('/').update(updates).then(()=>{
+          popup.remove();
+          renderAnwesenheit();
+          if(uebersprungen>0) setTimeout(()=>alert(uebersprungen+' Mitarbeiter übersprungen (Urlaub fest / kein Arbeitstag).'), 200);
+        });
+      });
+    };
+    btnWrap.appendChild(btn);
+  });
+  popup.appendChild(btnWrap);
+  const th = event.target.closest('th');
+  const rect = th ? th.getBoundingClientRect() : {bottom:100, left:100};
+  popup.style.top  = (rect.bottom+4)+'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth-220)+'px';
+  document.body.appendChild(popup);
+  const close=(e)=>{if(!popup.contains(e.target)){popup.remove();document.removeEventListener('click',close);}};
+  setTimeout(()=>document.addEventListener('click',close),10);
+}
+
+// Inline-Popup fuer einzelne Zelle
+function anwZelleKlick(td, jahr, monat, tag, maKey, aktuellerWert){
+  document.querySelectorAll('.anw-popup').forEach(p=>p.remove());
+  const popup = document.createElement('div');
+  popup.className = 'anw-popup';
+  popup.style.cssText = 'position:fixed; background:#fff; border:1.5px solid #CCC; border-radius:8px;' +
+    'box-shadow:0 4px 20px rgba(0,0,0,0.15); z-index:9999; padding:8px; display:flex; flex-wrap:wrap; gap:4px; max-width:220px;';
+  ['','X','U','K','KK','SOU','EZ','F'].forEach(v=>{
+    const btn = document.createElement('button');
+    btn.textContent = v||'–';
+    btn.style.cssText = `padding:5px 10px; border:none; border-radius:5px; cursor:pointer; font-size:12px; font-weight:700;
+      background:${v?ANW_FARBEN[v]:'#F5F5F5'}; color:${v?ANW_FARBEN_TEXT[v]:'#999'};`+
+      (v===aktuellerWert?'outline:2px solid #C8102E;':'');
+    btn.onclick=()=>{
+      const pfad = 'anwesenheit/'+jahr+'/'+monat+'/'+maKey+'/'+tag;
+      const mN = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+      anwUndoSnapshot([pfad], `${maKey.replace(/_/g,' ')} am ${tag}. ${mN[monat]} → "${v||'gelöscht'}"`).then(()=>{
+        speichereAnwTagByKey(jahr,monat,maKey,tag,v);
+        popup.remove();
+        renderAnwesenheit();
+      });
+    };
+    popup.appendChild(btn);
+  });
+  const rect=td.getBoundingClientRect();
+  popup.style.top=(rect.bottom+4)+'px';
+  popup.style.left=Math.min(rect.left,window.innerWidth-240)+'px';
+  document.body.appendChild(popup);
+  const close=(e)=>{if(!popup.contains(e.target)&&e.target!==td){popup.remove();document.removeEventListener('click',close);}};
+  setTimeout(()=>document.addEventListener('click',close),10);
+}
+
+
+function speichereAnwTagByKey(jahr, monat, maKey, tag, wert){
+  db.ref('anwesenheit/'+jahr+'/'+monat+'/'+maKey+'/'+tag).set(wert || null);
+}
+
+function anwHexZuRgb(hex){
+  hex = hex.replace('#','');
+  return [parseInt(hex.substring(0,2),16), parseInt(hex.substring(2,4),16), parseInt(hex.substring(4,6),16)];
+}
+
+async function exportAnwesenheitPDF(){
+  const { jsPDF } = window.jspdf;
+  const monat = parseInt(document.getElementById('anwMonat').value);
+  const jahr  = parseInt(document.getElementById('anwJahr').value);
+  const monate = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  const monatName = monate[monat];
+  const tageImMonat = new Date(jahr, monat+1, 0).getDate();
+  const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+  const snap = await db.ref('anwesenheit/'+jahr+'/'+monat).once('value');
+  const alleGespeichert = snap.exists() ? snap.val() : {};
+  const sortiert = sortiereAnwesenheit(MITARBEITER);
+
+  const kategorien = ['U','K','KK','SOU','EZ','F'];
+  const kategorieName = {U:'Urlaub',K:'Krank',KK:'Kinder-Krank',SOU:'Sonderurlaub',EZ:'Elternzeit',F:'Freistellung'};
+
+  // Zellwerte + Summen vorab berechnen
+  const zellenProZeile = []; // zellenProZeile[zeile][tag] = {anzeige, colorKey}
+  const kategorieSummen = {};
+  sortiert.forEach(m=>{
+    const maKey = m.name.replace(/[.#$[\]]/g,'_');
+    const maGes = alleGespeichert[maKey] || {};
+    const s = {U:0,K:0,KK:0,SOU:0,EZ:0,F:0};
+    const zeile = {};
+    const arbeitstageM = getArbeitstage(m.name);
+    for(let t=1; t<=tageImMonat; t++){
+      const d = new Date(jahr, monat, t);
+      const we = d.getDay()===0||d.getDay()===6;
+      const ft = istFeiertag(d);
+      const keinArbeitstag = !we && !ft && !arbeitstageM.includes(d.getDay());
+      if(we||ft){ zeile[t] = {anzeige:'', colorKey: we?'WE':'FT'}; continue; }
+      if(keinArbeitstag){ zeile[t] = {anzeige:'', colorKey:'NA'}; continue; }
+      let wert = maGes[t] || '';
+      if(!wert) wert = getAutoWert(m.name, t, monat, jahr);
+      const basis = anwBasisTyp(wert);
+      if(s[basis]!==undefined) s[basis] += anwZahlenwert(wert);
+      zeile[t] = {anzeige: wert||'', colorKey: basis||''};
+    }
+    zellenProZeile.push(zeile);
+    kategorieSummen[m.name] = s;
+  });
+
+  // Nur Kategorien anzeigen, bei denen im Monat mindestens 1 Tag angefallen ist
+  const kategorienSichtbar = kategorien.filter(k =>
+    sortiert.some(m => (kategorieSummen[m.name][k]||0) > 0)
+  );
+
+  // ---- PDF aufbauen ----
+  const doc = new jsPDF({orientation:'landscape', unit:'mm', format:'a4'});
+  const pageW = doc.internal.pageSize.getWidth();
+
+  // Titel-Balken
+  doc.setFillColor(200,16,46);
+  doc.rect(0, 0, pageW, 14, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.text('Anwesenheitsliste '+monatName+' '+jahr, 8, 9.5);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.text('Rudolf Hilgenroth GmbH & Co. KG', pageW-8, 9.5, {align:'right'});
+
+  // Tabellen-Header: Mitarbeiter | Standort | Tag 1..N | ausgeschriebene Summenspalten (nur relevante)
+  const head = [['Mitarbeiter','Standort',
+    ...Array.from({length:tageImMonat},(_,i)=>{
+      const d = new Date(jahr, monat, i+1);
+      return (i+1)+'\n'+WT[d.getDay()];
+    }),
+    ...kategorienSichtbar.map(k=>kategorieName[k])
+  ]];
+
+  const body = sortiert.map((m, ri)=>{
+    const row = [m.name, m.standort];
+    for(let t=1; t<=tageImMonat; t++) row.push(zellenProZeile[ri][t].anzeige);
+    const s = kategorieSummen[m.name];
+    kategorienSichtbar.forEach(k=> row.push(s[k]>0 ? String(s[k]).replace('.',',') : ''));
+    return row;
+  });
+
+  const FARBEN = {
+    X:  '#C6EFCE', U:  '#DDEEFF', K:  '#FFE0E0', KK: '#FFEB9C',
+    SOU:'#FFD966', EZ: '#E8D5F5', F:  '#EBEBEB', WE: '#F5F5F5', FT: '#E8E8E8', NA: '#EFEFEF'
+  };
+  const TEXTFARBEN = {
+    X:'#1a5c2a', U:'#1a5276', K:'#7b1818', KK:'#7d5a00',
+    SOU:'#7d4e00', EZ:'#6a1b9a', F:'#555555', WE:'#bbbbbb', FT:'#999999', NA:'#cccccc'
+  };
+  const KAT_FARBEN = {U:'#DDEEFF',K:'#FFE0E0',KK:'#FFEB9C',SOU:'#FFD966',EZ:'#E8D5F5',F:'#EBEBEB'};
+
+  const nameColW = 32, standortColW = 16, sumColW = 16;
+  const restBreite = pageW - 16 - nameColW - standortColW - (sumColW*kategorienSichtbar.length);
+  const tagColW = Math.max(4.2, restBreite / tageImMonat);
+
+  const columnStyles = {0:{cellWidth:nameColW, halign:'left'}, 1:{cellWidth:standortColW, halign:'left'}};
+  for(let i=0;i<tageImMonat;i++) columnStyles[2+i] = {cellWidth:tagColW};
+  for(let i=0;i<kategorienSichtbar.length;i++) columnStyles[2+tageImMonat+i] = {cellWidth:sumColW};
+
+  doc.autoTable({
+    head, body,
+    startY: 18,
+    theme: 'grid',
+    styles:{ fontSize: tageImMonat>27?5.5:6.5, cellPadding:0.8, halign:'center', valign:'middle', lineColor:[210,210,210], lineWidth:0.1 },
+    headStyles:{ fillColor:[68,68,68], textColor:255, fontSize:5.5, fontStyle:'bold' },
+    columnStyles,
+    margin:{left:8, right:8},
+    didParseCell: (data)=>{
+      if(data.section!=='body') return;
+      const col = data.column.index;
+      const ri  = data.row.index;
+      if(col>=2 && col<2+tageImMonat){
+        const t = col-1; // Tag-Nummer
+        const info = zellenProZeile[ri][t];
+        const bg = FARBEN[info.colorKey] || '#FFFFFF';
+        const fg = TEXTFARBEN[info.colorKey] || '#333333';
+        data.cell.styles.fillColor = anwHexZuRgb(bg);
+        data.cell.styles.textColor = anwHexZuRgb(fg);
+        data.cell.styles.fontStyle = 'bold';
+      } else if(col>=2+tageImMonat){
+        const kat = kategorienSichtbar[col-2-tageImMonat];
+        if(data.cell.raw){
+          data.cell.styles.fillColor = anwHexZuRgb(KAT_FARBEN[kat]);
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    }
+  });
+
+  // Legende unten (mit fester Breite pro Eintrag statt Zeichenlaenge, damit nichts gequetscht wird)
+  let legY = doc.lastAutoTable.finalY + 7;
+  if(legY > doc.internal.pageSize.getHeight() - 12){ doc.addPage('a4','landscape'); legY = 15; }
+  const legende = [
+    ['X','anwesend',FARBEN.X],['U','Urlaub',FARBEN.U],['K','krank',FARBEN.K],
+    ['KK','Kinder-krank',FARBEN.KK],['SOU','Sonderurlaub',FARBEN.SOU],
+    ['EZ','Elternzeit',FARBEN.EZ],['F','Freistellung',FARBEN.F]
+  ];
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal');
+  const legEintragBreite = (pageW - 16) / legende.length;
+  legende.forEach(([k,txt,farbe], idx)=>{
+    const lx = 8 + idx*legEintragBreite;
+    const rgb = anwHexZuRgb(farbe);
+    doc.setFillColor(rgb[0],rgb[1],rgb[2]);
+    doc.setDrawColor(200,200,200);
+    doc.rect(lx, legY-3.2, 4.5, 4.5, 'FD');
+    doc.setTextColor(80,80,80);
+    doc.text(k+' = '+txt, lx+6.5, legY);
+  });
+
+  doc.save('Anwesenheitsliste_'+monatName+'_'+jahr+'.pdf');
+}
+
+</script>
+</body>
+</html>
