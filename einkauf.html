@@ -207,7 +207,7 @@ tr:hover .ra{opacity:1;}
     <div class="std-box" id="pj-std-box">Standardpreis: <strong id="pj-std">–</strong></div>
     <div class="fr2" style="margin-top:10px">
       <div class="fr" style="margin:0"><label>Projektpreis (€/t)</label><input class="fi" id="pj-preis" placeholder="z.B. 14,50" oninput="pjCalc()"></div>
-      <div class="fr" style="margin:0"><label>Menge (Tonnen)</label><input class="fi" id="pj-menge" placeholder="z.B. 500" type="number" min="0" step="0.1" oninput="pjCalc()"></div>
+      <div class="fr" style="margin:0"><label>Menge (Tonnen)</label><input class="fi" id="pj-menge" placeholder="z.B. 500" type="text" inputmode="decimal" oninput="cleanMenge(this);pjCalc()"></div>
     </div>
     <div class="std-box" id="pj-gesamt-box" style="display:none">
       Gesamtbetrag: <strong id="pj-gesamt" style="color:var(--green)">–</strong>
@@ -228,7 +228,7 @@ tr:hover .ra{opacity:1;}
     <div class="std-box">Standardpreis: <strong id="pp-std">–</strong></div>
     <div class="fr2" style="margin-top:10px">
       <div class="fr" style="margin:0"><label>Projektpreis (€/t)</label><input class="fi" id="pp-preis" placeholder="z.B. 14,50" type="text" oninput="ppCalc()"></div>
-      <div class="fr" style="margin:0"><label>Menge (Tonnen)</label><input class="fi" id="pp-menge" placeholder="z.B. 500" type="number" min="0" step="0.1" oninput="ppCalc()"></div>
+      <div class="fr" style="margin:0"><label>Menge (Tonnen)</label><input class="fi" id="pp-menge" placeholder="z.B. 500" type="text" inputmode="decimal" oninput="cleanMenge(this);ppCalc()"></div>
     </div>
     <div class="std-box" id="pp-gesamt-box" style="display:none">
       Gesamtbetrag: <strong id="pp-gesamt" style="color:var(--green)">–</strong>
@@ -516,13 +516,28 @@ function drawProj(){
   pa.forEach(([k,v])=>{
     if(!v||!v.name) return;
     const cnt=Object.keys(v.preise||{}).length;
+    // Preisvorschau: bis zu 3 Einträge anzeigen
+    const preisArr=Object.values(v.preise||{}).slice(0,3);
+    const preisPreview=preisArr.map(p=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--ink)">${esc(p.material||'')}</div>
+          <div style="font-size:11px;color:var(--muted)">${esc(p.lieferant||'')}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:8px">
+          ${p.preis?`<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${esc(p.preis)} ${esc(p.einheit||'')}</div>`:'<div style="font-size:11px;color:var(--amber)">Auf Anfrage</div>'}
+          ${p.menge?`<div style="font-size:11px;color:var(--muted)">${esc(p.menge)} t</div>`:''}
+        </div>
+      </div>`).join('');
+    const more=cnt>3?`<div style="font-size:11px;color:var(--muted);text-align:center;padding-top:6px">+${cnt-3} weitere</div>`:'';
     html+=`<div class="pcard" onclick="curProj='${k}';drawProj()">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
-        <div style="font-size:13px;font-weight:600">${esc(v.name)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">${esc(v.name)}</div>
         <span class="badge tp">${cnt} Preis${cnt!==1?'e':''}</span>
       </div>
-      ${v.baustelle?`<div style="font-size:11px;color:var(--muted)">${esc(v.baustelle)}</div>`:''}
-      ${v.notiz?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(v.notiz)}</div>`:''}
+      ${v.baustelle?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">${esc(v.baustelle)}</div>`:'<div style="margin-bottom:8px"></div>'}
+      ${preisPreview?`<div style="border-top:1px solid var(--line)">${preisPreview}</div>`:'<div style="font-size:11px;color:var(--muted);font-style:italic">Noch keine Preise</div>'}
+      ${more}
       <div style="display:flex;gap:4px;margin-top:10px;justify-content:flex-end">
         <button class="btn btn-g btn-sm" onclick="event.stopPropagation();openProj('${k}')">Bearb.</button>
         <button class="btn btn-g btn-sm" style="color:#ef4444" onclick="event.stopPropagation();delProj('${k}')">Löschen</button>
@@ -650,6 +665,16 @@ function pjCalc(){
       document.getElementById('pj-ersparnis').style.color=std>preis?'var(--green)':'var(--amber)';
     } else {document.getElementById('pj-ersparnis').textContent='';}
   } else {gb.style.display='none';}
+}
+function cleanMenge(inp){
+  // Nur Ziffern, Komma und Punkt erlauben — max. ein Dezimaltrennzeichen
+  let v=inp.value.replace(/[^0-9.,]/g,'');
+  // Nur erstes Dezimalzeichen behalten
+  const first=v.search(/[.,]/);
+  if(first>=0){
+    v=v.slice(0,first+1)+v.slice(first+1).replace(/[.,]/g,'');
+  }
+  inp.value=v;
 }
 function saveProj(){
   const name=document.getElementById('pj-name').value.trim();
