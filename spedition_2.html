@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speditionspreise | Hilgenroth</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F8FA;color:#1B1D22;font-size:14px;display:flex;flex-direction:column;}
+:root{
+  --red:#C8102E;--red-d:#9E0C24;--red-l:#FCE9EC;
+  --ink:#1B1D22;--slate:#4A4F58;--muted:#8A909B;
+  --line:#E6E8EC;--bg:#F7F8FA;--white:#fff;
+  --green:#16a34a;--green-l:#dcfce7;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+}
+
+/* Nav */
+.nav{display:flex;background:var(--white);border-bottom:1px solid var(--line);padding:0 20px;flex-shrink:0;align-items:stretch;}
+.ntab{height:42px;padding:0 14px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px;transition:color .14s,border-color .14s;white-space:nowrap;}
+.ntab:hover{color:var(--ink);}
+.ntab.on{color:var(--red);border-bottom-color:var(--red);font-weight:600;}
+.ntab svg{width:14px;height:14px;stroke-width:1.8;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--amber);flex-shrink:0;}
+.sdot.on{background:var(--green);}
+.slbl{font-size:11px;color:var(--muted);}
+
+/* Layout */
+.wrap{display:flex;flex:1;overflow:hidden;}
+.side{width:190px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);overflow-y:auto;padding:10px 0;}
+.side-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 12px 6px;}
+.sped-btn{width:100%;text-align:left;padding:7px 12px;background:none;border:none;border-left:3px solid transparent;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;color:var(--slate);display:flex;align-items:center;justify-content:space-between;transition:.12s;}
+.sped-btn:hover{background:var(--bg);color:var(--ink);}
+.sped-btn.on{background:var(--red-l);color:var(--red);border-left-color:var(--red);}
+.sped-btn .cnt{font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+.sped-btn.on .cnt{color:var(--red);}
+
+/* Main */
+.main{flex:1;overflow-y:auto;padding:18px 22px;}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+.pht{font-size:15px;font-weight:600;}
+.ph-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+
+/* Buttons */
+.btn{height:30px;padding:0 13px;border-radius:6px;font-size:12px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:.14s;white-space:nowrap;}
+.btn-p{background:var(--red);color:#fff;}.btn-p:hover{background:var(--red-d);}
+.btn-g{background:transparent;border:1px solid var(--line);color:var(--slate);}.btn-g:hover{border-color:var(--muted);color:var(--ink);}
+.btn-sm{height:26px;padding:0 9px;font-size:11px;border-radius:4px;}
+
+/* Search + Filter */
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.swrap{position:relative;}
+.swrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--muted);stroke-width:2;pointer-events:none;}
+.sinp{height:32px;padding:0 10px 0 30px;border:1px solid var(--line);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:var(--ink);background:var(--white);width:220px;}
+.sinp:focus{outline:none;border-color:var(--red);}
+.fsel{height:32px;padding:0 8px;border:1px solid var(--line);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:var(--ink);background:var(--white);}
+.fsel:focus{outline:none;border-color:var(--red);}
+.filter-count{font-size:11px;color:var(--muted);}
+
+/* Kacheln Übersicht */
+.sped-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;}
+.sped-card{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:14px;cursor:pointer;transition:.14s;}
+.sped-card:hover{border-color:var(--red);box-shadow:0 2px 8px rgba(200,16,46,.07);}
+.sped-card-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.sped-card-stats{display:flex;gap:8px;flex-wrap:wrap;}
+.stat-pill{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--bg);color:var(--slate);border:1px solid var(--line);}
+.sped-card-preview{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;}
+.preview-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:2px 0;}
+.preview-row .pr-bst{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px;}
+.preview-row .pr-preis{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--green);flex-shrink:0;}
+
+/* Tabelle */
+.twrap{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:var(--bg);padding:8px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none;}
+.tbl th:hover{color:var(--ink);}
+.tbl th .sort-icon{font-size:10px;margin-left:3px;opacity:.4;}
+.tbl th.sorted .sort-icon{opacity:1;color:var(--red);}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg);}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+.preis-cell{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--green);}
+.badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.04em;padding:2px 6px;border-radius:4px;}
+.bSB{background:#dbeafe;color:#1d4ed8;}
+.bAsphalt{background:#fef3c7;color:#d97706;}
+.bTeer{background:#1c1c1c;color:#fff;}
+.bSonstige{background:var(--line);color:var(--slate);}
+.ra{display:flex;gap:3px;opacity:0;transition:.12s;}
+tr:hover .ra{opacity:1;}
+.ib{width:25px;height:25px;border-radius:4px;border:1px solid var(--line);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ib svg{width:12px;height:12px;stroke-width:1.8;}
+.ib.e:hover{border-color:var(--red);color:var(--red);}
+.ib.d:hover{border-color:#ef4444;color:#ef4444;}
+
+/* Back */
+.back{display:flex;align-items:center;gap:7px;margin-bottom:14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--slate);}
+.back:hover{color:var(--red);}
+.back svg{width:15px;height:15px;stroke-width:2;}
+
+/* Modal */
+.bd{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:200;}
+.bd.on{display:flex;}
+.md{background:var(--white);border-radius:10px;padding:22px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.14);}
+.mdt{font-size:14px;font-weight:600;margin-bottom:16px;}
+.fr{margin-bottom:11px;}
+.fr label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);display:block;margin-bottom:4px;}
+.fi,.fs{width:100%;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--white);}
+.fi:focus,.fs:focus{outline:none;border-color:var(--red);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.ma{display:flex;gap:7px;justify-content:flex-end;margin-top:16px;}
+
+/* CSV Upload */
+.upload-zone{border:2px dashed var(--line);border-radius:8px;padding:28px;text-align:center;cursor:pointer;transition:.14s;background:var(--bg);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--red);background:var(--red-l);}
+.upload-zone svg{width:32px;height:32px;stroke:var(--muted);margin-bottom:10px;}
+.upload-zone p{font-size:13px;color:var(--muted);}
+.upload-zone small{font-size:11px;color:var(--muted);}
+.csv-preview{background:var(--bg);border-radius:6px;padding:10px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--slate);max-height:120px;overflow-y:auto;margin-top:10px;white-space:pre;}
+.upload-result{font-size:12px;font-weight:500;margin-top:8px;}
+.upload-result.ok{color:var(--green);}
+.upload-result.err{color:var(--red);}
+
+.empty{padding:36px;text-align:center;color:var(--muted);}
+.empty svg{width:34px;height:34px;stroke:var(--muted);margin-bottom:10px;opacity:.3;display:block;margin:0 auto 10px;}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="ntab on" id="nt-overview" onclick="goTab('overview')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Übersicht
+  </button>
+  <button class="ntab" id="nt-preise" onclick="goTab('preise')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Alle Preise
+  </button>
+  <button class="ntab" id="nt-anfrage" onclick="goTab('anfrage')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Neue Anfrage
+  </button>
+  <div class="nav-right">
+    <button class="btn btn-g" style="height:26px;font-size:11px" onclick="openCSV()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>CSV Import
+    </button>
+    <span class="sdot" id="sdot"></span><span class="slbl" id="slbl">verbinde …</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <aside class="side" id="side">
+    <div class="side-lbl">Spediteure</div>
+    <button class="sped-btn on" id="sb-alle" onclick="setCurSped(null,this)">
+      <span>Alle</span><span class="cnt" id="sb-alle-cnt"></span>
+    </button>
+    <div id="sped-list"></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Preis-Modal -->
+<div class="bd" id="bd-preis">
+  <div class="md">
+    <div class="mdt" id="preis-title">Neuer Preis</div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Datum</label><input class="fi" type="date" id="p-datum"></div>
+      <div class="fr" style="margin:0"><label>Bst.-Nr.</label><input class="fi" id="p-bstnr" placeholder="z.B. 5025"></div>
+    </div>
+    <div class="fr" style="margin-top:10px"><label>Spediteur *</label><select class="fs" id="p-sped"></select></div>
+    <div class="fr"><label>Von</label><input class="fi" id="p-von" placeholder="z.B. Hellefeld"></div>
+    <div class="fr"><label>Kunde / Auftraggeber</label><input class="fi" id="p-kunde" placeholder="z.B. Hilgenroth"></div>
+    <div class="fr"><label>Nach Baustelle *</label><input class="fi" id="p-bst" placeholder="z.B. Bahnhofstr., Neheim"></div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Material</label>
+        <select class="fs" id="p-mat">
+          <option value="SB">SB</option>
+          <option value="Asphalt">Asphalt</option>
+          <option value="Teer">Teer</option>
+          <option value="Sonstige">Sonstige</option>
+        </select>
+      </div>
+      <div class="fr" style="margin:0"><label>Entfernung (km)</label><input class="fi" id="p-km" placeholder="z.B. 12" type="text" inputmode="decimal"></div>
+    </div>
+    <div class="fr2" style="margin-top:10px">
+      <div class="fr" style="margin:0"><label>Preis / t (€)</label><input class="fi" id="p-preis" placeholder="z.B. 6,10" type="text" inputmode="decimal" oninput="cleanDec(this)"></div>
+      <div class="fr" style="margin:0"><label>Bemerkung</label><input class="fi" id="p-bem" placeholder="z.B. nach verhandelt"></div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-preis')">Abbrechen</button>
+      <button class="btn btn-p" onclick="savePreis()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Spediteur-Modal -->
+<div class="bd" id="bd-sped">
+  <div class="md" style="width:360px">
+    <div class="mdt" id="sped-title">Spediteur hinzufügen</div>
+    <div class="fr"><label>Name *</label><input class="fi" id="s-name" placeholder="z.B. Albers"></div>
+    <div class="fr"><label>Notiz</label><input class="fi" id="s-not" placeholder="z.B. Kontakt, Telefon"></div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-sped')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveSped()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV-Modal -->
+<div class="bd" id="bd-csv">
+  <div class="md" style="width:560px">
+    <div class="mdt">CSV-Import – Historische Preise</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+      Wenn du pro Spediteur eine eigene Datei importierst, wähle ihn unten — dann wird er für alle Zeilen gesetzt.<br>
+      Sonst: letzte Spalte der CSV = Spediteur-Name (wird automatisch erkannt).
+    </p>
+    <div class="fr">
+      <label>Spediteur für diesen Import (optional — überschreibt CSV-Spalte)</label>
+      <select class="fs" id="csv-sped">
+        <option value="">— aus CSV-Spalte lesen —</option>
+      </select>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:10px">
+      Erwartetes Format: <strong>Datum;Von;Kunde;Bst-Nr;Baustelle;Material;Entfernung;Preis;Bemerkung;Spediteur</strong><br>
+      Trennzeichen: Semikolon (;) · Dezimalzeichen: Komma oder Punkt · Erste Zeile = Kopfzeile
+    </p>
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p>CSV-Datei hierher ziehen oder klicken</p>
+      <small>UTF-8 oder Windows-1252 kodiert</small>
+    </div>
+    <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleCSV(this.files[0])">
+    <div class="csv-preview" id="csv-preview" style="display:none"></div>
+    <div class="upload-result" id="upload-result"></div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-csv')">Schließen</button>
+      <button class="btn btn-p" id="import-btn" style="display:none" onclick="importCSV()">Importieren</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Firebase (Dispo-Hellefeld) ──
+firebase.initializeApp({
+  apiKey:"AIzaSyA_DISPO_KEY", // ← hier Dispo-Firebase-Config eintragen
+  databaseURL:"https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"dispo-hellefeld",
+});
+const db = firebase.database();
+const SR = db.ref('spedition/spediteure');
+const PR = db.ref('spedition/preise');
+
+// ── State ──
+let speds={}, preise={};
+let curTab='overview', curSped=null;
+let preisKey=null, spedKey=null;
+let sortCol='datum', sortDir=-1;
+let sq='', filterMat='', filterSped='';
+let csvRows=[];
+
+// ── Sync ──
+function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=on?'synchronisiert':'offline';}
+
+// ── Helpers ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function pnum(p){return p?parseFloat(String(p).replace(',','.'))||0:0;}
+function cleanDec(inp){let v=inp.value.replace(/[^0-9.,]/g,'');const f=v.search(/[.,]/);if(f>=0)v=v.slice(0,f+1)+v.slice(f+1).replace(/[.,]/g,'');inp.value=v;}
+function matBadge(m){const c={'SB':'bSB','Asphalt':'bAsphalt','Teer':'bTeer'}[m]||'bSonstige';return `<span class="badge ${c}">${esc(m)}</span>`;}
+function fmtDate(d){if(!d)return'';try{const p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}catch{return d;}}
+
+// ── Tab ──
+function goTab(t){
+  curTab=t;
+  ['overview','preise','anfrage'].forEach(id=>{
+    document.getElementById('nt-'+id).className='ntab'+(t===id?' on':'');
+  });
+  document.getElementById('side').style.display=t==='anfrage'?'none':'';
+  draw();
+}
+
+// ── Sped Filter ──
+function setCurSped(name,btn){
+  curSped=name;
+  document.querySelectorAll('.sped-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  draw();
+}
+
+// ── Draw ──
+function draw(){
+  buildSpedList();
+  if(curTab==='overview') drawOverview();
+  else if(curTab==='preise') drawPreise();
+  else drawAnfrage();
+}
+
+// ── Sidebar ──
+function buildSpedList(){
+  const list=document.getElementById('sped-list');
+  const total=Object.keys(preise).length;
+  document.getElementById('sb-alle-cnt').textContent=total;
+  const items=Object.entries(speds).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+  list.innerHTML=items.map(([k,v])=>{
+    if(!v||!v.name)return'';
+    const cnt=Object.values(preise).filter(p=>p&&p.spediteur===v.name).length;
+    return `<button class="sped-btn${curSped===v.name?' on':''}" onclick="setCurSped('${esc(v.name)}',this)">
+      <span>${esc(v.name)}</span><span class="cnt">${cnt}</span>
+    </button>`;
+  }).join('');
+}
+
+// ── ÜBERSICHT ──
+function drawOverview(){
+  const main=document.getElementById('main');
+  const allSpeds=Object.entries(speds).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+  const filtered=curSped?allSpeds.filter(([k,v])=>v&&v.name===curSped):allSpeds;
+
+  let html=`<div class="ph">
+    <div class="pht">${curSped?esc(curSped):'Alle Spediteure'}</div>
+    <div class="ph-actions">
+      <button class="btn btn-g" onclick="openSped()">+ Spediteur</button>
+      <button class="btn btn-p" onclick="openPreis()">+ Preis erfassen</button>
+    </div>
+  </div><div class="sped-grid">`;
+
+  filtered.forEach(([k,v])=>{
+    if(!v||!v.name)return;
+    const pArr=Object.values(preise).filter(p=>p&&p.spediteur===v.name);
+    const cnt=pArr.length;
+    const mats=[...new Set(pArr.map(p=>p.material).filter(Boolean))];
+    const avgPreis=pArr.filter(p=>p.preis).length?
+      (pArr.filter(p=>p.preis).reduce((s,p)=>s+pnum(p.preis),0)/pArr.filter(p=>p.preis).length).toFixed(2).replace('.',','):null;
+    const preview=pArr.sort((a,b)=>(b.datum||'').localeCompare(a.datum||'')).slice(0,3);
+
+    html+=`<div class="sped-card" onclick="setCurSped('${esc(v.name)}',document.querySelector('.sped-btn[onclick*=\\'${esc(v.name)}\\']')||document.getElementById('sb-alle'));goTab('preise')">
+      <div class="sped-card-name">${esc(v.name)}</div>
+      <div class="sped-card-stats">
+        <span class="stat-pill">${cnt} Preis${cnt!==1?'e':''}</span>
+        ${avgPreis?`<span class="stat-pill" style="color:var(--green);border-color:var(--green-l);background:var(--green-l)">Ø ${avgPreis} €/t</span>`:''}
+        ${mats.slice(0,2).map(m=>`<span class="stat-pill">${esc(m)}</span>`).join('')}
+      </div>
+      ${preview.length?`<div class="sped-card-preview">${preview.map(p=>`
+        <div class="preview-row">
+          <span class="pr-bst">${esc(p.baustelle||'')}</span>
+          <span class="pr-preis">${p.preis?esc(p.preis)+' €/t':'-'}</span>
+        </div>`).join('')}</div>`:''}
+      ${v.notiz?`<div style="font-size:11px;color:var(--muted);margin-top:6px">${esc(v.notiz)}</div>`:''}
+      <div style="display:flex;gap:4px;margin-top:10px;justify-content:flex-end">
+        <button class="btn btn-g btn-sm" onclick="event.stopPropagation();openSped('${k}')">Bearb.</button>
+        <button class="btn btn-g btn-sm" style="color:#ef4444" onclick="event.stopPropagation();delSped('${k}')">Löschen</button>
+      </div>
+    </div>`;
+  });
+
+  if(!filtered.length) html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Noch keine Spediteure. Klicke „+ Spediteur".</p></div>`;
+  html+=`</div>`;
+  main.innerHTML=html;
+}
+
+// ── ALLE PREISE ──
+function drawPreise(){
+  const main=document.getElementById('main');
+  let rows=Object.entries(preise).filter(([k,v])=>v&&v.baustelle);
+  if(curSped) rows=rows.filter(([k,v])=>v.spediteur===curSped);
+  if(sq) rows=rows.filter(([k,v])=>((v.baustelle||'')+(v.spediteur||'')+(v.kunde||'')+(v.von||'')+(v.material||'')+(v.bstnr||'')+(v.bemerkung||'')).toLowerCase().includes(sq));
+  if(filterMat) rows=rows.filter(([k,v])=>v.material===filterMat);
+
+  // Sortieren
+  rows.sort((a,b)=>{
+    const av=a[1][sortCol]||'', bv=b[1][sortCol]||'';
+    if(sortCol==='preis'||sortCol==='km') return (pnum(av)-pnum(bv))*sortDir;
+    return av.localeCompare(bv)*sortDir;
+  });
+
+  const avg=rows.filter(([k,v])=>v.preis).length?
+    (rows.filter(([k,v])=>v.preis).reduce((s,[k,v])=>s+pnum(v.preis),0)/rows.filter(([k,v])=>v.preis).length).toFixed(2).replace('.',','):null;
+
+  function sortBtn(col,label){
+    const on=sortCol===col;
+    const dir=on?(sortDir===1?'▲':'▼'):'↕';
+    return `<th class="${on?'sorted':''}" onclick="doSort('${col}')">${label}<span class="sort-icon">${dir}</span></th>`;
+  }
+
+  let html=`<div class="ph">
+    <div class="pht">${curSped?esc(curSped)+' – Preise':'Alle Speditionspreise'}</div>
+    <div class="ph-actions">
+      ${avg?`<span style="font-size:12px;color:var(--muted)">Ø <strong style="color:var(--green);font-family:'IBM Plex Mono',monospace">${avg} €/t</strong></span>`:''}
+      <span style="font-size:11px;color:var(--muted)">${rows.length} Einträge</span>
+      <button class="btn btn-p" onclick="openPreis()">+ Preis erfassen</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="swrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="sinp" id="sq-inp" value="${esc(sq)}" placeholder="Suchen …">
+    </div>
+    <select class="fsel" id="mat-filter" onchange="filterMat=this.value;drawPreise()">
+      <option value="">Alle Materialien</option>
+      <option value="SB"${filterMat==='SB'?' selected':''}>SB</option>
+      <option value="Asphalt"${filterMat==='Asphalt'?' selected':''}>Asphalt</option>
+      <option value="Teer"${filterMat==='Teer'?' selected':''}>Teer</option>
+      <option value="Sonstige"${filterMat==='Sonstige'?' selected':''}>Sonstige</option>
+    </select>
+  </div>
+  <div class="twrap"><table class="tbl"><thead><tr>
+    ${sortBtn('datum','Datum')}
+    ${sortBtn('spediteur','Spediteur')}
+    ${sortBtn('von','Von')}
+    ${sortBtn('kunde','Kunde')}
+    <th>Bst.-Nr.</th>
+    ${sortBtn('baustelle','Nach Baustelle')}
+    ${sortBtn('material','Material')}
+    ${sortBtn('km','Entf. km')}
+    ${sortBtn('preis','Preis/t')}
+    <th>Bemerkung</th>
+    <th></th>
+  </tr></thead><tbody>`;
+
+  if(!rows.length) html+=`<tr><td colspan="11"><div class="empty"><p>Keine Einträge gefunden</p></div></td></tr>`;
+  rows.forEach(([k,v])=>{
+    html+=`<tr>
+      <td class="mono" style="color:var(--muted);white-space:nowrap">${fmtDate(v.datum||'')}</td>
+      <td style="font-weight:500">${esc(v.spediteur||'')}</td>
+      <td style="color:var(--slate)">${esc(v.von||'')}</td>
+      <td style="color:var(--slate)">${esc(v.kunde||'')}</td>
+      <td class="mono" style="color:var(--muted)">${esc(v.bstnr||'')}</td>
+      <td>${esc(v.baustelle||'')}</td>
+      <td>${matBadge(v.material||'Sonstige')}</td>
+      <td class="mono" style="color:var(--muted)">${v.km?esc(v.km)+' km':'-'}</td>
+      <td class="preis-cell">${v.preis?esc(v.preis)+' €/t':'-'}</td>
+      <td style="font-size:12px;color:var(--muted)">${esc(v.bemerkung||'')}</td>
+      <td><div class="ra">
+        <button class="ib e" onclick="openPreis('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+        <button class="ib d" onclick="delPreis('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  main.innerHTML=html;
+
+  const inp=document.getElementById('sq-inp');
+  if(inp){
+    inp.addEventListener('input',function(){sq=this.value.toLowerCase();drawPreise();});
+    const l=inp.value.length;inp.setSelectionRange(l,l);inp.focus();
+  }
+}
+
+function doSort(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=-1;}drawPreise();}
+
+// ── ANFRAGE ──
+function drawAnfrage(){
+  const main=document.getElementById('main');
+  const spedNames=[...new Set(Object.values(speds).filter(s=>s&&s.name).map(s=>s.name))].sort();
+  main.innerHTML=`<div class="ph"><div class="pht">Neue Preisanfrage erfassen</div></div>
+  <div style="max-width:580px">
+    <div class="twrap" style="padding:20px">
+      <div class="fr2">
+        <div class="fr" style="margin:0"><label>Datum</label><input class="fi" type="date" id="a-datum" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="fr" style="margin:0"><label>Bst.-Nr.</label><input class="fi" id="a-bstnr" placeholder="z.B. 5025"></div>
+      </div>
+      <div class="fr" style="margin-top:10px"><label>Spediteur *</label>
+        <select class="fs" id="a-sped"><option value="">— wählen —</option>${spedNames.map(n=>`<option>${esc(n)}</option>`).join('')}</select>
+      </div>
+      <div class="fr2">
+        <div class="fr" style="margin:0"><label>Von</label><input class="fi" id="a-von" value="Hellefeld"></div>
+        <div class="fr" style="margin:0"><label>Kunde</label><input class="fi" id="a-kunde" value="Hilgenroth"></div>
+      </div>
+      <div class="fr"><label>Nach Baustelle *</label><input class="fi" id="a-bst" placeholder="z.B. Bahnhofstr., Neheim"></div>
+      <div class="fr2">
+        <div class="fr" style="margin:0"><label>Material</label>
+          <select class="fs" id="a-mat"><option>SB</option><option>Asphalt</option><option>Teer</option><option>Sonstige</option></select>
+        </div>
+        <div class="fr" style="margin:0"><label>Entfernung (km)</label><input class="fi" id="a-km" placeholder="z.B. 12" type="text" inputmode="decimal"></div>
+      </div>
+      <div class="fr2">
+        <div class="fr" style="margin:0"><label>Preis / t (€)</label><input class="fi" id="a-preis" placeholder="z.B. 6,10" oninput="cleanDec(this)"></div>
+        <div class="fr" style="margin:0"><label>Bemerkung</label><input class="fi" id="a-bem" placeholder="z.B. nach verhandelt"></div>
+      </div>
+      <div class="ma" style="margin-top:16px">
+        <button class="btn btn-g" onclick="['a-bstnr','a-bst','a-km','a-preis','a-bem'].forEach(id=>document.getElementById(id).value='');document.getElementById('a-sped').value=''">Leeren</button>
+        <button class="btn btn-p" onclick="saveAnfrage()">Speichern</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function saveAnfrage(){
+  const sped=document.getElementById('a-sped').value.trim();
+  const bst=document.getElementById('a-bst').value.trim();
+  if(!sped||!bst){alert('Spediteur und Baustelle sind Pflichtfelder.');return;}
+  const e={
+    datum:document.getElementById('a-datum').value,
+    bstnr:document.getElementById('a-bstnr').value.trim(),
+    spediteur:sped,von:document.getElementById('a-von').value.trim(),
+    kunde:document.getElementById('a-kunde').value.trim(),
+    baustelle:bst,material:document.getElementById('a-mat').value,
+    km:document.getElementById('a-km').value.trim(),
+    preis:document.getElementById('a-preis').value.trim(),
+    bemerkung:document.getElementById('a-bem').value.trim(),
+    ts:Date.now()
+  };
+  const k=PR.push().key;
+  PR.child(k).set(e);
+  preise[k]=e;
+  ['a-bstnr','a-bst','a-km','a-preis','a-bem'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-sped').value='';
+  showToast('Preis gespeichert ✓');
+  draw();
+}
+
+// ── Toast ──
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:20px;right:20px;background:#1B1D22;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .2s';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity='0',2500);
+}
+
+// ── Preis Modal ──
+function fillSpedSel(id){
+  const sel=document.getElementById(id);if(!sel)return;
+  const cur=sel.value;
+  const names=[...new Set(Object.values(speds).filter(s=>s&&s.name).map(s=>s.name))].sort();
+  sel.innerHTML=names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+  if(curSped&&!cur) sel.value=curSped;
+}
+function openPreis(key){
+  preisKey=key||null;
+  document.getElementById('preis-title').textContent=key?'Preis bearbeiten':'Neuer Preis';
+  fillSpedSel('p-sped');
+  if(key&&preise[key]){
+    const v=preise[key];
+    document.getElementById('p-datum').value=v.datum||'';
+    document.getElementById('p-bstnr').value=v.bstnr||'';
+    document.getElementById('p-sped').value=v.spediteur||'';
+    document.getElementById('p-von').value=v.von||'';
+    document.getElementById('p-kunde').value=v.kunde||'';
+    document.getElementById('p-bst').value=v.baustelle||'';
+    document.getElementById('p-mat').value=v.material||'SB';
+    document.getElementById('p-km').value=v.km||'';
+    document.getElementById('p-preis').value=v.preis||'';
+    document.getElementById('p-bem').value=v.bemerkung||'';
+  } else {
+    document.getElementById('p-datum').value=new Date().toISOString().slice(0,10);
+    ['p-bstnr','p-von','p-kunde','p-bst','p-km','p-preis','p-bem'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('p-von').value='Hellefeld';
+    document.getElementById('p-kunde').value='Hilgenroth';
+    document.getElementById('p-mat').value='SB';
+  }
+  openM('bd-preis');
+}
+function savePreis(){
+  const sped=document.getElementById('p-sped').value;
+  const bst=document.getElementById('p-bst').value.trim();
+  if(!sped||!bst){alert('Spediteur und Baustelle sind Pflichtfelder.');return;}
+  const e={datum:document.getElementById('p-datum').value,bstnr:document.getElementById('p-bstnr').value.trim(),spediteur:sped,von:document.getElementById('p-von').value.trim(),kunde:document.getElementById('p-kunde').value.trim(),baustelle:bst,material:document.getElementById('p-mat').value,km:document.getElementById('p-km').value.trim(),preis:document.getElementById('p-preis').value.trim(),bemerkung:document.getElementById('p-bem').value.trim(),ts:Date.now()};
+  if(preisKey){PR.child(preisKey).update(e);preise[preisKey]={...preise[preisKey],...e};}
+  else{const k=PR.push().key;PR.child(k).set(e);preise[k]=e;}
+  closeM('bd-preis');draw();
+}
+function delPreis(k){if(!confirm('Löschen?'))return;PR.child(k).remove();delete preise[k];draw();}
+
+// ── Spediteur Modal ──
+function openSped(key){
+  spedKey=key||null;
+  document.getElementById('sped-title').textContent=key?'Spediteur bearbeiten':'Spediteur hinzufügen';
+  if(key&&speds[key]){document.getElementById('s-name').value=speds[key].name||'';document.getElementById('s-not').value=speds[key].notiz||'';}
+  else{['s-name','s-not'].forEach(id=>document.getElementById(id).value='');}
+  openM('bd-sped');
+}
+function saveSped(){
+  const name=document.getElementById('s-name').value.trim();
+  if(!name){alert('Name ist Pflichtfeld.');return;}
+  const e={name,notiz:document.getElementById('s-not').value.trim()};
+  if(spedKey){SR.child(spedKey).update(e);speds[spedKey]={...speds[spedKey],...e};}
+  else{const k=SR.push().key;SR.child(k).set(e);speds[k]=e;}
+  closeM('bd-sped');draw();
+}
+function delSped(k){
+  const name=speds[k]?.name;
+  if(!confirm(`Spediteur "${name}" und alle zugehörigen Preise löschen?`))return;
+  // Alle Preise dieses Spediteurs löschen
+  const toDelete=Object.entries(preise).filter(([pk,pv])=>pv&&pv.spediteur===name);
+  const batch={};
+  toDelete.forEach(([pk])=>{batch[pk]=null;delete preise[pk];});
+  if(Object.keys(batch).length) PR.update(batch);
+  SR.child(k).remove();
+  delete speds[k];
+  if(curSped===name) curSped=null;
+  draw();
+}
+
+// ── CSV Import ──
+function openCSV(){
+  openM('bd-csv');
+  document.getElementById('csv-preview').style.display='none';
+  document.getElementById('upload-result').textContent='';
+  document.getElementById('import-btn').style.display='none';
+  csvRows=[];
+  // Spediteur-Select befüllen
+  const sel=document.getElementById('csv-sped');
+  if(sel){
+    const names=[...new Set(Object.values(speds).filter(s=>s&&s.name).map(s=>s.name))].sort();
+    sel.innerHTML='<option value="">— aus CSV-Spalte lesen —</option>'+names.map(n=>`<option>${esc(n)}</option>`).join('');
+    if(curSped) sel.value=curSped;
+  }
+}
+function handleDrop(e){e.preventDefault();document.getElementById('drop-zone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleCSV(f);}
+function handleCSV(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const text=e.target.result;
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){document.getElementById('upload-result').textContent='Datei enthält keine Daten.';document.getElementById('upload-result').className='upload-result err';return;}
+    // Header erkennen
+    const sep=lines[0].includes(';')?';':',';
+    csvRows=[];
+    for(let i=1;i<lines.length;i++){
+      const cols=lines[i].split(sep);
+      if(cols.length<8)continue;
+      // Format: Datum;Von;Kunde;Bst-Nr;Baustelle;Material;Entfernung;Preis;Bemerkung;Spediteur
+      const row={
+        datum:parseCSVDate(cols[0]?.trim()||''),
+        von:cols[1]?.trim()||'',
+        kunde:cols[2]?.trim()||'',
+        bstnr:cols[3]?.trim()||'',
+        baustelle:cols[4]?.trim()||'',
+        material:cols[5]?.trim()||'SB',
+        km:cols[6]?.trim()||'',
+        preis:cols[7]?.trim().replace(',','.')||'',
+        bemerkung:cols[8]?.trim()||'',
+        spediteur:cols[9]?.trim()||'',
+        ts:Date.now()
+      };
+      if(row.baustelle) csvRows.push(row);
+    }
+    const prev=document.getElementById('csv-preview');
+    prev.style.display='';
+    prev.textContent=csvRows.slice(0,5).map(r=>`${r.datum||'-'} | ${r.spediteur||'-'} | ${r.baustelle} | ${r.preis?r.preis+' €/t':'-'}`).join('\n')+(csvRows.length>5?`\n… +${csvRows.length-5} weitere`:'');
+    document.getElementById('upload-result').textContent=`${csvRows.length} Zeilen erkannt`;
+    document.getElementById('upload-result').className='upload-result ok';
+    document.getElementById('import-btn').style.display='';
+  };
+  reader.readAsText(file,'UTF-8');
+}
+function parseCSVDate(d){
+  if(!d)return'';
+  // DD.MM.YYYY → YYYY-MM-DD
+  const m=d.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  return d;
+}
+async function importCSV(){
+  if(!csvRows.length)return;
+  const fixedSped=document.getElementById('csv-sped')?.value||'';
+  document.getElementById('import-btn').textContent='Importiere …';
+  const batch={};
+  csvRows.forEach(row=>{
+    // Spediteur überschreiben falls gewählt
+    if(fixedSped) row.spediteur=fixedSped;
+    const k=PR.push().key;
+    batch[k]=row;
+    preise[k]=row;
+    // Spediteur automatisch anlegen falls nicht vorhanden
+    if(row.spediteur&&!Object.values(speds).find(s=>s&&s.name===row.spediteur)){
+      const sk=SR.push().key;
+      speds[sk]={name:row.spediteur,notiz:''};
+      SR.child(sk).set(speds[sk]);
+    }
+  });
+  await PR.update(batch);
+  document.getElementById('upload-result').textContent=`${csvRows.length} Einträge importiert ✓`;
+  document.getElementById('upload-result').className='upload-result ok';
+  document.getElementById('import-btn').style.display='none';
+  csvRows=[];
+  draw();
+}
+
+// ── Modal ──
+function openM(id){document.getElementById(id).classList.add('on');}
+function closeM(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.bd').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)closeM(b.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.bd.on').forEach(b=>closeM(b.id));});
+
+// ── Firebase ──
+function initFB(){
+  db.ref('.info/connected').on('value',s=>sync(!!s.val()));
+  SR.on('value',s=>{const v=s.val();if(v)speds=v;draw();},()=>{});
+  PR.on('value',s=>{const v=s.val();if(v)preise=v;draw();},()=>{});
+}
+
+// ── Start ──
+const SEED_SPEDS=['Albers','Diverse','Funke','Hubertus Schulte','Mimberg','Otte-Wiese','R. Leifert','Rene Braun','Roth'];
+SEED_SPEDS.forEach((n,i)=>{speds['_s'+i]={name:n,notiz:''};});
+draw();
+sync(false);
+initFB();
+</script>
+</body>
+</html>
