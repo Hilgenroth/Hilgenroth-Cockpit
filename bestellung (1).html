@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1d1f">
+<title>Bestell-Terminal · Hilgenroth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --bg:#f6f7f8;--bg-e:#fff;--surf:#fafbfb;
+  --ink:#1a1d1f;--ink2:#34373b;--ink3:#6c7177;--muted:#9aa0a8;
+  --line:#e8ebed;--line2:#d4d8dc;
+  --brand:#d11a2c;--brand-d:#a8121f;--brand-s:#fde8ea;
+  --grn:#1f7a3f;--grn-s:#dfeee5;
+  --amb:#b87514;--amb-s:#fdf0d8;
+  --blu:#1a5ab8;--blu-s:#dfe8f4;
+  --sh-sm:0 1px 2px rgba(15,18,22,.04),0 1px 1px rgba(15,18,22,.03);
+  --sh-md:0 4px 12px rgba(15,18,22,.06),0 1px 2px rgba(15,18,22,.04);
+  --sh-lg:0 12px 32px rgba(15,18,22,.08),0 2px 6px rgba(15,18,22,.04);
+  --r:10px;--rs:6px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:radial-gradient(1000px 500px at 80% -10%,rgba(209,26,44,.05),transparent 60%),var(--bg);
+  color:var(--ink);line-height:1.5;min-height:100vh;letter-spacing:-.005em;
+  padding:14px 14px calc(28px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto}
+
+header{background:var(--bg-e);border:1px solid var(--line);border-radius:var(--rl);
+  padding:14px 16px;box-shadow:var(--sh-sm);display:flex;align-items:center;
+  justify-content:space-between;gap:12px;margin-bottom:14px}
+header h1{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+header .sub{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-top:3px}
+.conn{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surf);
+  border:1px solid var(--line);border-radius:100px;font-size:10px;font-weight:700;
+  color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.conn.online{color:var(--grn);border-color:var(--grn-s);background:var(--grn-s)}
+.conn.online .conn-dot{background:var(--grn)}
+.conn.offline{color:var(--brand);border-color:var(--brand-s);background:var(--brand-s)}
+.conn.offline .conn-dot{background:var(--brand)}
+
+.panel{background:var(--bg-e);border:1px solid var(--line);border-radius:var(--rl);
+  padding:20px 18px;box-shadow:var(--sh-sm);margin-bottom:14px}
+.pt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);
+  margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:10px}
+
+.fg{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--ink2)}
+label .req{color:var(--brand);margin-left:1px}
+input[type=text],input[type=date],input[type=time],input[type=password],textarea,select{
+  width:100%;padding:13px 12px;border:1px solid var(--line);border-radius:var(--rs);
+  font-size:16px;font-family:inherit;background:var(--surf);color:var(--ink);
+  transition:all .15s;font-weight:600}
+input::placeholder,textarea::placeholder{color:var(--muted);font-weight:400}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--ink);background:#fff;
+  box-shadow:0 0 0 3px rgba(26,29,31,.06)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c7177' d='M3 4.5l3 3 3-3z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r2>.fg{min-width:0}
+.r2 input,.r2 select{width:100%;box-sizing:border-box}
+
+.anfahrt-info{display:flex;align-items:flex-start;gap:8px;background:var(--blu-s);color:var(--blu);
+  border-radius:var(--rs);padding:11px 12px;font-size:13px;font-weight:700;margin-top:2px}
+.anfahrt-info svg{flex-shrink:0;margin-top:1px}
+.anfahrt-info.none{background:var(--surf);color:var(--ink3);font-weight:600}
+
+.btn-p{width:100%;padding:16px;background:var(--ink);color:#fff;font-size:15px;font-weight:800;
+  border:none;border-radius:var(--rs);cursor:pointer;font-family:inherit;box-shadow:var(--sh-sm);
+  transition:all .15s;letter-spacing:.01em}
+.btn-p:hover{background:var(--brand)}
+.btn-p:disabled{background:var(--muted);cursor:not-allowed}
+.btn-s{padding:9px 14px;background:#fff;color:var(--ink2);border:1px solid var(--line);
+  font-size:12px;font-weight:700;border-radius:var(--rs);cursor:pointer;font-family:inherit}
+.btn-s:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* Profil-Auswahl */
+#gate{position:fixed;inset:0;z-index:9998;background:radial-gradient(900px 500px at 50% 0%,rgba(209,26,44,.10),transparent 60%),#1a1d1f;
+  display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+#gate.hidden{display:none}
+.gate-card{background:var(--bg-e);border-radius:var(--rl);padding:26px 22px;width:100%;
+  max-width:400px;box-shadow:var(--sh-lg)}
+.gate-card h2{font-size:19px;font-weight:800;letter-spacing:-.02em;text-align:center}
+.gate-card p{font-size:12px;color:var(--ink3);margin:5px 0 20px;text-align:center;font-weight:600}
+.gate-err{color:var(--brand);font-size:12px;font-weight:700;margin-top:10px;min-height:16px;text-align:center}
+.pin-field{position:relative}
+.pin-field input{width:100%;padding:16px 12px;border:1px solid var(--line);border-radius:var(--rs);
+  background:var(--surf);font-size:16px;color:transparent;caret-color:var(--ink);text-align:center;font-family:inherit}
+.pin-field input:focus{outline:none;border-color:var(--ink);background:#fff;box-shadow:0 0 0 3px rgba(26,29,31,.06)}
+.pin-dots{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;gap:16px;pointer-events:none}
+.pin-dot{width:13px;height:13px;border-radius:50%;background:var(--line2);transition:transform .15s,background .15s}
+.pin-dot.filled{background:var(--ink);transform:scale(1.15)}
+
+/* Bestellungen-Liste */
+.ord{border:1px solid var(--line);border-left:4px solid var(--amb);border-radius:var(--r);
+  padding:13px 14px;margin-bottom:10px;background:var(--surf)}
+.ord.st-uebernommen{border-left-color:var(--blu)}
+.ord.st-erledigt{border-left-color:var(--grn);opacity:.6}
+.badge.bd-blu{background:var(--blu-s);color:var(--blu)}
+.badge.bd-grn{background:var(--grn-s);color:var(--grn)}
+.badge.bd-brand{background:var(--brand-s);color:var(--brand)}
+.ord-notiz{margin-top:8px;background:var(--amb-s);color:var(--amb-d,var(--amb));border-radius:var(--rs);
+  padding:9px 11px;font-size:12px;font-weight:700;display:flex;gap:8px;align-items:flex-start}
+.ord-notiz svg{flex-shrink:0;margin-top:1px}
+.ord-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.ord-h strong{font-size:14px;font-weight:800}
+.badge{padding:3px 9px;border-radius:100px;font-size:9px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.06em;background:var(--amb-s);color:var(--amb);white-space:nowrap}
+.ord.st-uebernommen .badge{background:var(--blu-s);color:var(--blu)}
+.ord.st-erledigt .badge{background:var(--grn-s);color:var(--grn)}
+.ord small{display:block;font-size:12px;color:var(--ink3);font-weight:600;line-height:1.6}
+.empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(120%);bottom:20px;
+  background:var(--ink);color:#fff;padding:13px 22px;border-radius:var(--r);font-size:13px;
+  font-weight:700;box-shadow:var(--sh-lg);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  z-index:9999;max-width:92vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--grn)}
+.toast.amber{background:var(--brand)}
+.errbar{position:fixed;top:0;left:0;right:0;z-index:99999;background:var(--brand-d);color:#fff;
+  padding:12px 16px;font:700 13px/1.45 'Plus Jakarta Sans',system-ui,sans-serif;text-align:center}
+
+/* Admin */
+.admin-link{background:none;border:none;color:rgba(255,255,255,.55);font-size:10px;font-weight:700;
+  text-decoration:underline;cursor:pointer;font-family:inherit;padding:4px}
+.modal-ov{position:fixed;inset:0;z-index:9999;background:rgba(15,18,22,.55);display:none;
+  align-items:flex-start;justify-content:center;padding:14px;overflow-y:auto}
+.modal-ov.show{display:flex}
+.modal{background:var(--bg-e);border-radius:var(--rl);width:100%;max-width:480px;
+  box-shadow:var(--sh-lg);margin:20px 0 40px;overflow:hidden}
+.modal-h{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;
+  border-bottom:1px solid var(--line)}
+.modal-h strong{font-size:15px;font-weight:800}
+.modal-x{background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;
+  width:30px;height:30px;border-radius:var(--rs)}
+.modal-x:hover{background:var(--surf)}
+.modal-b{padding:16px 18px;max-height:60vh;overflow-y:auto}
+.adm-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.adm-row .adm-main{font-weight:700}
+.adm-row .adm-sub{color:var(--ink3);font-weight:600;font-size:11px;margin-top:2px}
+.adm-row button{background:none;border:none;color:var(--brand);font-size:16px;cursor:pointer;
+  width:26px;height:26px;border-radius:4px}
+.adm-add{padding:14px 18px;border-top:1px solid var(--line);background:var(--surf)}
+.adm-add .r2{margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<!-- ===== ZUGANG (persönlicher PIN je Schachtmeister, oder Disponenten-PIN) ===== -->
+<div id="gate">
+  <div class="gate-card">
+    <h2>Bestell-Terminal</h2>
+    <p>Rudolf Hilgenroth GmbH &amp; Co. KG</p>
+
+    <div id="gatePinStep">
+      <div class="fg">
+        <label>Dein persönlicher PIN</label>
+        <div class="pin-field">
+          <input type="tel" id="pinInput" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="PIN">
+          <div class="pin-dots" id="pinDots">
+            <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+          </div>
+        </div>
+      </div>
+      <button class="btn-p" id="pinBtn">Anmelden</button>
+      <div class="gate-err" id="pinErr"></div>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" class="admin-link" style="color:var(--ink3)" onclick="openAdmin()">Admin-Zugang (Verwaltung)</button>
+      </div>
+    </div>
+
+    <div id="gateAdminStep" style="display:none">
+      <div class="fg">
+        <label>Für welchen Schachtmeister bestellst du?</label>
+        <select id="adminSmSelect"><option value="">— Schachtmeister wählen —</option></select>
+      </div>
+      <button class="btn-p" id="adminSmBtn">Bestellung aufgeben</button>
+      <div style="text-align:center;margin-top:14px">
+        <button type="button" class="admin-link" style="color:var(--ink3)" onclick="zeigePinStep()">Zurück</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Bestell-Terminal</h1>
+      <div class="sub" id="hdrSm">—</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <div class="conn" id="conn"><span class="conn-dot"></span><span id="connTxt">Verbinde…</span></div>
+      <button class="btn-s" id="adminSwitchBtn" style="font-size:11px;padding:5px 10px" onclick="anfordereSchachtmeisterWechsel()">🔁 Schachtmeister wechseln</button>
+    </div>
+  </header>
+
+
+  <div style="text-align:right;margin:-6px 2px 10px">
+    <button class="btn-s" onclick="openAdmin()" style="font-size:11px;padding:6px 10px">⚙ Admin</button>
+  </div>
+
+  <div class="panel" id="ntfyPanel" style="display:none">
+    <div class="pt" style="cursor:pointer" onclick="toggleNtfyBox()">
+      <span>🔔 Push-Benachrichtigungen einrichten</span>
+      <span id="ntfyToggleIcon" style="font-weight:400;color:var(--ink3)">▾</span>
+    </div>
+    <div id="ntfyBox">
+      <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">
+        So bekommst du Nachrichten der Dispo auch auf den Sperrbildschirm – einmalig einrichten:
+      </p>
+      <ol style="font-size:12px;color:var(--ink2);line-height:2;padding-left:18px;margin-bottom:12px">
+        <li>Kostenlose App <strong>„ntfy"</strong> aus dem App Store / Play Store installieren</li>
+        <li>App öffnen, auf <strong>„+"</strong> tippen und diesen Kanal eingeben:</li>
+      </ol>
+      <div style="background:var(--surf);border:1px solid var(--line);border-radius:var(--rs);padding:12px;
+        display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <code id="ntfyTopicText" style="font-size:13px;font-weight:800;letter-spacing:-.01em"></code>
+        <button class="btn-s" onclick="copyNtfyTopic()">Kopieren</button>
+      </div>
+      <a id="ntfyOpenLink" href="#" target="_blank" style="text-decoration:none">
+        <button class="btn-s" style="width:100%">Kanal direkt öffnen (falls App installiert)</button>
+      </a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Neue Bestellung</div>
+    <form id="ordForm">
+
+      <div class="fg">
+        <label>Baustelle <span class="req">*</span></label>
+        <select id="bstSelect" required><option value="">— Baustelle wählen —</option></select>
+      </div>
+
+      <div class="fg" id="anfahrtInfoWrap" style="display:none">
+        <label>Anfahrt zu dieser Baustelle</label>
+        <div class="anfahrt-info" id="anfahrtInfo"></div>
+      </div>
+
+      <div class="fg">
+        <label>Eigene Anfahrt-Angabe <span style="font-weight:400;color:var(--ink3);font-size:11px">(optional)</span></label>
+        <input type="text" id="anfahrtNotiz" placeholder="z.B. über Feldweg, Umleitung wegen Baustelle">
+      </div>
+
+      <div class="fg">
+        <label>Material <span class="req">*</span></label>
+        <select id="matSelect" required><option value="">— Material wählen —</option></select>
+      </div>
+
+      <div class="fg" id="matFreiWrap" style="display:none">
+        <label>Material (freie Eingabe) <span class="req">*</span></label>
+        <input type="text" id="matFrei" placeholder="z.B. Füllsand 0/2">
+      </div>
+
+      <div class="r2">
+        <div class="fg">
+          <label>Menge (in Tonnen) <span class="req">*</span></label>
+          <div style="position:relative">
+            <input type="number" id="menge" inputmode="decimal" min="0" step="0.5" placeholder="z.B. 20" required style="padding-right:34px">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--ink3);font-size:13px;pointer-events:none">t</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Fahrzeug</label>
+          <select id="fahrzeugtyp">
+            <option value="">— optional —</option>
+            <option>Sattel</option>
+            <option>3A</option>
+            <option>3A-Zug</option>
+            <option>Trecker</option>
+            <option>Kipper</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="r2">
+        <div class="fg">
+          <label>Benötigt am <span class="req">*</span></label>
+          <input type="date" id="datum" required>
+        </div>
+        <div class="fg">
+          <label>Uhrzeit</label>
+          <input type="time" id="uhrzeit">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Bemerkung</label>
+        <textarea id="bemerkung" placeholder="Weitere Hinweise für die Disposition"></textarea>
+      </div>
+
+      <button type="submit" class="btn-p" id="submitBtn">Bestellung absenden</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="pt"><span>Meine Bestellungen</span><span id="ordCount" style="font-weight:800;color:var(--ink)">0</span></div>
+    <div id="ordList"><div class="empty">Noch keine Bestellungen.</div></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN-MODAL ===== -->
+<div class="modal-ov" id="adminOv">
+  <div class="modal">
+    <div class="modal-h"><strong>Admin</strong><button class="modal-x" onclick="closeAdmin()">×</button></div>
+    <div class="modal-b" id="adminPwStep">
+      <div class="fg">
+        <label>Admin-Passwort</label>
+        <input type="password" id="adminPw" placeholder="Passwort" autocomplete="off">
+      </div>
+      <button class="btn-p" onclick="checkAdminPw()">Anmelden</button>
+      <div class="gate-err" id="adminPwErr"></div>
+    </div>
+    <div id="adminContent" style="display:none">
+      <div class="modal-b">
+        <strong style="font-size:12px;display:block;margin-bottom:6px">Schachtmeister &amp; PIN</strong>
+        <div id="admSmList"></div>
+      </div>
+      <div class="adm-add">
+        <div class="r2">
+          <input type="text" id="admSmName" placeholder="Name, Vorname">
+          <input type="text" id="admSmPhone" placeholder="Telefon (optional)">
+        </div>
+        <input type="text" id="admSmPin" placeholder="PIN (optional, falls kein Link genutzt wird)" inputmode="numeric" maxlength="6" style="margin-bottom:8px">
+        <button class="btn-s" onclick="admAddSm()" style="width:100%">+ Schachtmeister hinzufügen</button>
+      </div>
+      <div class="modal-b" style="border-top:1px solid var(--line)">
+        <strong style="font-size:12px;display:block;margin-bottom:6px">Baustellen</strong>
+        <div id="admBstList"></div>
+      </div>
+      <div class="adm-add">
+        <div class="r2">
+          <input type="text" id="admBstNr" placeholder="Nummer">
+          <input type="text" id="admBstName" placeholder="Name">
+        </div>
+        <input type="text" id="admBstAnfahrt" placeholder="Anfahrt, z.B. Vom Bahnhof" style="margin-bottom:8px">
+        <button class="btn-s" onclick="admAddBst()" style="width:100%">+ Baustelle hinzufügen</button>
+      </div>
+      <div class="modal-b" style="border-top:1px solid var(--line)">
+        <strong style="font-size:12px;display:block;margin-bottom:6px">Material</strong>
+        <div id="admMatList"></div>
+      </div>
+      <div class="adm-add">
+        <input type="text" id="admMatName" placeholder="Materialbezeichnung" style="margin-bottom:8px">
+        <button class="btn-s" onclick="admAddMat()" style="width:100%">+ Material hinzufügen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="updateOv">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-h"><strong id="updOvTitle">Update zu deiner Bestellung</strong><button class="modal-x" onclick="closeUpdateOv()">×</button></div>
+    <div class="modal-b" id="updOvBody"></div>
+    <div style="padding:0 18px 18px"><button class="btn-p" onclick="closeUpdateOv()">Verstanden</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== FIREBASE =====
+const cfg = {
+  apiKey: "AIzaSyAuU6mF5p5JQ5qvwLVbYUGc1v-HoQ8ZUMw",
+  authDomain: "dispo-hellefeld.firebaseapp.com",
+  databaseURL: "https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "dispo-hellefeld",
+  storageBucket: "dispo-hellefeld.firebasestorage.app",
+  messagingSenderId: "34994251645",
+  appId: "1:34994251645:web:2f8a076d385bb245354e14"
+};
+firebase.initializeApp(cfg);
+const db=firebase.database();
+
+const smRef=db.ref('schachtmeister');
+const bstRef=db.ref('baustellen');
+const bestRef=db.ref('bestellungen');
+const matRef=db.ref('bestellMaterialien');
+const connRef=db.ref('.info/connected');
+
+// ===== ZUGANG (persönlicher PIN pro Schachtmeister) =====
+function authErrorBanner(err){
+  const code=(err&&err.code)||'';
+  const msg = code==='auth/operation-not-allowed'
+    ? 'Anonyme Anmeldung ist im Firebase-Projekt nicht aktiviert.'
+    : code==='auth/unauthorized-domain'
+    ? 'Diese Domain ist in Firebase nicht freigegeben.'
+    : 'Anmeldung an der Datenbank fehlgeschlagen: '+((err&&err.message)||err);
+  let bar=document.getElementById('authErrBar');
+  if(!bar){bar=document.createElement('div');bar.id='authErrBar';bar.className='errbar';document.body.appendChild(bar);}
+  bar.textContent='\u26A0  '+msg;
+}
+// Anmeldung an Firebase läuft sofort und unabhängig vom persönlichen PIN –
+// erst so kann die Schachtmeister-Liste zum Abgleich des PINs geladen werden.
+const authReady = firebase.auth().signInAnonymously()
+  .catch(err=>{console.error('[Auth]',err);authErrorBanner(err);throw err;});
+
+// ===== STAMMDATEN =====
+const DFLT_MAT = [
+  'Füllsand','Frostschutz 0/32','Frostschutz 0/45','Schotter 0/32','Schotter 0/45',
+  'Recycling 0/45','Brechsand 0/3','Edelsplitt 2/5','Edelsplitt 5/8','Edelsplitt 8/11',
+  'Edelsplitt 11/16','Edelsplitt 16/22','Mutterboden','Rohrgrabenkies','Kies 8/16','Kies 16/32'
+];
+let schachtmeister=[], baustellen=[], materialien=[...DFLT_MAT];
+let meinSM=null, meineBestellungen=[];
+let _smListeReady=false, _pendingPinAttempt=false;
+
+function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function toast(msg,v){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(v?' '+v:'');setTimeout(()=>t.classList.remove('show'),2600)}
+function fmtDatum(iso){if(!iso)return'—';const p=String(iso).split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:iso}
+
+// ===== PIN-EINGABE =====
+function renderPinDots(){
+  const inp=document.getElementById('pinInput');
+  const box=document.getElementById('pinDots');
+  if(!inp||!box)return;
+  const len=inp.value.length;
+  const total=Math.max(4,len);
+  let html='';
+  for(let i=0;i<total;i++)html+='<span class="pin-dot'+(i<len?' filled':'')+'"></span>';
+  box.innerHTML=html;
+}
+function tryPin(){
+  const inp=document.getElementById('pinInput'), err=document.getElementById('pinErr');
+  const val=inp.value.trim();
+  if(!val){err.textContent='Bitte PIN eingeben';return;}
+  if(!_smListeReady){
+    // Schachtmeister-Liste ist noch nicht geladen – Eingabe merken und automatisch prüfen, sobald sie da ist
+    _pendingPinAttempt=true;
+    err.textContent='Einen Moment, Daten werden geladen…';
+    return;
+  }
+  pruefePin(val);
+}
+function pruefePin(val){
+  const err=document.getElementById('pinErr');
+  if(val===ADMIN_BESTELL_PIN){
+    err.textContent='';
+    _adminVerifiedThisSession=true;
+    zeigeAdminSmSchritt();
+    return;
+  }
+  const treffer=schachtmeister.find(s=>s.pin && String(s.pin)===val);
+  if(treffer){
+    try{localStorage.setItem('bestellPin',val);}catch(e){}
+    err.textContent='';
+    setProfil(treffer.name);
+  } else {
+    err.textContent='Falscher PIN';
+    document.getElementById('pinInput').value='';
+    renderPinDots();
+    document.getElementById('pinInput').focus();
+  }
+}
+document.getElementById('pinBtn').addEventListener('click',tryPin);
+document.getElementById('pinInput').addEventListener('input',renderPinDots);
+document.getElementById('pinInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryPin();}});
+setTimeout(()=>document.getElementById('pinInput').focus(),150);
+
+// ===== DISPONENTEN-MODUS (Admin-Bestell-PIN) =====
+const ADMIN_BESTELL_PIN='1999';
+let _isAdminOrder=false;
+let _adminVerifiedThisSession=false;
+function fuelleAdminSmSelect(){
+  const sel=document.getElementById('adminSmSelect');
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Schachtmeister wählen —</option>'
+    +schachtmeister.map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join('');
+  if(cur)sel.value=cur;
+}
+function zeigeAdminSmSchritt(){
+  document.getElementById('gate').classList.remove('hidden');
+  document.getElementById('gatePinStep').style.display='none';
+  document.getElementById('gateAdminStep').style.display='block';
+  fuelleAdminSmSelect();
+}
+function zeigePinStep(){
+  document.getElementById('gateAdminStep').style.display='none';
+  document.getElementById('gatePinStep').style.display='block';
+  document.getElementById('pinInput').value='';
+  document.getElementById('pinErr').textContent='';
+  renderPinDots();
+  document.getElementById('pinInput').focus();
+}
+document.getElementById('adminSmBtn').addEventListener('click',()=>{
+  const v=document.getElementById('adminSmSelect').value;
+  if(!v){toast('Bitte Schachtmeister wählen','amber');return;}
+  _isAdminOrder=true;
+  setProfil(v);
+});
+// Immer sichtbarer "Schachtmeister wechseln"-Button im Header: verlangt einmal pro
+// Sitzung erneut den 1999er-PIN, danach kann innerhalb derselben Sitzung frei
+// zwischen Schachtmeistern gewechselt werden, ohne den PIN jedes Mal neu einzugeben.
+window.anfordereSchachtmeisterWechsel=function(){
+  meinSM=null;
+  if(_adminVerifiedThisSession){
+    zeigeAdminSmSchritt();
+  } else {
+    document.getElementById('gate').classList.remove('hidden');
+    zeigePinStep();
+  }
+};
+window.adminSwitchSM=window.anfordereSchachtmeisterWechsel;
+function renderAdminSwitchBtn(){ /* Button ist jetzt dauerhaft sichtbar – nichts zu tun */ }
+
+function setProfil(name){
+  meinSM=name;
+  if(!_isAdminOrder){ try{localStorage.setItem('bestellSmName',name);}catch(e){} }
+  document.getElementById('hdrSm').textContent=name+(_isAdminOrder?' · Bestellung durch Disponent':'');
+  document.getElementById('gate').classList.add('hidden');
+  ladeMeineBestellungen();
+  if(_isAdminOrder){ document.getElementById('ntfyPanel').style.display='none'; }
+  else { zeigeNtfyBox(name); }
+  renderAdminSwitchBtn();
+}
+
+// ===== NTFY-PUSH-EINRICHTUNG =====
+function ntfySlug(name){
+  return String(name||'').toLowerCase()
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'unbekannt';
+}
+function zeigeNtfyBox(name){
+  const topic='hilgenroth-dispo-'+ntfySlug(name);
+  document.getElementById('ntfyPanel').style.display='block';
+  document.getElementById('ntfyTopicText').textContent=topic;
+  document.getElementById('ntfyOpenLink').href='https://ntfy.sh/'+encodeURIComponent(topic);
+  let collapsed=null; try{collapsed=localStorage.getItem('ntfyBoxCollapsed');}catch(e){}
+  if(collapsed==='1'){
+    document.getElementById('ntfyBox').style.display='none';
+    document.getElementById('ntfyToggleIcon').textContent='▸';
+  }
+}
+window.toggleNtfyBox=function(){
+  const box=document.getElementById('ntfyBox');
+  const icon=document.getElementById('ntfyToggleIcon');
+  const hidden=box.style.display==='none';
+  box.style.display=hidden?'block':'none';
+  icon.textContent=hidden?'▾':'▸';
+  try{localStorage.setItem('ntfyBoxCollapsed',hidden?'0':'1');}catch(e){}
+};
+window.copyNtfyTopic=function(){
+  const txt=document.getElementById('ntfyTopicText').textContent;
+  navigator.clipboard?.writeText(txt).then(()=>toast('Kanalname kopiert','success'))
+    .catch(()=>toast('Kopieren nicht möglich – bitte manuell markieren','amber'));
+};
+
+// ===== DATEN LADEN (nach Auth) =====
+connRef.on('value',s=>{
+  const el=document.getElementById('conn'), tx=document.getElementById('connTxt');
+  if(s.val()===true){el.className='conn online';tx.textContent='Online'}
+  else{el.className='conn offline';tx.textContent='Offline'}
+});
+
+authReady.then(()=>{
+  smRef.on('value',s=>{
+    const v=s.val();
+    schachtmeister=Array.isArray(v)?v:[];
+    _smListeReady=true;
+    if(!meinSM){
+      let treffer=null;
+      // 1) Persönlicher Link (?sm=slug) hat Vorrang – reicht allein, kein PIN nötig
+      const smParam=new URLSearchParams(location.search).get('sm');
+      if(smParam) treffer=schachtmeister.find(x=>ntfySlug(x.name)===ntfySlug(smParam));
+      // 2) Zuvor auf diesem Gerät angemeldeter Name
+      if(!treffer){
+        let savedName=null; try{savedName=localStorage.getItem('bestellSmName');}catch(e){}
+        if(savedName) treffer=schachtmeister.find(x=>x.name===savedName);
+      }
+      // 3) Zuvor eingegebener PIN
+      if(!treffer){
+        let savedPin=null; try{savedPin=localStorage.getItem('bestellPin');}catch(e){}
+        if(savedPin) treffer=schachtmeister.find(x=>x.pin&&String(x.pin)===savedPin);
+      }
+      if(treffer){ setProfil(treffer.name); }
+      else if(_pendingPinAttempt){ _pendingPinAttempt=false; pruefePin(document.getElementById('pinInput').value.trim()); }
+    }
+    fuelleAdminSmSelect();
+    renderAdminLists();
+  });
+
+  bstRef.on('value',s=>{
+    const v=s.val();
+    baustellen=Array.isArray(v)?v:[];
+    const sel=document.getElementById('bstSelect');
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— Baustelle wählen —</option>'
+      +baustellen.map(b=>'<option value="'+esc(b.nr)+'">'+esc(b.nr)+' – '+esc(b.name)+'</option>').join('');
+    if(cur)sel.value=cur;
+    zeigeAnfahrt();
+    renderAdminLists();
+  });
+
+  matRef.on('value',s=>{
+    const v=s.val();
+    materialien=(Array.isArray(v)&&v.length)?v:[...DFLT_MAT];
+    const sel=document.getElementById('matSelect');
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— Material wählen —</option>'
+      +materialien.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('')
+      +'<option value="__frei">✎ Anderes Material…</option>';
+    if(cur)sel.value=cur;
+    renderAdminLists();
+  });
+
+  bestRef.on('value',s=>{
+    const v=s.val()||{};
+    checkMeineAenderungen(v);
+    meineBestellungen=Object.entries(v).map(([id,b])=>({id,...b}));
+    renderMeine();
+  });
+}).catch(()=>{});
+
+document.getElementById('matSelect').addEventListener('change',function(){
+  const frei=this.value==='__frei';
+  document.getElementById('matFreiWrap').style.display=frei?'block':'none';
+  if(frei)document.getElementById('matFrei').focus();
+});
+
+function zeigeAnfahrt(){
+  const nr=document.getElementById('bstSelect').value;
+  const wrap=document.getElementById('anfahrtInfoWrap');
+  const box=document.getElementById('anfahrtInfo');
+  if(!nr){wrap.style.display='none';return;}
+  const b=baustellen.find(x=>x.nr===nr);
+  wrap.style.display='block';
+  if(b&&b.anfahrt){
+    box.className='anfahrt-info';
+    box.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'+esc(b.anfahrt);
+  } else {
+    box.className='anfahrt-info none';
+    box.textContent='Keine Anfahrt hinterlegt';
+  }
+}
+document.getElementById('bstSelect').addEventListener('change',zeigeAnfahrt);
+
+// ===== BESTELLUNG ABSENDEN =====
+document.getElementById('ordForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  if(!meinSM){toast('Bitte zuerst Profil wählen','amber');return;}
+
+  const bstNr=document.getElementById('bstSelect').value;
+  const bst=baustellen.find(b=>b.nr===bstNr);
+  let material=document.getElementById('matSelect').value;
+  if(material==='__frei')material=document.getElementById('matFrei').value.trim();
+
+  if(!bstNr){toast('Bitte Baustelle wählen','amber');return;}
+  if(!material){toast('Bitte Material angeben','amber');return;}
+  const mengeVal=document.getElementById('menge').value.trim();
+  if(!mengeVal||isNaN(parseFloat(mengeVal))){toast('Bitte Menge in Tonnen angeben','amber');return;}
+  const uhrzeitVal=document.getElementById('uhrzeit').value;
+
+  const sm=schachtmeister.find(x=>x.name===meinSM);
+  const rec={
+    sm:meinSM,
+    tel:(sm&&sm.phone)||'',
+    bstNr:bstNr,
+    bstName:(bst&&bst.name)||'',
+    material:material,
+    menge:mengeVal+' t',
+    fahrzeugtyp:document.getElementById('fahrzeugtyp').value,
+    datum:document.getElementById('datum').value,
+    uhrzeit:uhrzeitVal?uhrzeitVal+' Uhr':'',
+    anfahrt:(bst&&bst.anfahrt)||'',
+    anfahrtNotiz:document.getElementById('anfahrtNotiz').value.trim(),
+    bemerkung:document.getElementById('bemerkung').value.trim(),
+    status:'offen',
+    createdAt:firebase.database.ServerValue.TIMESTAMP
+  };
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true; btn.textContent='Wird gesendet…';
+  bestRef.push(rec).then(()=>{
+    toast('Bestellung abgeschickt','success');
+    document.getElementById('ordForm').reset();
+    document.getElementById('matFreiWrap').style.display='none';
+  }).catch(err=>{
+    toast('Fehler: '+err.message,'amber');
+  }).finally(()=>{
+    btn.disabled=false; btn.textContent='Bestellung absenden';
+  });
+});
+
+// ===== EIGENE BESTELLUNGEN =====
+function ladeMeineBestellungen(){ renderMeine(); }
+function renderMeine(){
+  const box=document.getElementById('ordList');
+  if(!box)return;
+  if(!meinSM){box.innerHTML='<div class="empty">Noch keine Bestellungen.</div>';return;}
+  const list=meineBestellungen.filter(b=>b.sm===meinSM)
+    .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,15);
+  document.getElementById('ordCount').textContent=list.length;
+  if(!list.length){box.innerHTML='<div class="empty">Noch keine Bestellungen.</div>';return;}
+  box.innerHTML=list.map(b=>{
+    const cardCls=b.erledigt?'st-erledigt':(b.uebernommen||b.beauftragt)?'st-uebernommen':'';
+    const badges=[];
+    if(b.erledigt)badges.push('<span class="badge bd-grn">Erledigt</span>');
+    else{
+      if(!b.uebernommen&&!b.beauftragt)badges.push('<span class="badge">Offen</span>');
+      if(b.uebernommen)badges.push('<span class="badge bd-blu">In Auftrag übernommen</span>');
+      if(b.beauftragt)badges.push('<span class="badge bd-brand">In Auftrag gegeben</span>');
+    }
+    return '<div class="ord '+cardCls+'">'
+      +'<div class="ord-h"><strong>'+esc(b.material)+(b.menge?' · '+esc(b.menge):'')+(b.fahrzeugtyp?' · '+esc(b.fahrzeugtyp):'')+'</strong>'
+      +'<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">'+badges.join('')+'</div></div>'
+      +'<small>'+esc(b.bstNr)+' – '+esc(b.bstName)+'</small>'
+      +'<small>Benötigt: '+fmtDatum(b.datum)+(b.uhrzeit?' · '+esc(b.uhrzeit):'')+'</small>'
+      +(b.anfahrt?'<small>Anfahrt: '+esc(b.anfahrt)+'</small>':'')
+      +(b.anfahrtNotiz?'<small>Eigene Angabe: '+esc(b.anfahrtNotiz)+'</small>':'')
+      +(b.bemerkung?'<small>'+esc(b.bemerkung)+'</small>':'')
+      +(b.dispoNotiz?'<div class="ord-notiz"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'+esc(b.dispoNotiz)+'</div>':'')
+      +'</div>';
+  }).join('');
+}
+
+// ===== ÄNDERUNGEN AN EIGENEN BESTELLUNGEN ERKENNEN =====
+let _prevBestSnapshot=null;
+let _updQueue=[];
+function playUpdateSound(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const t0=ctx.currentTime;
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=740;
+    gain.gain.setValueAtTime(0.0001,t0);
+    gain.gain.exponentialRampToValueAtTime(0.25,t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001,t0+0.22);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+0.24);
+  }catch(e){}
+}
+function checkMeineAenderungen(v){
+  if(!meinSM){ _prevBestSnapshot=v; return; }
+  if(_prevBestSnapshot===null){ _prevBestSnapshot=v; return; }
+  Object.keys(v).forEach(id=>{
+    const cur=v[id], prev=_prevBestSnapshot[id];
+    if(cur.sm!==meinSM)return;
+    if(!prev){ return; } // neue eigene Bestellung selbst gerade erst abgeschickt – kein Alarm nötig
+    const meldungen=[];
+    if(cur.beauftragt && !prev.beauftragt) meldungen.push('Deine Bestellung <strong>'+esc(cur.material||'')+' · '+esc(cur.bstName||'')+'</strong> wurde als "in Auftrag gegeben" markiert.');
+    if(cur.dispoNotiz && cur.dispoNotiz!==prev.dispoNotiz) meldungen.push('Neue Nachricht der Dispo zu <strong>'+esc(cur.material||'')+' · '+esc(cur.bstName||'')+'</strong>:<br>„'+esc(cur.dispoNotiz)+'"');
+    meldungen.forEach(m=>{ _updQueue.push(m); });
+  });
+  _prevBestSnapshot=v;
+  if(_updQueue.length) showNextUpdate();
+}
+let _updShowing=false;
+function showNextUpdate(){
+  if(!_updQueue.length){_updShowing=false;return;}
+  if(_updShowing)return;
+  _updShowing=true;
+  playUpdateSound();
+  document.getElementById('updOvBody').innerHTML='<div style="font-size:13px;line-height:1.6">'+_updQueue[0]+'</div>';
+  document.getElementById('updateOv').classList.add('show');
+}
+window.closeUpdateOv=function(){
+  _updQueue.shift();
+  document.getElementById('updateOv').classList.remove('show');
+  _updShowing=false;
+  setTimeout(showNextUpdate,250);
+};
+
+// Datum-Vorgabe: morgen
+(function(){
+  const d=new Date(); d.setDate(d.getDate()+1);
+  document.getElementById('datum').value=d.toISOString().slice(0,10);
+})();
+
+// ===== ADMIN =====
+const ADMIN_PW='Hilgenroth8!';
+let adminUnlocked=false;
+
+function openAdmin(){
+  document.getElementById('adminOv').classList.add('show');
+  let saved=null; try{saved=sessionStorage.getItem('bestellAdmin');}catch(e){}
+  if(saved===ADMIN_PW){ adminUnlocked=true; showAdminContent(); }
+  else {
+    adminUnlocked=false;
+    document.getElementById('adminPwStep').style.display='block';
+    document.getElementById('adminContent').style.display='none';
+    document.getElementById('adminPw').value='';
+    document.getElementById('adminPwErr').textContent='';
+    setTimeout(()=>document.getElementById('adminPw').focus(),100);
+  }
+}
+function closeAdmin(){ document.getElementById('adminOv').classList.remove('show'); }
+function checkAdminPw(){
+  const v=document.getElementById('adminPw').value;
+  if(v===ADMIN_PW){
+    try{sessionStorage.setItem('bestellAdmin',ADMIN_PW);}catch(e){}
+    adminUnlocked=true;
+    showAdminContent();
+  } else {
+    document.getElementById('adminPwErr').textContent='Falsches Passwort';
+  }
+}
+function showAdminContent(){
+  document.getElementById('adminPwStep').style.display='none';
+  document.getElementById('adminContent').style.display='block';
+  renderAdminLists();
+}
+document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkAdminPw();}});
+
+function renderAdminLists(){
+  if(!adminUnlocked)return;
+  const sl=document.getElementById('admSmList');
+  if(sl){
+    sl.innerHTML=!schachtmeister.length
+      ? '<div style="padding:10px 0;color:var(--muted);font-size:12px">Noch keine Schachtmeister.</div>'
+      : schachtmeister.map((s,i)=>
+        '<div class="adm-row" style="grid-template-columns:1fr auto auto"><div><div class="adm-main">'+esc(s.name)+'</div>'
+        +'<div class="adm-sub">'+(s.phone?esc(s.phone)+' · ':'')+(s.pin?'zusätzlich per PIN: '+esc(s.pin):'nur per Link')+'</div></div>'
+        +'<button onclick="admCopySmLink('+i+')" title="Persönlichen Link kopieren" style="font-size:11px;width:auto;padding:0 8px;color:var(--ink2)">🔗 Link</button>'
+        +'<button onclick="admDelSm('+i+')" title="Löschen">×</button></div>'
+      ).join('');
+  }
+  const bl=document.getElementById('admBstList');
+  if(bl){
+    bl.innerHTML=!baustellen.length
+      ? '<div style="padding:10px 0;color:var(--muted);font-size:12px">Noch keine Baustellen.</div>'
+      : baustellen.map((b,i)=>
+        '<div class="adm-row"><div><div class="adm-main">'+esc(b.nr)+' – '+esc(b.name)+'</div>'
+        +'<div class="adm-sub">'+(b.anfahrt?esc(b.anfahrt):'keine Anfahrt hinterlegt')+'</div></div>'
+        +'<button onclick="admDelBst('+i+')" title="Löschen">×</button></div>'
+      ).join('');
+  }
+  const ml=document.getElementById('admMatList');
+  if(ml){
+    ml.innerHTML=!materialien.length
+      ? '<div style="padding:10px 0;color:var(--muted);font-size:12px">Noch kein Material.</div>'
+      : materialien.map((m,i)=>
+        '<div class="adm-row"><div class="adm-main">'+esc(m)+'</div>'
+        +'<button onclick="admDelMat('+i+')" title="Löschen">×</button></div>'
+      ).join('');
+  }
+}
+window.admAddSm=function(){
+  const n=document.getElementById('admSmName').value.trim();
+  const p=document.getElementById('admSmPhone').value.trim();
+  const pin=document.getElementById('admSmPin').value.trim();
+  if(!n){toast('Name eingeben','amber');return;}
+  if(pin && schachtmeister.some(s=>s.pin===pin)){toast('PIN wird schon verwendet','amber');return;}
+  const neu=[...schachtmeister,{name:n,phone:p,pin:pin}];
+  smRef.set(neu).then(()=>{
+    document.getElementById('admSmName').value='';
+    document.getElementById('admSmPhone').value='';
+    document.getElementById('admSmPin').value='';
+    toast('Schachtmeister hinzugefügt','success');
+  }).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+window.admDelSm=function(i){
+  if(!confirm('Schachtmeister "'+schachtmeister[i].name+'" entfernen?'))return;
+  const neu=schachtmeister.filter((_,j)=>j!==i);
+  smRef.set(neu).then(()=>toast('Gelöscht','success')).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+window.admCopySmLink=function(i){
+  const s=schachtmeister[i]; if(!s)return;
+  const link=location.origin+location.pathname+'?sm='+encodeURIComponent(ntfySlug(s.name));
+  navigator.clipboard?.writeText(link).then(()=>toast('Link für '+s.name+' kopiert','success'))
+    .catch(()=>toast('Kopieren nicht möglich: '+link,'amber'));
+};
+window.admAddBst=function(){
+  const nr=document.getElementById('admBstNr').value.trim();
+  const name=document.getElementById('admBstName').value.trim();
+  const anfahrt=document.getElementById('admBstAnfahrt').value.trim();
+  if(!nr||!name){toast('Nummer und Name eingeben','amber');return;}
+  if(baustellen.find(b=>b.nr===nr)){toast('Nummer bereits vorhanden','amber');return;}
+  const neu=[...baustellen,{nr,name,anfahrt}].sort((a,b)=>a.nr.localeCompare(b.nr,undefined,{numeric:true}));
+  bstRef.set(neu).then(()=>{
+    document.getElementById('admBstNr').value='';
+    document.getElementById('admBstName').value='';
+    document.getElementById('admBstAnfahrt').value='';
+    toast('Baustelle hinzugefügt','success');
+  }).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+window.admDelBst=function(i){
+  if(!confirm('Baustelle "'+baustellen[i].nr+' – '+baustellen[i].name+'" löschen?'))return;
+  const neu=baustellen.filter((_,j)=>j!==i);
+  bstRef.set(neu).then(()=>toast('Gelöscht','success')).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+window.admAddMat=function(){
+  const name=document.getElementById('admMatName').value.trim();
+  if(!name){toast('Bezeichnung eingeben','amber');return;}
+  if(materialien.includes(name)){toast('Bereits vorhanden','amber');return;}
+  const neu=[...materialien,name];
+  matRef.set(neu).then(()=>{
+    document.getElementById('admMatName').value='';
+    toast('Material hinzugefügt','success');
+  }).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+window.admDelMat=function(i){
+  if(!confirm('Material "'+materialien[i]+'" löschen?'))return;
+  const neu=materialien.filter((_,j)=>j!==i);
+  matRef.set(neu).then(()=>toast('Gelöscht','success')).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+</script>
+</body>
+</html>
