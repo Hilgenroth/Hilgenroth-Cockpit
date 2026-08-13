@@ -9,292 +9,257 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F8FA;color:#1B1D22;font-size:14px;display:flex;flex-direction:column;}
 :root{
-  --red:#C8102E;--red-dark:#9E0C24;--red-light:#FCE9EC;
+  --red:#C8102E;--red-d:#9E0C24;--red-l:#FCE9EC;
   --ink:#1B1D22;--slate:#4A4F58;--muted:#8A909B;
   --line:#E6E8EC;--bg:#F7F8FA;--white:#fff;
-  --green:#16a34a;--green-light:#dcfce7;
-  --amber:#d97706;--amber-light:#fef3c7;
+  --green:#16a34a;--green-l:#dcfce7;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --purple:#7c3aed;--purple-l:#ede9fe;
 }
-body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh;}
 
-/* ── Header ── */
-.page-header{
-  background:var(--white);border-bottom:2px solid var(--red);
-  padding:0 28px;height:58px;display:flex;align-items:center;
-  gap:16px;position:sticky;top:0;z-index:50;
-  box-shadow:0 1px 4px rgba(0,0,0,.06);
-}
-.page-header .logo-sq{
-  width:32px;height:32px;background:var(--red);border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#fff;
-}
-.page-title{font-size:15px;font-weight:600;color:var(--ink);}
-.page-sub{font-size:11px;color:var(--muted);margin-left:2px;}
-.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
-.btn{
-  height:34px;padding:0 16px;border-radius:6px;font-size:13px;font-weight:500;
-  font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;
-  display:inline-flex;align-items:center;gap:6px;transition:all .14s;
-}
-.btn-primary{background:var(--red);color:#fff;}
-.btn-primary:hover{background:var(--red-dark);}
-.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--slate);}
-.btn-ghost:hover{border-color:var(--muted);color:var(--ink);}
-.btn-sm{height:28px;padding:0 10px;font-size:12px;border-radius:5px;}
+/* Header */
+.hdr{height:52px;background:var(--white);border-bottom:2px solid var(--red);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.logo{width:30px;height:30px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#fff;flex-shrink:0;}
+.hdr-t{font-size:13px;font-weight:600;}
+.hdr-s{font-size:10px;color:var(--muted);}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:6px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--amber);}
+.sdot.on{background:var(--green);}
+.slbl{font-size:11px;color:var(--muted);}
 
-/* ── Layout ── */
-.layout{display:flex;height:calc(100vh - 58px);}
-.sidebar{
-  width:220px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);
-  overflow-y:auto;padding:16px 0;
-}
-.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 16px 8px;}
-.cat-btn{
-  width:100%;text-align:left;padding:9px 16px;background:none;border:none;cursor:pointer;
-  font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:var(--slate);
-  display:flex;align-items:center;gap:8px;transition:background .12s,color .12s;
-  border-left:3px solid transparent;
-}
-.cat-btn:hover{background:var(--bg);color:var(--ink);}
-.cat-btn.active{background:var(--red-light);color:var(--red);border-left-color:var(--red);}
-.cat-btn svg{width:15px;height:15px;flex-shrink:0;stroke-width:1.8;}
+/* Nav */
+.nav{display:flex;background:var(--white);border-bottom:1px solid var(--line);padding:0 20px;flex-shrink:0;}
+.ntab{height:40px;padding:0 14px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px;transition:color .14s,border-color .14s;}
+.ntab:hover{color:var(--ink);}
+.ntab.on{color:var(--red);border-bottom-color:var(--red);font-weight:600;}
+.ntab svg{width:14px;height:14px;stroke-width:1.8;}
 
-/* ── Main ── */
-.main{flex:1;overflow-y:auto;padding:24px 28px;}
-.section-header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:18px;gap:12px;
-}
-.section-title{font-size:17px;font-weight:600;color:var(--ink);}
-.search-wrap{position:relative;}
-.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--muted);stroke-width:2;pointer-events:none;}
-.search-input{
-  height:34px;padding:0 12px 0 34px;border:1px solid var(--line);border-radius:6px;
-  font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--white);
-  width:240px;transition:border-color .14s;
-}
-.search-input:focus{outline:none;border-color:var(--red);}
+/* Layout */
+.wrap{display:flex;flex:1;overflow:hidden;}
+.side{width:185px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);padding:10px 0;overflow-y:auto;}
+.side-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 12px 6px;}
+.scat{width:100%;text-align:left;padding:7px 12px;background:none;border:none;border-left:3px solid transparent;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;color:var(--slate);display:flex;align-items:center;gap:6px;transition:.12s;}
+.scat:hover{background:var(--bg);color:var(--ink);}
+.scat.on{background:var(--red-l);color:var(--red);border-left-color:var(--red);}
+.scat svg{width:13px;height:13px;stroke-width:1.8;flex-shrink:0;}
 
-/* ── Table ── */
-.table-wrap{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+/* Main */
+.main{flex:1;overflow-y:auto;padding:18px 22px;}
+
+/* Buttons */
+.btn{height:30px;padding:0 13px;border-radius:6px;font-size:12px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:.14s;white-space:nowrap;}
+.btn-p{background:var(--red);color:#fff;}.btn-p:hover{background:var(--red-d);}
+.btn-g{background:transparent;border:1px solid var(--line);color:var(--slate);}.btn-g:hover{border-color:var(--muted);color:var(--ink);}
+.btn-sm{height:26px;padding:0 9px;font-size:11px;border-radius:4px;}
+
+/* Search */
+.sbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.swrap{position:relative;flex:1;max-width:380px;}
+.swrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--muted);stroke-width:2;pointer-events:none;}
+.sinp{width:100%;height:34px;padding:0 10px 0 30px;border:1px solid var(--line);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--white);}
+.sinp:focus{outline:none;border-color:var(--red);}
+
+/* Compare */
+.cmpbox{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px;}
+.cmphd{padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;}
+.cmpcards{display:flex;flex-wrap:wrap;gap:10px;padding:12px 14px;}
+.ccard{border:1px solid var(--line);border-radius:7px;padding:10px 14px;min-width:160px;cursor:pointer;transition:.14s;position:relative;}
+.ccard:hover{border-color:var(--red);}
+.ccard.best{border-color:var(--green);background:var(--green-l);}
+.ccard .cl{font-size:12px;font-weight:600;margin-bottom:3px;}
+.ccard .cp{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--green);}
+.ccard .cn{font-size:11px;color:var(--muted);margin-top:3px;}
+.ccard .cb{position:absolute;top:5px;right:7px;font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;}
+.ccard .ca{font-size:12px;color:var(--amber);font-weight:500;}
+
+/* Table */
+.twrap{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
 .tbl{width:100%;border-collapse:collapse;}
-.tbl th{
-  background:var(--bg);padding:10px 14px;text-align:left;
-  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
-  border-bottom:1px solid var(--line);white-space:nowrap;
-}
-.tbl td{
-  padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle;
-  font-size:13px;color:var(--ink);
-}
+.tbl th{background:var(--bg);padding:8px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
 .tbl tr:last-child td{border-bottom:none;}
 .tbl tr:hover td{background:var(--bg);}
-.tbl .mono{font-family:'IBM Plex Mono',monospace;font-size:13px;}
-.tbl .lieferant{font-weight:500;color:var(--ink);}
-.tbl .material{color:var(--slate);}
-.tbl .preis-cell{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--green);}
-.tbl .preis-cell.auf-anfrage{color:var(--amber);font-size:11px;font-weight:500;}
-.badge{
-  display:inline-block;font-size:10px;font-weight:600;letter-spacing:.04em;
-  padding:2px 7px;border-radius:4px;
-}
-.badge-green{background:var(--green-light);color:var(--green);}
-.badge-amber{background:var(--amber-light);color:var(--amber);}
-.badge-red{background:var(--red-light);color:var(--red-dark);}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+.p-val{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--green);}
+.p-afr{color:var(--amber);font-size:11px;font-weight:500;}
+.badge{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.04em;padding:2px 6px;border-radius:4px;}
+.ts{background:var(--green-l);color:var(--green);}
+.ta{background:var(--amber-l);color:var(--amber);}
+.tb{background:var(--blue-l);color:var(--blue);}
+.tsc{background:var(--purple-l);color:var(--purple);}
+.to{background:var(--line);color:var(--slate);}
+.tp{background:var(--red-l);color:var(--red-d);}
+.ra{display:flex;gap:3px;opacity:0;transition:.12s;}
+tr:hover .ra{opacity:1;}
+.ib{width:25px;height:25px;border-radius:4px;border:1px solid var(--line);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ib svg{width:12px;height:12px;stroke-width:1.8;}
+.ib.e:hover{border-color:var(--red);color:var(--red);}
+.ib.d:hover{border-color:#ef4444;color:#ef4444;}
 
-/* Edit & Delete buttons */
-.row-actions{display:flex;gap:4px;opacity:0;transition:opacity .12s;}
-tr:hover .row-actions{opacity:1;}
-.icon-btn{
-  width:28px;height:28px;border-radius:5px;border:1px solid var(--line);
-  background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:all .12s;
-}
-.icon-btn svg{width:14px;height:14px;stroke-width:1.8;}
-.icon-btn.edit:hover{border-color:var(--red);color:var(--red);}
-.icon-btn.del:hover{border-color:#ef4444;color:#ef4444;}
+/* Cards */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.lcard{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:12px 14px;cursor:pointer;transition:.14s;}
+.lcard:hover{border-color:var(--red);}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;}
+.pcard{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:14px;cursor:pointer;transition:.14s;}
+.pcard:hover{border-color:var(--red);}
 
-/* ── Modal ── */
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,.35);
-  display:none;align-items:center;justify-content:center;z-index:200;
-}
-.modal-backdrop.open{display:flex;}
-.modal{
-  background:var(--white);border-radius:12px;padding:28px;
-  width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;
-  box-shadow:0 8px 32px rgba(0,0,0,.15);
-}
-.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;color:var(--ink);}
-.form-row{margin-bottom:14px;}
-.form-label{font-size:12px;font-weight:500;color:var(--slate);margin-bottom:5px;display:block;letter-spacing:.02em;}
-.form-input,.form-select{
-  width:100%;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:6px;
-  font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--white);
-  transition:border-color .14s;
-}
-.form-input:focus,.form-select:focus{outline:none;border-color:var(--red);}
-.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:22px;}
+/* Back */
+.back{display:flex;align-items:center;gap:7px;margin-bottom:14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--slate);}
+.back:hover{color:var(--red);}
+.back svg{width:15px;height:15px;stroke-width:2;}
 
-/* Spinner */
-.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-left:8px;vertical-align:middle;transition:background .3s;}
-.sync-dot.saving{background:var(--amber);}
-.sync-dot.saved{background:var(--green);}
+/* Phead */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+.pht{font-size:15px;font-weight:600;}
 
-/* Empty state */
-.empty{padding:48px;text-align:center;color:var(--muted);}
-.empty svg{width:40px;height:40px;stroke:var(--muted);margin-bottom:12px;opacity:.4;}
+/* Modal */
+.bd{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:200;}
+.bd.on{display:flex;}
+.md{background:var(--white);border-radius:10px;padding:22px;width:440px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.14);}
+.mdt{font-size:14px;font-weight:600;margin-bottom:16px;}
+.fr{margin-bottom:11px;}
+.fr label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);display:block;margin-bottom:4px;}
+.fi,.fs{width:100%;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--white);}
+.fi:focus,.fs:focus{outline:none;border-color:var(--red);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ma{display:flex;gap:7px;justify-content:flex-end;margin-top:16px;}
+.std-box{background:var(--bg);border-radius:6px;padding:7px 10px;font-size:11px;color:var(--muted);margin-top:2px;}
+
+.empty{padding:36px;text-align:center;color:var(--muted);}
+.empty svg{width:34px;height:34px;stroke:var(--muted);margin-bottom:10px;opacity:.3;display:block;margin:0 auto 10px;}
 </style>
 </head>
 <body>
 
-<header class="page-header">
-  <div class="logo-sq">RH</div>
-  <div>
-    <div class="page-title">Einkauf – Materialliste</div>
-    <div class="page-sub">Rudolf Hilgenroth GmbH &amp; Co. KG · Hellefeld</div>
-  </div>
-  <div class="header-actions">
-    <span id="sync-status" style="font-size:12px;color:var(--muted)">gespeichert <span class="sync-dot saved" id="sync-dot"></span></span>
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="search-input" type="text" placeholder="Suchen …" id="search-input" oninput="renderTable()">
-    </div>
-    <button class="btn btn-primary" onclick="openModal()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Neues Material
-    </button>
-  </div>
-</header>
-
-<div class="layout">
-  <aside class="sidebar">
-    <div class="sidebar-label">Kategorien</div>
-    <button class="cat-btn active" data-cat="alle" onclick="setCategory('alle',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      Alle Materialien
-    </button>
-    <button class="cat-btn" data-cat="Gesteinskörnung & Sand" onclick="setCategory('Gesteinskörnung & Sand',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18M3 21l4-8h10l4 8M7 13V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v8"/></svg>
-      Gesteinskörnung &amp; Sand
-    </button>
-    <button class="cat-btn" data-cat="Asphalt" onclick="setCategory('Asphalt',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 17h18M3 17l3-11h12l3 11"/></svg>
-      Asphalt
-    </button>
-    <button class="cat-btn" data-cat="Beton" onclick="setCategory('Beton',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M7 8V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/></svg>
-      Beton
-    </button>
-    <button class="cat-btn" data-cat="Schmierstoffe" onclick="setCategory('Schmierstoffe',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Schmierstoffe
-    </button>
-    <button class="cat-btn" data-cat="Sonstige" onclick="setCategory('Sonstige',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Sonstige
-    </button>
-  </aside>
-
-  <main class="main">
-    <div class="section-header">
-      <div class="section-title" id="section-title">Alle Materialien</div>
-      <span id="count-label" style="font-size:12px;color:var(--muted)"></span>
-    </div>
-    <div class="table-wrap">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th>Lieferant</th>
-            <th>Material / Sorte</th>
-            <th>Kategorie</th>
-            <th>EK-Preis 2026</th>
-            <th>Einheit</th>
-            <th>Notiz</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-      </table>
-      <div class="empty" id="empty-state" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <p>Keine Einträge gefunden</p>
-      </div>
-    </div>
-  </main>
+<div class="hdr">
+  <div class="logo">RH</div>
+  <div><div class="hdr-t">Einkauf – Materialliste</div><div class="hdr-s">Rudolf Hilgenroth GmbH & Co. KG · Hellefeld</div></div>
+  <div class="hdr-r"><span class="sdot" id="sdot"></span><span class="slbl" id="slbl">verbinde …</span></div>
 </div>
 
-<!-- Modal -->
-<div class="modal-backdrop" id="modal">
-  <div class="modal">
-    <div class="modal-title" id="modal-title">Neues Material</div>
-    <div class="form-row">
-      <label class="form-label">Lieferant *</label>
-      <input class="form-input" id="f-lieferant" placeholder="z.B. Mineral Berge Diabas">
+<div class="nav">
+  <button class="ntab on" id="nt-preise" onclick="goTab('preise')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Preise &amp; Vergleich
+  </button>
+  <button class="ntab" id="nt-lief" onclick="goTab('lief')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Lieferanten
+  </button>
+  <button class="ntab" id="nt-proj" onclick="goTab('proj')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projektpreise
+  </button>
+</div>
+
+<div class="wrap">
+  <aside class="side" id="side">
+    <div class="side-lbl">Kategorien</div>
+    <button class="scat on" onclick="goKat('alle',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Alle</button>
+    <button class="scat" onclick="goKat('Gesteinskörnung & Sand',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18M3 21l4-8h10l4 8"/></svg>Gesteinskörnung &amp; Sand</button>
+    <button class="scat" onclick="goKat('Asphalt',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 17h18M3 17l3-11h12l3 11"/></svg>Asphalt</button>
+    <button class="scat" onclick="goKat('Beton',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M7 8V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/></svg>Beton</button>
+    <button class="scat" onclick="goKat('Schmierstoffe',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Schmierstoffe</button>
+    <button class="scat" onclick="goKat('Sonstige',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Sonstige</button>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Modals -->
+<div class="bd" id="bd-mat">
+  <div class="md">
+    <div class="mdt" id="mat-title">Neues Material</div>
+    <div class="fr"><label>Lieferant *</label><select class="fs" id="mat-lief"></select></div>
+    <div class="fr"><label>Material / Sorte *</label><input class="fi" id="mat-mat" placeholder="z.B. Sand 0/2"></div>
+    <div class="fr"><label>Kategorie</label>
+      <select class="fs" id="mat-kat"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select>
     </div>
-    <div class="form-row">
-      <label class="form-label">Material / Sorte *</label>
-      <input class="form-input" id="f-material" placeholder="z.B. Sand 0/2">
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>EK-Preis</label><input class="fi" id="mat-preis" placeholder="z.B. 15,70"></div>
+      <div class="fr" style="margin:0"><label>Einheit</label><select class="fs" id="mat-ein"><option>€/t</option><option>€/m³</option><option>€/kg</option><option>€/l</option><option>€/Stk</option><option>Auf Anfrage</option></select></div>
     </div>
-    <div class="form-row">
-      <label class="form-label">Kategorie</label>
-      <select class="form-select" id="f-kategorie">
-        <option>Gesteinskörnung &amp; Sand</option>
-        <option>Asphalt</option>
-        <option>Beton</option>
-        <option>Schmierstoffe</option>
-        <option>Sonstige</option>
-      </select>
+    <div class="fr" style="margin-top:10px"><label>Notiz</label><input class="fi" id="mat-not" placeholder="z.B. inkl. EKZ"></div>
+    <div class="ma"><button class="btn btn-g" onclick="closeM('bd-mat')">Abbrechen</button><button class="btn btn-p" onclick="saveMat()">Speichern</button></div>
+  </div>
+</div>
+
+<div class="bd" id="bd-lief">
+  <div class="md">
+    <div class="mdt" id="lief-title">Lieferant</div>
+    <div class="fr"><label>Name *</label><input class="fi" id="lf-name" placeholder="z.B. Mineral Berge Diabas"></div>
+    <div class="fr"><label>Kategorie</label><select class="fs" id="lf-kat"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select></div>
+    <div class="fr"><label>Notiz</label><input class="fi" id="lf-not" placeholder="z.B. Steinbruch"></div>
+    <div class="ma"><button class="btn btn-g" onclick="closeM('bd-lief')">Abbrechen</button><button class="btn btn-p" onclick="saveLief()">Speichern</button></div>
+  </div>
+</div>
+
+<div class="bd" id="bd-proj">
+  <div class="md">
+    <div class="mdt" id="proj-title">Neues Projekt</div>
+    <div class="fr"><label>Projektname *</label><input class="fi" id="pj-name" placeholder="z.B. B55 Sundern 2026"></div>
+    <div class="fr"><label>Baustelle / Auftraggeber</label><input class="fi" id="pj-bst" placeholder="z.B. Stadt Sundern"></div>
+    <div class="fr"><label>Notiz</label><input class="fi" id="pj-not" placeholder="z.B. Laufzeit, Besonderheiten"></div>
+    <div class="divider" style="height:1px;background:var(--line);margin:14px 0;"></div>
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;">Erster Projektpreis (optional)</div>
+    <div class="fr"><label>Lieferant</label><select class="fs" id="pj-lief" onchange="pjUpdateMat()"><option value="">— kein Preis anlegen —</option></select></div>
+    <div class="fr"><label>Sorte / Material</label><select class="fs" id="pj-mat" onchange="pjUpdateStd()"><option value="">— erst Lieferant wählen —</option></select></div>
+    <div class="fr"><label>Kategorie</label><select class="fs" id="pj-kat"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select></div>
+    <div class="std-box" id="pj-std-box">Standardpreis: <strong id="pj-std">–</strong></div>
+    <div class="fr2" style="margin-top:10px">
+      <div class="fr" style="margin:0"><label>Projektpreis (€/t)</label><input class="fi" id="pj-preis" placeholder="z.B. 14,50" oninput="pjCalc()"></div>
+      <div class="fr" style="margin:0"><label>Menge (Tonnen)</label><input class="fi" id="pj-menge" placeholder="z.B. 500" type="number" min="0" step="0.1" oninput="pjCalc()"></div>
     </div>
-    <div class="form-row-2">
-      <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">EK-Preis 2026</label>
-        <input class="form-input" id="f-preis" placeholder="z.B. 15,70" type="text">
-      </div>
-      <div class="form-row" style="margin-bottom:0">
-        <label class="form-label">Einheit</label>
-        <select class="form-select" id="f-einheit">
-          <option>€/t</option>
-          <option>€/m³</option>
-          <option>€/kg</option>
-          <option>€/l</option>
-          <option>€/Stk</option>
-          <option>Auf Anfrage</option>
-        </select>
-      </div>
+    <div class="std-box" id="pj-gesamt-box" style="display:none">
+      Gesamtbetrag: <strong id="pj-gesamt" style="color:var(--green)">–</strong>
+      <span style="margin-left:12px;color:var(--muted)">Ersparnis: <strong id="pj-ersparnis" style="color:var(--green)">–</strong></span>
     </div>
-    <div class="form-row" style="margin-top:14px">
-      <label class="form-label">Notiz</label>
-      <input class="form-input" id="f-notiz" placeholder="z.B. inkl. EKZ, Frachtzuschlag …">
+    <div class="fr"><label>Einheit</label><select class="fs" id="pj-ein"><option>€/t</option><option>€/m³</option><option>€/kg</option><option>€/l</option><option>Auf Anfrage</option></select></div>
+    <div class="fr"><label>Notiz zum Preis</label><input class="fi" id="pj-pnot" placeholder="z.B. gültig bis 31.12.2026"></div>
+    <div class="ma"><button class="btn btn-g" onclick="closeM('bd-proj')">Abbrechen</button><button class="btn btn-p" onclick="saveProj()">Speichern</button></div>
+  </div>
+</div>
+
+<div class="bd" id="bd-pp">
+  <div class="md">
+    <div class="mdt" id="pp-title">Projektpreis</div>
+    <div class="fr"><label>Lieferant *</label><select class="fs" id="pp-lief" onchange="ppUpdateMat()"></select></div>
+    <div class="fr"><label>Sorte / Material *</label><select class="fs" id="pp-mat" onchange="ppUpdateStd()"><option value="">— erst Lieferant wählen —</option></select></div>
+    <div class="fr"><label>Kategorie</label><select class="fs" id="pp-kat"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select></div>
+    <div class="std-box">Standardpreis: <strong id="pp-std">–</strong></div>
+    <div class="fr2" style="margin-top:10px">
+      <div class="fr" style="margin:0"><label>Projektpreis (€/t)</label><input class="fi" id="pp-preis" placeholder="z.B. 14,50" type="text" oninput="ppCalc()"></div>
+      <div class="fr" style="margin:0"><label>Menge (Tonnen)</label><input class="fi" id="pp-menge" placeholder="z.B. 500" type="number" min="0" step="0.1" oninput="ppCalc()"></div>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveEntry()">Speichern</button>
+    <div class="std-box" id="pp-gesamt-box" style="display:none">
+      Gesamtbetrag: <strong id="pp-gesamt" style="color:var(--green)">–</strong>
+      <span style="margin-left:12px;color:var(--muted)">vs. Standard: <strong id="pp-ersparnis" style="color:var(--green)">–</strong></span>
     </div>
+    <div class="fr"><label>Einheit</label><select class="fs" id="pp-ein"><option>€/t</option><option>€/m³</option><option>€/kg</option><option>€/l</option><option>Auf Anfrage</option></select></div>
+    <div class="fr"><label>Notiz / Gültigkeit</label><input class="fi" id="pp-not" placeholder="z.B. gültig bis 31.12.2026"></div>
+    <div class="ma"><button class="btn btn-g" onclick="closeM('bd-pp')">Abbrechen</button><button class="btn btn-p" onclick="savePP()">Speichern</button></div>
   </div>
 </div>
 
 <script>
-// ── Firebase Config (bitte durch echte Config ersetzen) ──
-const firebaseConfig = {
-  apiKey: "AIzaSyBnFgq0jZsdSMMaWUNzR0rMk6ezLEr9quE",
-  authDomain: "preisliste-einkauf.firebaseapp.com",
-  databaseURL: "https://preisliste-einkauf-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "preisliste-einkauf",
-  storageBucket: "preisliste-einkauf.firebasestorage.app",
-  messagingSenderId: "572552313968",
-  appId: "1:572552313968:web:5969b0ac5252a9bb0d08b5"
-};
-firebase.initializeApp(firebaseConfig);
+// ── Firebase ──
+firebase.initializeApp({
+  apiKey:"AIzaSyBnFgq0jZsdSMMaWUNzR0rMk6ezLEr9quE",
+  authDomain:"preisliste-einkauf.firebaseapp.com",
+  databaseURL:"https://preisliste-einkauf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"preisliste-einkauf",
+  storageBucket:"preisliste-einkauf.firebasestorage.app",
+  messagingSenderId:"572552313968",
+  appId:"1:572552313968:web:5969b0ac5252a9bb0d08b5"
+});
 const db = firebase.database();
-const REF = db.ref('einkauf/materialien');
+const MR = db.ref('einkauf/materialien');
+const LR = db.ref('einkauf/lieferanten');
+const PR = db.ref('einkauf/projekte');
 
-// ── Initiale Daten aus Excel (2026-Preise) ──
-const SEED = [
-  // Gesteinskörnung & Sand
+// ── Seed ──
+const SMAT=[
   {lieferant:'Mineral Berge (Diabas)',material:'Sand 0/2',kategorie:'Gesteinskörnung & Sand',preis:'15,70',einheit:'€/t',notiz:'2026'},
   {lieferant:'Mineral Berge (Diabas)',material:'Sand 0/5',kategorie:'Gesteinskörnung & Sand',preis:'9,50',einheit:'€/t',notiz:'2026'},
   {lieferant:'Mineral Berge (Diabas)',material:'2/5',kategorie:'Gesteinskörnung & Sand',preis:'18,50',einheit:'€/t',notiz:'2026'},
@@ -308,189 +273,531 @@ const SEED = [
   {lieferant:'WGU-Berge',material:'2/5',kategorie:'Gesteinskörnung & Sand',preis:'14,00',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'0/8',kategorie:'Gesteinskörnung & Sand',preis:'11,60',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'2/8',kategorie:'Gesteinskörnung & Sand',preis:'14,00',einheit:'€/t',notiz:'2026'},
-  {lieferant:'WGU-Berge',material:'5/8',kategorie:'Gesteinskörnung & Sand',preis:'11,60',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'0/16',kategorie:'Gesteinskörnung & Sand',preis:'18,20',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'8/16',kategorie:'Gesteinskörnung & Sand',preis:'13,00',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'11/16',kategorie:'Gesteinskörnung & Sand',preis:'14,00',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'16/22',kategorie:'Gesteinskörnung & Sand',preis:'13,00',einheit:'€/t',notiz:'2026'},
-  {lieferant:'WGU-Berge',material:'16/32',kategorie:'Gesteinskörnung & Sand',preis:'14,00',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'0/32',kategorie:'Gesteinskörnung & Sand',preis:'11,20',einheit:'€/t',notiz:'2026'},
   {lieferant:'WGU-Berge',material:'0/45',kategorie:'Gesteinskörnung & Sand',preis:'10,90',einheit:'€/t',notiz:'2026'},
   {lieferant:'Halbeswig (Diabas)',material:'Sand 0/2',kategorie:'Gesteinskörnung & Sand',preis:'21,20',einheit:'€/t',notiz:'2026'},
   {lieferant:'Halbeswig (Diabas)',material:'1/3',kategorie:'Gesteinskörnung & Sand',preis:'35,40',einheit:'€/t',notiz:'2026'},
-  {lieferant:'Halbeswig (Diabas)',material:'0/5L-Bettung',kategorie:'Gesteinskörnung & Sand',preis:'25,05',einheit:'€/t',notiz:'2026'},
   {lieferant:'Halbeswig (Diabas)',material:'2/5',kategorie:'Gesteinskörnung & Sand',preis:'23,40',einheit:'€/t',notiz:'2026'},
   {lieferant:'Halbeswig (Diabas)',material:'0/8',kategorie:'Gesteinskörnung & Sand',preis:'13,50',einheit:'€/t',notiz:'2026'},
   {lieferant:'Halbeswig (Diabas)',material:'2/8',kategorie:'Gesteinskörnung & Sand',preis:'28,40',einheit:'€/t',notiz:'2026'},
   {lieferant:'Halbeswig (Diabas)',material:'8/11',kategorie:'Gesteinskörnung & Sand',preis:'24,60',einheit:'€/t',notiz:'2026'},
   {lieferant:'Halbeswig (Diabas)',material:'11/16',kategorie:'Gesteinskörnung & Sand',preis:'23,40',einheit:'€/t',notiz:'2026'},
-  {lieferant:'Lippesand Brasa',material:'Sand',kategorie:'Gesteinskörnung & Sand',preis:'16,36',einheit:'€/t',notiz:'inkl. EKZ u. Zuschlag'},
-  {lieferant:'Rheinsand Klösters',material:'Rheinsand',kategorie:'Gesteinskörnung & Sand',preis:'21,30',einheit:'€/t',notiz:'Preiserhöhung Juni 2026'},
-  {lieferant:'Füllsand Habrock',material:'Füllsand',kategorie:'Gesteinskörnung & Sand',preis:'13,10',einheit:'€/t',notiz:'2024 (2026 auf Anfrage)'},
-  // Beton
+  {lieferant:'Lippesand Brasa',material:'Sand',kategorie:'Gesteinskörnung & Sand',preis:'16,36',einheit:'€/t',notiz:'inkl. EKZ'},
+  {lieferant:'Rheinsand Klösters',material:'Rheinsand',kategorie:'Gesteinskörnung & Sand',preis:'21,30',einheit:'€/t',notiz:'Jun 2026'},
   {lieferant:'Thomas Zement',material:'CEM I 42,5 N',kategorie:'Beton',preis:'153,75',einheit:'€/t',notiz:'2026'},
   {lieferant:'Thomas Zement',material:'CEM I 52,5 N',kategorie:'Beton',preis:'160,35',einheit:'€/t',notiz:'2026'},
   {lieferant:'Thomas Zement',material:'CEM III A 42,5 N',kategorie:'Beton',preis:'153,75',einheit:'€/t',notiz:'2026'},
   {lieferant:'Thomas Zement',material:'CEM II A-LL 42,5 N',kategorie:'Beton',preis:'153,75',einheit:'€/t',notiz:'2026'},
   {lieferant:'Thomas Zement',material:'CEM II-B-S 42,5 N',kategorie:'Beton',preis:'',einheit:'Auf Anfrage',notiz:'2026'},
-  {lieferant:'Thomas Zement',material:'CEM I 52,5 R (ft)',kategorie:'Beton',preis:'',einheit:'Auf Anfrage',notiz:'2026'},
-  {lieferant:'Bau Mineral',material:'EFA-Füller',kategorie:'Beton',preis:'67,00',einheit:'€/t',notiz:'2026, inkl. 2€ Frachtkosten'},
-  {lieferant:'Cemex Admixtures',material:'ISOPLAST 1500 (Cont.)',kategorie:'Beton',preis:'0,57',einheit:'€/kg',notiz:'2026, keine Erhöhung'},
-  {lieferant:'Cemex Admixtures',material:'ISOPLAST 1500 (Fass)',kategorie:'Beton',preis:'0,64',einheit:'€/kg',notiz:'2026, keine Erhöhung'},
-  {lieferant:'Cemex Admixtures',material:'ISOSPHERE 9015 (Fass)',kategorie:'Beton',preis:'0,86',einheit:'€/kg',notiz:'2026, keine Erhöhung'},
-  {lieferant:'Cemex Admixtures',material:'ISOFLOW 3740 (Cont.)',kategorie:'Beton',preis:'0,98',einheit:'€/kg',notiz:'2026, keine Erhöhung'},
-  {lieferant:'Cemex Admixtures',material:'ISOFLOW 3740 (Fass)',kategorie:'Beton',preis:'1,08',einheit:'€/kg',notiz:'2026, keine Erhöhung'},
-  {lieferant:'Krampe Harex',material:'Stahldrahtfasern',kategorie:'Beton',preis:'',einheit:'Auf Anfrage',notiz:'2026'},
-  // Schmierstoffe
+  {lieferant:'Bau Mineral',material:'EFA-Füller',kategorie:'Beton',preis:'67,00',einheit:'€/t',notiz:'inkl. 2€ Fracht'},
+  {lieferant:'Cemex Admixtures',material:'ISOPLAST 1500 (Cont.)',kategorie:'Beton',preis:'0,57',einheit:'€/kg',notiz:'2026'},
+  {lieferant:'Cemex Admixtures',material:'ISOPLAST 1500 (Fass)',kategorie:'Beton',preis:'0,64',einheit:'€/kg',notiz:'2026'},
+  {lieferant:'Cemex Admixtures',material:'ISOFLOW 3740 (Cont.)',kategorie:'Beton',preis:'0,98',einheit:'€/kg',notiz:'2026'},
+  {lieferant:'Cemex Admixtures',material:'ISOFLOW 3740 (Fass)',kategorie:'Beton',preis:'1,08',einheit:'€/kg',notiz:'2026'},
   {lieferant:'Fuchs Lubritech',material:'Trennmittel-Emulsionen',kategorie:'Schmierstoffe',preis:'+0,20',einheit:'€/l',notiz:'Zuschlag ab 2022'},
   {lieferant:'Fuchs Lubritech',material:'Schal- und Trennmittel',kategorie:'Schmierstoffe',preis:'+0,30',einheit:'€/l',notiz:'Zuschlag ab 2022'},
-  {lieferant:'Fuchs Lubritech',material:'esterbasierte Trennmittel',kategorie:'Schmierstoffe',preis:'+0,50',einheit:'€/l',notiz:'Zuschlag ab 2022'},
-  {lieferant:'Noeke Freienohl',material:'Kornhaus',kategorie:'Schmierstoffe',preis:'',einheit:'€/100l',notiz:'Auf Anfrage'},
+];
+const SLIEF=[
+  {name:'Mineral Berge (Diabas)',kategorie:'Gesteinskörnung & Sand',notiz:'Sundern'},
+  {name:'WGU-Berge',kategorie:'Gesteinskörnung & Sand',notiz:''},
+  {name:'Halbeswig (Diabas)',kategorie:'Gesteinskörnung & Sand',notiz:''},
+  {name:'Ebel',kategorie:'Gesteinskörnung & Sand',notiz:'PL Extra Ordner'},
+  {name:'Lippesand Brasa',kategorie:'Gesteinskörnung & Sand',notiz:''},
+  {name:'Rheinsand Klösters',kategorie:'Gesteinskörnung & Sand',notiz:''},
+  {name:'Thomas Zement',kategorie:'Beton',notiz:''},
+  {name:'Bau Mineral',kategorie:'Beton',notiz:'EFA-Füller'},
+  {name:'Cemex Admixtures',kategorie:'Beton',notiz:'Zusatzmittel'},
+  {name:'Krampe Harex',kategorie:'Beton',notiz:'Stahldrahtfasern'},
+  {name:'Fuchs Lubritech',kategorie:'Schmierstoffe',notiz:''},
+  {name:'Noeke Freienohl',kategorie:'Schmierstoffe',notiz:'Kornhaus'},
 ];
 
 // ── State ──
-let data = {};
-let editKey = null;
-let currentCat = 'alle';
+let mats={}, liefs={}, projs={};
+let curTab='preise', curKat='alle', curLief=null, curProj=null;
+let matKey=null, liefKey=null, projKey=null, ppKey=null;
+let sq=''; // Suchquery — persistent
 
-// ── Firebase ──
-function setSyncing(state) {
-  const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-status');
-  dot.className = 'sync-dot ' + (state === 'saving' ? 'saving' : 'saved');
-  lbl.innerHTML = (state === 'saving' ? 'Speichern…' : 'gespeichert') + ' <span class="sync-dot ' + (state === 'saving' ? 'saving' : 'saved') + '" id="sync-dot"></span>';
+// ── Sync ──
+function sync(on){
+  document.getElementById('sdot').className='sdot'+(on?' on':'');
+  document.getElementById('slbl').textContent=on?'synchronisiert':'offline – Daten lokal';
 }
 
-function initData() {
-  REF.once('value', snap => {
-    const val = snap.val();
-    if (!val) {
-      // Seed-Daten einmalig schreiben
-      SEED.forEach(item => {
-        item.id = Date.now() + Math.random();
-        item.erstellt = new Date().toLocaleDateString('de-DE');
-        REF.push(item);
+// ── Helpers ──
+function ktag(k){return {'Gesteinskörnung & Sand':'ts','Asphalt':'ta','Beton':'tb','Schmierstoffe':'tsc','Sonstige':'to'}[k]||'to';}
+function pnum(p){return p?parseFloat(p.replace(',','.'))||0:null;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Tab ──
+function goTab(t){
+  curTab=t; curLief=null; curProj=null;
+  ['preise','lief','proj'].forEach(id=>{
+    document.getElementById('nt-'+id).className='ntab'+(t===id?' on':'');
+  });
+  document.getElementById('side').style.display=t==='preise'?'':'none';
+  draw();
+}
+
+// ── Kategorie ──
+function goKat(k,btn){
+  curKat=k;
+  document.querySelectorAll('.scat').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  draw();
+}
+
+// ── Draw router ──
+function draw(){
+  if(curTab==='preise') drawPreise();
+  else if(curTab==='lief') drawLief();
+  else drawProj();
+}
+
+// ── PREISE ──
+function drawPreise(){
+  const main=document.getElementById('main');
+  let rows=Object.entries(mats).filter(([k,v])=>v&&v.material);
+  if(curKat!=='alle') rows=rows.filter(([k,v])=>v.kategorie===curKat);
+
+  const isSearch=sq.length>=2;
+  let groups={};
+  rows.forEach(([k,v])=>{
+    const m=v.material.toLowerCase();
+    if(!groups[m]) groups[m]={name:v.material,kat:v.kategorie,items:[]};
+    groups[m].items.push({k,v});
+  });
+  let fg=Object.entries(groups);
+  if(isSearch) fg=fg.filter(([m])=>m.includes(sq));
+  const frows=isSearch?[]:rows.filter(([k,v])=>!sq||((v.lieferant+v.material+v.notiz+v.kategorie).toLowerCase().includes(sq)));
+
+  let html=`<div class="ph">
+    <div class="pht">${curKat==='alle'?'Alle Materialien':esc(curKat)}</div>
+    <div style="display:flex;gap:7px;align-items:center">
+      ${isSearch?`<span style="font-size:12px;color:var(--red);font-weight:500">${fg.length} Treffer</span>`:`<span style="font-size:12px;color:var(--muted)">${frows.length} Einträge</span>`}
+      <button class="btn btn-p" onclick="openMat()">+ Material</button>
+    </div>
+  </div>
+  <div class="sbar">
+    <div class="swrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="sinp" id="sq-inp" value="${esc(sq)}" placeholder="Material suchen – Lieferanten werden verglichen …">
+    </div>
+  </div>`;
+
+  if(isSearch){
+    if(!fg.length){html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><p>Kein Material gefunden für „${esc(sq)}"</p></div>`;}
+    fg.forEach(([mk,grp])=>{
+      const nums=grp.items.filter(i=>i.v.preis&&pnum(i.v.preis)>0).map(i=>pnum(i.v.preis));
+      const best=nums.length?Math.min(...nums):null;
+      html+=`<div class="cmpbox"><div class="cmphd"><span style="font-size:13px;font-weight:600">${esc(grp.name)}</span><span class="badge ${ktag(grp.kat)}" style="margin-left:6px">${esc(grp.kat)}</span><span style="margin-left:auto;font-size:11px;color:var(--muted)">${grp.items.length} Lieferant${grp.items.length!==1?'en':''}</span></div><div class="cmpcards">`;
+      grp.items.forEach(({k,v})=>{
+        const n=pnum(v.preis); const isBest=best&&n===best;
+        html+=`<div class="ccard${isBest?' best':''}" onclick="goLief('${esc(v.lieferant)}')">
+          ${isBest?'<span class="cb">Günstigster</span>':''}
+          <div class="cl">${esc(v.lieferant)}</div>
+          ${v.preis?`<div class="cp">${esc(v.preis)} ${v.einheit!=='Auf Anfrage'?esc(v.einheit):''}</div>`:'<div class="ca">Auf Anfrage</div>'}
+          ${v.notiz?`<div class="cn">${esc(v.notiz)}</div>`:''}
+        </div>`;
       });
-    }
-  });
-  REF.on('value', snap => {
-    data = snap.val() || {};
-    renderTable();
-  });
-}
-
-function saveEntry() {
-  const lieferant = document.getElementById('f-lieferant').value.trim();
-  const material = document.getElementById('f-material').value.trim();
-  if (!lieferant || !material) { alert('Lieferant und Material sind Pflichtfelder.'); return; }
-  const entry = {
-    lieferant,
-    material,
-    kategorie: document.getElementById('f-kategorie').value,
-    preis: document.getElementById('f-preis').value.trim(),
-    einheit: document.getElementById('f-einheit').value,
-    notiz: document.getElementById('f-notiz').value.trim(),
-    geaendert: new Date().toLocaleDateString('de-DE'),
-  };
-  setSyncing('saving');
-  if (editKey) {
-    REF.child(editKey).update(entry).then(() => setSyncing('saved'));
+      html+=`</div></div>`;
+    });
   } else {
-    REF.push(entry).then(() => setSyncing('saved'));
+    html+=`<div class="twrap"><table class="tbl"><thead><tr><th>Lieferant</th><th>Material / Sorte</th><th>Kategorie</th><th>EK-Preis</th><th>Einheit</th><th>Notiz</th><th></th></tr></thead><tbody>`;
+    if(!frows.length) html+=`<tr><td colspan="7"><div class="empty"><p>Keine Einträge</p></div></td></tr>`;
+    frows.forEach(([k,v])=>{
+      html+=`<tr>
+        <td style="font-weight:500;cursor:pointer;color:var(--red)" onclick="goLief('${esc(v.lieferant)}')">${esc(v.lieferant)}</td>
+        <td style="color:var(--slate)">${esc(v.material)}</td>
+        <td><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span></td>
+        <td class="${v.preis?'p-val':'p-afr'}">${v.preis?esc(v.preis)+(v.einheit!=='Auf Anfrage'?' '+esc(v.einheit):''):'Auf Anfrage'}</td>
+        <td class="mono" style="color:var(--muted)">${v.einheit!=='Auf Anfrage'?esc(v.einheit):''}</td>
+        <td style="font-size:12px;color:var(--muted)">${esc(v.notiz||'')}</td>
+        <td><div class="ra">
+          <button class="ib e" onclick="openMat('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="ib d" onclick="delMat('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div></td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
   }
-  closeModal();
+  main.innerHTML=html;
+  // Search-Event NACH dem Rendern anhängen — kein oninput im HTML
+  const inp=document.getElementById('sq-inp');
+  if(inp){
+    inp.addEventListener('input',function(){sq=this.value.trim().toLowerCase();drawPreise();});
+    // Cursor ans Ende setzen
+    const len=inp.value.length; inp.setSelectionRange(len,len);
+    inp.focus();
+  }
 }
 
-function deleteEntry(key) {
-  if (!confirm('Diesen Eintrag wirklich löschen?')) return;
-  setSyncing('saving');
-  REF.child(key).remove().then(() => setSyncing('saved'));
-}
+// ── LIEFERANTEN ──
+function goLief(name){curLief=name;curTab='lief';document.getElementById('nt-lief').className='ntab on';document.getElementById('nt-preise').className='ntab';document.getElementById('side').style.display='none';drawLief();}
 
-// ── UI ──
-function setCategory(cat, btn) {
-  currentCat = cat;
-  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('section-title').textContent =
-    cat === 'alle' ? 'Alle Materialien' : cat;
-  renderTable();
-}
-
-function renderTable() {
-  const q = document.getElementById('search-input').value.toLowerCase();
-  const tbody = document.getElementById('table-body');
-  const empty = document.getElementById('empty-state');
-  let rows = Object.entries(data).filter(([k,v]) => {
-    if (currentCat !== 'alle' && v.kategorie !== currentCat) return false;
-    if (q) {
-      const s = (v.lieferant + v.material + v.notiz + v.kategorie).toLowerCase();
-      if (!s.includes(q)) return false;
-    }
-    return true;
+function drawLief(){
+  const main=document.getElementById('main');
+  if(curLief){
+    const items=Object.entries(mats).filter(([k,v])=>v&&v.lieferant===curLief);
+    const lf=Object.values(liefs).find(l=>l&&l.name===curLief)||{};
+    let html=`<div class="back" onclick="curLief=null;drawLief()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Zurück</div>
+    <div class="ph"><div><div class="pht">${esc(curLief)}</div><span class="badge ${ktag(lf.kategorie)}" style="margin-top:4px;display:inline-block">${esc(lf.kategorie||'')}</span>${lf.notiz?` <span style="font-size:11px;color:var(--muted)">${esc(lf.notiz)}</span>`:''}</div>
+    <button class="btn btn-p" onclick="openMat(null,'${esc(curLief)}')">+ Preis hinzufügen</button></div>
+    <div class="twrap"><table class="tbl"><thead><tr><th>Material</th><th>Kategorie</th><th>EK-Preis</th><th>Einheit</th><th>Notiz</th><th></th></tr></thead><tbody>`;
+    if(!items.length) html+=`<tr><td colspan="6"><div class="empty"><p>Noch keine Preise eingetragen.</p></div></td></tr>`;
+    items.forEach(([k,v])=>{
+      html+=`<tr><td style="font-weight:500">${esc(v.material)}</td><td><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span></td>
+        <td class="${v.preis?'p-val':'p-afr'}">${v.preis?esc(v.preis)+(v.einheit!=='Auf Anfrage'?' '+esc(v.einheit):''):'Auf Anfrage'}</td>
+        <td class="mono" style="color:var(--muted)">${v.einheit!=='Auf Anfrage'?esc(v.einheit):''}</td>
+        <td style="font-size:12px;color:var(--muted)">${esc(v.notiz||'')}</td>
+        <td><div class="ra">
+          <button class="ib e" onclick="openMat('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="ib d" onclick="delMat('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div></td></tr>`;
+    });
+    html+=`</tbody></table></div>`;
+    main.innerHTML=html; return;
+  }
+  const items=Object.entries(liefs).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+  let html=`<div class="ph"><div class="pht">Lieferanten</div><button class="btn btn-p" onclick="openLief()">+ Lieferant</button></div><div class="lgrid">`;
+  items.forEach(([k,v])=>{
+    if(!v||!v.name) return;
+    const cnt=Object.values(mats).filter(m=>m&&m.lieferant===v.name).length;
+    html+=`<div class="lcard" onclick="goLief('${esc(v.name)}')">
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(v.name)}</div>
+      <div style="display:flex;align-items:center;gap:6px"><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span><span style="font-size:11px;color:var(--muted)">${cnt} Preis${cnt!==1?'e':''}</span></div>
+      ${v.notiz?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(v.notiz)}</div>`:''}
+      <div style="display:flex;gap:4px;margin-top:10px;justify-content:flex-end">
+        <button class="btn btn-g btn-sm" onclick="event.stopPropagation();openLief('${k}')">Bearb.</button>
+        <button class="btn btn-g btn-sm" style="color:#ef4444" onclick="event.stopPropagation();delLief('${k}')">Löschen</button>
+      </div>
+    </div>`;
   });
-  document.getElementById('count-label').textContent = rows.length + ' Einträge';
-  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
-  empty.style.display = 'none';
-  const catColors = {
-    'Gesteinskörnung & Sand':'badge-green',
-    'Asphalt':'badge-amber',
-    'Beton':'badge-red',
-    'Schmierstoffe':'badge-green',
-    'Sonstige':'badge-amber',
-  };
-  tbody.innerHTML = rows.map(([k,v]) => `
-    <tr>
-      <td class="lieferant">${v.lieferant || '–'}</td>
-      <td class="material">${v.material || '–'}</td>
-      <td><span class="badge ${catColors[v.kategorie]||'badge-green'}">${v.kategorie||'–'}</span></td>
-      <td class="${v.preis ? 'preis-cell' : 'preis-cell auf-anfrage'}">${v.preis ? v.preis + ' ' + (v.einheit||'') : 'Auf Anfrage'}</td>
-      <td class="mono" style="color:var(--muted)">${v.einheit === 'Auf Anfrage' ? '' : (v.einheit||'')}</td>
-      <td style="color:var(--muted);font-size:12px">${v.notiz||''}</td>
-      <td>
-        <div class="row-actions">
-          <button class="icon-btn edit" title="Bearbeiten" onclick="openModal('${k}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="icon-btn del" title="Löschen" onclick="deleteEntry('${k}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-          </button>
-        </div>
-      </td>
-    </tr>`).join('');
+  if(!items.length) html+=`<div class="empty"><p>Keine Lieferanten eingetragen.</p></div>`;
+  html+=`</div>`;
+  main.innerHTML=html;
 }
 
-function openModal(key) {
-  editKey = key || null;
-  document.getElementById('modal-title').textContent = key ? 'Material bearbeiten' : 'Neues Material';
-  if (key && data[key]) {
-    const v = data[key];
-    document.getElementById('f-lieferant').value = v.lieferant || '';
-    document.getElementById('f-material').value = v.material || '';
-    document.getElementById('f-kategorie').value = v.kategorie || 'Sonstige';
-    document.getElementById('f-preis').value = v.preis || '';
-    document.getElementById('f-einheit').value = v.einheit || '€/t';
-    document.getElementById('f-notiz').value = v.notiz || '';
-  } else {
-    ['f-lieferant','f-material','f-preis','f-notiz'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f-kategorie').value = 'Gesteinskörnung & Sand';
-    document.getElementById('f-einheit').value = '€/t';
+// ── PROJEKTE ──
+function drawProj(){
+  const main=document.getElementById('main');
+  if(curProj&&projs[curProj]){
+    const pj=projs[curProj]; const prices=pj.preise||{};
+    let html=`<div class="back" onclick="curProj=null;drawProj()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Zurück</div>
+    <div class="ph"><div><div class="pht">${esc(pj.name)}</div>${pj.baustelle?`<div style="font-size:12px;color:var(--muted)">${esc(pj.baustelle)}</div>`:''}</div>
+    <div style="display:flex;gap:7px"><button class="btn btn-g" onclick="openProj('${curProj}')">Bearbeiten</button><button class="btn btn-p" onclick="openPP()">+ Projektpreis</button></div></div>
+    <div class="twrap"><table class="tbl"><thead><tr><th>Lieferant</th><th>Sorte / Material</th><th>Kat.</th><th>Menge (t)</th><th>Projektpreis</th><th>Standardpreis</th><th>Ersparnis</th><th>Notiz</th><th></th></tr></thead><tbody>`;
+    const pa=Object.entries(prices);
+    if(!pa.length) html+=`<tr><td colspan="8"><div class="empty"><p>Noch keine Projektpreise. Klicke „+ Projektpreis".</p></div></td></tr>`;
+    pa.forEach(([pk,pv])=>{
+      const std=Object.values(mats).find(m=>m&&m.lieferant===pv.lieferant&&m.material.toLowerCase()===(pv.material||'').toLowerCase());
+      const sp=std?pnum(std.preis):null; const pp=pnum(pv.preis);
+      const diff=sp&&pp?((sp-pp)/sp*100).toFixed(1):null;
+      html+=`<tr>
+        <td style="font-weight:500">${esc(pv.lieferant)}</td><td>${esc(pv.material)}</td>
+        <td><span class="badge ${ktag(pv.kategorie)}">${esc(pv.kategorie)}</span></td>
+        <td class="mono" style="font-weight:600">${pv.menge?pv.menge+' t':'-'}</td>
+        <td class="${pv.preis?'p-val':'p-afr'}">${pv.preis?esc(pv.preis)+' '+esc(pv.einheit||''):'Auf Anfrage'}</td>
+        <td class="mono" style="color:var(--muted)">${std&&std.preis?esc(std.preis)+' '+esc(std.einheit||''):'-'}</td>
+        <td>${diff?`<span style="color:var(--green);font-weight:600;font-size:12px">${parseFloat(diff)>0?'–'+diff+'%':'±0%'}</span>`:'-'}</td>
+        <td style="font-size:12px;color:var(--muted)">${esc(pv.notiz||'')}</td>
+        <td><div class="ra">
+          <button class="ib e" onclick="openPP('${pk}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="ib d" onclick="delPP('${pk}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div></td></tr>`;
+    });
+    html+=`</tbody></table></div>`;
+    main.innerHTML=html; return;
   }
-  document.getElementById('modal').classList.add('open');
-  document.getElementById('f-lieferant').focus();
+  const pa=Object.entries(projs).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+  let html=`<div class="ph"><div class="pht">Projektpreise</div><button class="btn btn-p" onclick="openProj()">+ Projekt anlegen</button></div><div class="pgrid">`;
+  pa.forEach(([k,v])=>{
+    if(!v||!v.name) return;
+    const cnt=Object.keys(v.preise||{}).length;
+    html+=`<div class="pcard" onclick="curProj='${k}';drawProj()">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600">${esc(v.name)}</div>
+        <span class="badge tp">${cnt} Preis${cnt!==1?'e':''}</span>
+      </div>
+      ${v.baustelle?`<div style="font-size:11px;color:var(--muted)">${esc(v.baustelle)}</div>`:''}
+      ${v.notiz?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(v.notiz)}</div>`:''}
+      <div style="display:flex;gap:4px;margin-top:10px;justify-content:flex-end">
+        <button class="btn btn-g btn-sm" onclick="event.stopPropagation();openProj('${k}')">Bearb.</button>
+        <button class="btn btn-g btn-sm" style="color:#ef4444" onclick="event.stopPropagation();delProj('${k}')">Löschen</button>
+      </div>
+    </div>`;
+  });
+  if(!pa.length) html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><p>Noch keine Projekte angelegt.</p></div>`;
+  html+=`</div>`;
+  main.innerHTML=html;
 }
-function closeModal() { document.getElementById('modal').classList.remove('open'); editKey = null; }
-document.getElementById('modal').addEventListener('click', e => { if(e.target === e.currentTarget) closeModal(); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
 
-// ── Init ──
-try { initData(); }
-catch(e) {
-  // Falls Firebase-Config fehlt, statische Demo-Daten zeigen
-  SEED.forEach((s,i) => data['seed_'+i] = s);
-  renderTable();
-  document.getElementById('sync-status').textContent = '⚠ Firebase nicht verbunden';
+// ── Lieferant-Select befüllen ──
+function fillLS(id){
+  const sel=document.getElementById(id); if(!sel)return;
+  const cur=sel.value;
+  const names=[...new Set(Object.values(liefs).filter(l=>l&&l.name).map(l=>l.name))].sort();
+  sel.innerHTML=names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
 }
+
+// ── Material CRUD ──
+function openMat(key,forLief){
+  matKey=key||null;
+  document.getElementById('mat-title').textContent=key?'Material bearbeiten':'Neues Material';
+  fillLS('mat-lief');
+  if(key&&mats[key]){const v=mats[key];document.getElementById('mat-lief').value=v.lieferant||'';document.getElementById('mat-mat').value=v.material||'';document.getElementById('mat-kat').value=v.kategorie||'Gesteinskörnung & Sand';document.getElementById('mat-preis').value=v.preis||'';document.getElementById('mat-ein').value=v.einheit||'€/t';document.getElementById('mat-not').value=v.notiz||'';}
+  else{['mat-mat','mat-preis','mat-not'].forEach(id=>document.getElementById(id).value='');document.getElementById('mat-kat').value='Gesteinskörnung & Sand';document.getElementById('mat-ein').value='€/t';if(forLief)document.getElementById('mat-lief').value=forLief;}
+  openM('bd-mat');
+}
+function saveMat(){
+  const l=document.getElementById('mat-lief').value, m=document.getElementById('mat-mat').value.trim();
+  if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
+  const e={lieferant:l,material:m,kategorie:document.getElementById('mat-kat').value,preis:document.getElementById('mat-preis').value.trim(),einheit:document.getElementById('mat-ein').value,notiz:document.getElementById('mat-not').value.trim(),ts:Date.now()};
+  if(matKey){MR.child(matKey).update(e);mats[matKey]={...mats[matKey],...e};}
+  else{const k=MR.push().key;MR.child(k).set(e);mats[k]=e;}
+  closeM('bd-mat'); draw();
+}
+function delMat(k){if(!confirm('Löschen?'))return;MR.child(k).remove();delete mats[k];draw();}
+
+// ── Lieferant CRUD ──
+function openLief(key){
+  liefKey=key||null;
+  document.getElementById('lief-title').textContent=key?'Lieferant bearbeiten':'Lieferant hinzufügen';
+  if(key&&liefs[key]){const v=liefs[key];document.getElementById('lf-name').value=v.name||'';document.getElementById('lf-kat').value=v.kategorie||'Gesteinskörnung & Sand';document.getElementById('lf-not').value=v.notiz||'';}
+  else{['lf-name','lf-not'].forEach(id=>document.getElementById(id).value='');document.getElementById('lf-kat').value='Gesteinskörnung & Sand';}
+  openM('bd-lief');
+}
+function saveLief(){
+  const name=document.getElementById('lf-name').value.trim();
+  if(!name){alert('Name ist Pflichtfeld.');return;}
+  const e={name,kategorie:document.getElementById('lf-kat').value,notiz:document.getElementById('lf-not').value.trim()};
+  if(liefKey){LR.child(liefKey).update(e);liefs[liefKey]={...liefs[liefKey],...e};}
+  else{const k=LR.push().key;LR.child(k).set(e);liefs[k]=e;}
+  closeM('bd-lief'); draw();
+}
+function delLief(k){if(!confirm('Löschen?'))return;LR.child(k).remove();delete liefs[k];draw();}
+
+// ── Projekt CRUD ──
+function openProj(key){
+  projKey=key||null;
+  document.getElementById('proj-title').textContent=key?'Projekt bearbeiten':'Neues Projekt';
+  if(key&&projs[key]){
+    const v=projs[key];
+    document.getElementById('pj-name').value=v.name||'';
+    document.getElementById('pj-bst').value=v.baustelle||'';
+    document.getElementById('pj-not').value=v.notiz||'';
+  } else {
+    ['pj-name','pj-bst','pj-not'].forEach(id=>document.getElementById(id).value='');
+  }
+  // Lieferanten-Select befüllen
+  const lsel=document.getElementById('pj-lief');
+  const names=[...new Set(Object.values(liefs).filter(l=>l&&l.name).map(l=>l.name))].sort();
+  lsel.innerHTML='<option value="">— kein Preis anlegen —</option>'+names.map(n=>`<option>${esc(n)}</option>`).join('');
+  // Preis-Felder zurücksetzen
+  ['pj-preis','pj-menge','pj-pnot'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pj-mat').innerHTML='<option value="">— erst Lieferant wählen —</option>';
+  document.getElementById('pj-std').textContent='–';
+  document.getElementById('pj-gesamt-box').style.display='none';
+  // Preissektion nur bei neuem Projekt anzeigen
+  const divider=document.querySelector('#bd-proj .divider');
+  const preisSection=divider?divider.nextElementSibling:null;
+  // Immer anzeigen (auch bei Bearbeitung kann man Preis hinzufügen)
+  openM('bd-proj');
+}
+function pjUpdateMat(){
+  const lief=document.getElementById('pj-lief').value;
+  const sel=document.getElementById('pj-mat');
+  if(!lief){sel.innerHTML='<option value="">— erst Lieferant wählen —</option>';document.getElementById('pj-std').textContent='–';return;}
+  const items=Object.values(mats).filter(m=>m&&m.lieferant===lief).sort((a,b)=>{
+    const ap=a.kategorie==='Gesteinskörnung & Sand'?0:1,bp=b.kategorie==='Gesteinskörnung & Sand'?0:1;
+    return ap!==bp?ap-bp:a.material.localeCompare(b.material);
+  });
+  const grps={};
+  items.forEach(m=>{if(!grps[m.kategorie])grps[m.kategorie]=[];grps[m.kategorie].push(m);});
+  let html='<option value="">— Material wählen —</option>';
+  Object.entries(grps).forEach(([kat,ms])=>{
+    html+=`<optgroup label="${esc(kat)}">`;
+    ms.forEach(m=>{html+=`<option value="${esc(m.material)}" data-kat="${esc(m.kategorie)}" data-preis="${esc(m.preis||'')}" data-ein="${esc(m.einheit||'€/t')}">${esc(m.material)}${m.preis?' ('+m.preis+' '+m.einheit+')':' (Auf Anfrage)'}</option>`;});
+    html+='</optgroup>';
+  });
+  if(!items.length) html='<option value="">— Keine Materialien für diesen Lieferanten —</option>';
+  sel.innerHTML=html;
+  pjUpdateStd();
+}
+function pjUpdateStd(){
+  const sel=document.getElementById('pj-mat');const opt=sel.selectedOptions[0];
+  if(!opt||!opt.value){document.getElementById('pj-std').textContent='–';pjCalc();return;}
+  document.getElementById('pj-kat').value=opt.dataset.kat||'Gesteinskörnung & Sand';
+  document.getElementById('pj-ein').value=opt.dataset.ein||'€/t';
+  document.getElementById('pj-std').textContent=opt.dataset.preis?(opt.dataset.preis+' '+opt.dataset.ein):'Auf Anfrage';
+  pjCalc();
+}
+function pjCalc(){
+  const preis=parseFloat((document.getElementById('pj-preis').value||'').replace(',','.'));
+  const menge=parseFloat(document.getElementById('pj-menge').value||'');
+  const sel=document.getElementById('pj-mat');const opt=sel.selectedOptions[0];
+  const std=opt&&opt.dataset.preis?parseFloat((opt.dataset.preis||'').replace(',','.')):null;
+  const gb=document.getElementById('pj-gesamt-box');
+  if(preis>0&&menge>0){
+    gb.style.display='';
+    document.getElementById('pj-gesamt').textContent=(preis*menge).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+    if(std&&std>0){
+      const ers=((std-preis)*menge).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const pct=((std-preis)/std*100).toFixed(1);
+      document.getElementById('pj-ersparnis').textContent=(std>preis?'':'Mehrkosten ')+ers+' € ('+Math.abs(pct)+'%)';
+      document.getElementById('pj-ersparnis').style.color=std>preis?'var(--green)':'var(--amber)';
+    } else {document.getElementById('pj-ersparnis').textContent='';}
+  } else {gb.style.display='none';}
+}
+function saveProj(){
+  const name=document.getElementById('pj-name').value.trim();
+  if(!name){alert('Projektname ist Pflichtfeld.');return;}
+  const e={name,baustelle:document.getElementById('pj-bst').value.trim(),notiz:document.getElementById('pj-not').value.trim()};
+  const lief=document.getElementById('pj-lief').value;
+  const mat=document.getElementById('pj-mat').value.trim();
+  let projId;
+  if(projKey){
+    PR.child(projKey).update(e);
+    projs[projKey]={...projs[projKey],...e};
+    projId=projKey;
+  } else {
+    const k=PR.push().key;
+    PR.child(k).set({...e,preise:{}});
+    projs[k]={...e,preise:{}};
+    projId=k;
+  }
+  // Optionalen ersten Projektpreis speichern
+  if(lief&&mat){
+    const pe={lieferant:lief,material:mat,
+      kategorie:document.getElementById('pj-kat').value,
+      preis:document.getElementById('pj-preis').value.trim(),
+      menge:document.getElementById('pj-menge').value.trim(),
+      einheit:document.getElementById('pj-ein').value,
+      notiz:document.getElementById('pj-pnot').value.trim()};
+    const ref=PR.child(projId).child('preise');
+    const pk=ref.push().key;
+    ref.child(pk).set(pe);
+    if(!projs[projId].preise) projs[projId].preise={};
+    projs[projId].preise[pk]=pe;
+  }
+  closeM('bd-proj'); draw();
+}
+function delProj(k){if(!confirm('Projekt und alle Preise löschen?'))return;PR.child(k).remove();delete projs[k];if(curProj===k)curProj=null;draw();}
+
+// ── Projektpreis CRUD ──
+function ppUpdateMat(){
+  const lief=document.getElementById('pp-lief').value;
+  const sel=document.getElementById('pp-mat');
+  const items=Object.values(mats).filter(m=>m&&m.lieferant===lief).sort((a,b)=>{
+    const ap=a.kategorie==='Gesteinskörnung & Sand'?0:1, bp=b.kategorie==='Gesteinskörnung & Sand'?0:1;
+    return ap!==bp?ap-bp:a.material.localeCompare(b.material);
+  });
+  const grps={};
+  items.forEach(m=>{if(!grps[m.kategorie])grps[m.kategorie]=[];grps[m.kategorie].push(m);});
+  let html='<option value="">— Material wählen —</option>';
+  Object.entries(grps).forEach(([kat,ms])=>{
+    html+=`<optgroup label="${esc(kat)}">`;
+    ms.forEach(m=>{html+=`<option value="${esc(m.material)}" data-kat="${esc(m.kategorie)}" data-preis="${esc(m.preis||'')}" data-ein="${esc(m.einheit||'€/t')}">${esc(m.material)}${m.preis?' ('+m.preis+' '+m.einheit+')':' (Auf Anfrage)'}</option>`;});
+    html+='</optgroup>';
+  });
+  if(!items.length) html='<option value="">— Keine Materialien für diesen Lieferanten —</option>';
+  sel.innerHTML=html;
+  ppUpdateStd();
+}
+function ppUpdateStd(){
+  const sel=document.getElementById('pp-mat'); const opt=sel.selectedOptions[0];
+  if(!opt||!opt.value){document.getElementById('pp-std').textContent='–';ppCalc();return;}
+  document.getElementById('pp-kat').value=opt.dataset.kat||'Gesteinskörnung & Sand';
+  document.getElementById('pp-ein').value=opt.dataset.ein||'€/t';
+  document.getElementById('pp-std').textContent=opt.dataset.preis?(opt.dataset.preis+' '+opt.dataset.ein):'Auf Anfrage';
+  ppCalc();
+}
+function ppCalc(){
+  const preis=parseFloat((document.getElementById('pp-preis').value||'').replace(',','.'));
+  const menge=parseFloat(document.getElementById('pp-menge').value||'');
+  const sel=document.getElementById('pp-mat'); const opt=sel.selectedOptions[0];
+  const std=opt&&opt.dataset.preis?parseFloat((opt.dataset.preis||'').replace(',','.')):null;
+  const gb=document.getElementById('pp-gesamt-box');
+  if(preis>0&&menge>0){
+    gb.style.display='';
+    const gesamt=(preis*menge).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('pp-gesamt').textContent=gesamt+' €';
+    if(std&&std>0){
+      const ers=((std-preis)*menge).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const pct=((std-preis)/std*100).toFixed(1);
+      document.getElementById('pp-ersparnis').textContent=(std>preis?'Ersparnis ':'Mehrkosten ')+ers+' € ('+Math.abs(pct)+'%)';
+      document.getElementById('pp-ersparnis').style.color=std>preis?'var(--green)':'var(--amber)';
+    } else { document.getElementById('pp-ersparnis').textContent=''; }
+  } else { gb.style.display='none'; }
+}
+function openPP(key){
+  ppKey=key||null;
+  document.getElementById('pp-title').textContent=key?'Projektpreis bearbeiten':'Projektpreis hinzufügen';
+  fillLS('pp-lief');
+  if(key&&curProj&&projs[curProj]&&projs[curProj].preise&&projs[curProj].preise[key]){
+    const v=projs[curProj].preise[key];
+    document.getElementById('pp-lief').value=v.lieferant||'';
+    ppUpdateMat();
+    document.getElementById('pp-mat').value=v.material||'';
+    document.getElementById('pp-kat').value=v.kategorie||'Gesteinskörnung & Sand';
+    document.getElementById('pp-preis').value=v.preis||'';
+    document.getElementById('pp-menge').value=v.menge||'';
+    document.getElementById('pp-ein').value=v.einheit||'€/t';
+    document.getElementById('pp-not').value=v.notiz||'';
+    document.getElementById('pp-std').textContent='–';
+    document.getElementById('pp-gesamt-box').style.display='none';
+  } else {
+    ['pp-preis','pp-not'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('pp-menge').value='';
+    document.getElementById('pp-kat').value='Gesteinskörnung & Sand';
+    document.getElementById('pp-ein').value='€/t';
+    document.getElementById('pp-std').textContent='–';
+    document.getElementById('pp-gesamt-box').style.display='none';
+    ppUpdateMat();
+  }
+  openM('bd-pp');
+}
+function savePP(){
+  if(!curProj)return;
+  const l=document.getElementById('pp-lief').value, m=document.getElementById('pp-mat').value.trim();
+  if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
+  const e={lieferant:l,material:m,kategorie:document.getElementById('pp-kat').value,preis:document.getElementById('pp-preis').value.trim(),menge:document.getElementById('pp-menge').value.trim(),einheit:document.getElementById('pp-ein').value,notiz:document.getElementById('pp-not').value.trim()};
+  const ref=PR.child(curProj).child('preise');
+  if(!projs[curProj].preise) projs[curProj].preise={};
+  if(ppKey){ref.child(ppKey).update(e);projs[curProj].preise[ppKey]={...projs[curProj].preise[ppKey],...e};}
+  else{const k=ref.push().key;ref.child(k).set(e);projs[curProj].preise[k]=e;}
+  closeM('bd-pp'); draw();
+}
+function delPP(k){if(!confirm('Löschen?'))return;PR.child(curProj).child('preise').child(k).remove();delete projs[curProj].preise[k];draw();}
+
+// ── Modal ──
+function openM(id){document.getElementById(id).classList.add('on');}
+function closeM(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.bd').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)closeM(b.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.bd.on').forEach(b=>closeM(b.id));});
+
+// ── Firebase Init ──
+function initFB(){
+  db.ref('.info/connected').on('value',s=>sync(!!s.val()));
+  MR.once('value').then(s=>{if(!s.val()){const b={};SMAT.forEach(m=>{const k=MR.push().key;b[k]={...m};});MR.update(b);}}).catch(()=>{});
+  MR.on('value',s=>{const v=s.val();if(v&&Object.keys(v).length>0){mats=v;}draw();},()=>{});
+  LR.once('value').then(s=>{if(!s.val()){const b={};SLIEF.forEach(l=>{const k=LR.push().key;b[k]={...l};});LR.update(b);}}).catch(()=>{});
+  LR.on('value',s=>{const v=s.val();if(v&&Object.keys(v).length>0){liefs=v;}draw();},()=>{});
+  PR.on('value',s=>{projs=s.val()||{};draw();},()=>{});
+}
+
+// ── Start ──
+// Seed-Daten sofort lokal laden
+SMAT.forEach((m,i)=>{mats['_'+i]={...m};});
+SLIEF.forEach((l,i)=>{liefs['_'+i]={...l};});
+draw();
+sync(false);
+// Firebase im Hintergrund
+initFB();
 </script>
 </body>
 </html>
