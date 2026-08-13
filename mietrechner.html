@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mietrechner – Rudolf Hilgenroth GmbH & Co. KG</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --red:#CC1F1F; --red-dk:#A01818; --red-lt:#F9E5E5;
+  --black:#111111; --gray1:#1E1E1E; --gray2:#2D2D2D; --gray3:#444444;
+  --gray4:#717171; --gray5:#B0B0B0; --gray6:#E5E5E5; --gray7:#F3F3F3;
+  --white:#FFFFFF; --radius:8px;
+  --shadow:0 1px 4px rgba(0,0,0,.12); --shadow-md:0 4px 16px rgba(0,0,0,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--gray7);color:var(--black);min-height:100vh;}
+
+/* HEADER */
+header{background:var(--black);border-bottom:3px solid var(--red);position:sticky;top:0;z-index:100;}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 1.5rem;height:62px;display:flex;align-items:center;gap:1.5rem;}
+.logo-name{font-size:20px;font-weight:900;color:var(--white);letter-spacing:.04em;text-transform:uppercase;line-height:1;}
+.logo-sub{font-size:9px;font-weight:600;color:var(--gray5);letter-spacing:.12em;text-transform:uppercase;margin-top:3px;}
+.header-divider{width:1px;height:32px;background:var(--gray2);}
+.header-app{font-size:13px;font-weight:600;color:var(--gray5);}
+.header-addr{margin-left:auto;font-size:11px;color:var(--gray4);text-align:right;line-height:1.5;}
+
+/* TABS */
+.tabs-bar{background:var(--white);border-bottom:1px solid var(--gray6);box-shadow:var(--shadow);}
+.tabs-inner{max-width:1200px;margin:0 auto;padding:0 1.5rem;display:flex;gap:0;align-items:center;}
+.tab-btn{padding:14px 20px;font-size:14px;font-weight:600;color:var(--gray4);background:none;border:none;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;}
+.tab-btn:hover{color:var(--black);}
+.tab-btn.active{color:var(--red);border-bottom-color:var(--red);}
+.print-btn{margin-left:auto;display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px solid var(--gray6);border-radius:var(--radius);background:var(--white);font-size:13px;font-weight:600;color:var(--gray3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.print-btn:hover{border-color:var(--red);color:var(--red);}
+.print-btn svg{flex-shrink:0;}
+
+/* PAGE */
+.page{max-width:1200px;margin:0 auto;padding:2rem 1.5rem 4rem;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* SECTION HEADING */
+.section-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--gray4);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.section-heading::after{content:'';flex:1;height:1px;background:var(--gray6);}
+
+/* STEPS */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:2rem;}
+@media(max-width:640px){.steps{grid-template-columns:1fr;}}
+.step-card{background:var(--white);border:1.5px solid var(--gray6);border-radius:var(--radius);padding:1rem 1.25rem;transition:border-color .15s;}
+.step-card.s-active{border-color:var(--red);}
+.step-card.s-done{border-color:#16A34A;background:#F0FDF4;}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--gray6);color:var(--gray4);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+.step-card.s-active .step-num{background:var(--red);color:#fff;}
+.step-card.s-done .step-num{background:#16A34A;color:#fff;}
+.step-lbl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--gray4);margin-bottom:4px;}
+.step-val{font-size:14px;font-weight:700;color:var(--black);min-height:20px;}
+
+/* CHIPS */
+.chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem;}
+.chip{padding:7px 16px;border:1.5px solid var(--gray6);border-radius:999px;background:var(--white);font-size:13px;font-weight:600;color:var(--black);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.chip:hover{border-color:var(--red);color:var(--red);}
+.chip.sel{background:var(--red);border-color:var(--red);color:#fff;}
+
+/* DEVICE CARDS */
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:1.5rem;}
+.dev-card{background:var(--white);border:1.5px solid var(--gray6);border-radius:var(--radius);padding:1rem;cursor:pointer;transition:all .12s;}
+.dev-card:hover{border-color:var(--red);box-shadow:var(--shadow);}
+.dev-card.sel{border-color:var(--red);background:var(--red-lt);}
+.dev-card .dm{font-size:14px;font-weight:700;}
+.dev-card .ds{font-size:12px;color:var(--gray4);margin-top:3px;}
+.dev-card .dp{font-size:12px;color:var(--gray5);margin-top:8px;}
+.dev-card .dp strong{color:var(--black);font-weight:600;}
+.dev-card.anfrage{opacity:.5;cursor:default;pointer-events:none;}
+
+/* RESULT */
+.result-panel{background:var(--white);border:1.5px solid var(--gray6);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-md);}
+.rp-head{background:var(--black);padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.rp-head h2{font-size:16px;font-weight:800;color:#fff;}
+.rp-badge{font-size:11px;font-weight:600;color:var(--gray5);}
+.rp-body{padding:1.5rem;}
+.specs-strip{display:flex;flex-wrap:wrap;gap:1.25rem;padding-bottom:1.25rem;margin-bottom:1.25rem;border-bottom:1px solid var(--gray6);}
+.sp-it .sp-l{font-size:10px;color:var(--gray5);font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.sp-it .sp-v{font-size:14px;font-weight:700;color:var(--black);margin-top:2px;}
+.days-row{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap;}
+.days-row label{font-size:13px;font-weight:600;color:var(--gray4);}
+.days-ctrl{display:flex;align-items:center;}
+.days-ctrl button{width:36px;height:36px;border:1.5px solid var(--gray6);background:var(--gray7);font-size:18px;font-weight:700;cursor:pointer;color:var(--black);line-height:1;transition:background .1s;}
+.days-ctrl button:first-child{border-radius:8px 0 0 8px;border-right:none;}
+.days-ctrl button:last-child{border-radius:0 8px 8px 0;border-left:none;}
+.days-ctrl button:hover{background:var(--gray6);}
+#days-input{width:64px;height:36px;border:1.5px solid var(--gray6);border-left:none;border-right:none;text-align:center;font-size:16px;font-weight:700;font-family:inherit;background:#fff;outline:none;color:var(--black);}
+.tarif-pill{padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;}
+.tp1{background:#FEF9C3;color:#854D0E;}
+.tp2{background:#DBEAFE;color:#1E40AF;}
+.tp3{background:#DCFCE7;color:#166534;}
+.tarif-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem;}
+@media(max-width:540px){.tarif-grid{grid-template-columns:1fr;}}
+.t-card{border:1.5px solid var(--gray6);border-radius:var(--radius);padding:1rem;text-align:center;}
+.t-card.t-active{border-color:var(--red);}
+.t-card .tr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gray4);margin-bottom:6px;}
+.t-card .tv{font-size:24px;font-weight:900;color:var(--black);line-height:1;}
+.t-card .tu{font-size:11px;color:var(--gray4);}
+.t-card .tt{font-size:13px;font-weight:600;color:var(--gray4);margin-top:10px;padding-top:10px;border-top:1px solid var(--gray6);}
+.t-card.t-active .tt{border-color:#FCA5A5;}
+.t-card .tf{font-size:11px;color:var(--gray5);margin-top:3px;}
+.t-active-lbl{font-size:11px;font-weight:800;color:var(--red);margin-top:6px;}
+.summary{border-top:1px solid var(--gray6);padding-top:1.25rem;}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:14px;}
+.sum-row+.sum-row{border-top:1px solid var(--gray6);}
+.sum-row .k{color:var(--gray4);}
+.sum-row .v{font-weight:700;color:var(--black);}
+.sum-row.aufpreis .k{color:var(--red);}
+.sum-row.aufpreis .v{color:var(--red);}
+.sum-total{background:var(--black);border-radius:var(--radius);padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;margin-top:1rem;}
+.sum-total .k{font-size:13px;font-weight:600;color:var(--gray5);}
+.sum-total .v{font-size:26px;font-weight:900;color:#fff;}
+.sum-note{font-size:11px;color:var(--gray5);margin-top:8px;text-align:right;}
+
+/* PREISLISTE */
+.filter-bar{background:var(--white);border:1.5px solid var(--gray6);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gray5);pointer-events:none;}
+#search-input{width:100%;height:38px;padding:0 12px 0 38px;border:1.5px solid var(--gray6);border-radius:var(--radius);font-size:14px;font-family:inherit;outline:none;color:var(--black);transition:border-color .15s;}
+#search-input:focus{border-color:var(--red);}
+.filter-select{height:38px;padding:0 12px;border:1.5px solid var(--gray6);border-radius:var(--radius);font-size:14px;font-family:inherit;color:var(--black);background:#fff;cursor:pointer;outline:none;}
+.filter-select:focus{border-color:var(--red);}
+.filter-count{font-size:12px;color:var(--gray4);white-space:nowrap;}
+.table-wrap{background:var(--white);border:1.5px solid var(--gray6);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead{background:var(--black);}
+th{padding:11px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gray5);white-space:nowrap;cursor:pointer;user-select:none;}
+th:hover{color:var(--white);}
+th.sorted{color:var(--red);}
+tbody tr{border-top:1px solid var(--gray6);transition:background .1s;}
+tbody tr:hover{background:var(--gray7);}
+tbody tr.anfrage-row{opacity:.55;}
+td{padding:10px 12px;vertical-align:middle;}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
+td.green{color:#15803D;}
+td.orange{color:#B45309;}
+td.red-text{color:var(--red);}
+.marke-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.mb-k{background:#DBEAFE;color:#1E40AF;}
+.mb-t{background:#DCFCE7;color:#166534;}
+.mb-s{background:#F3E8FF;color:#6B21A8;}
+.mb-a{background:#FEF9C3;color:#854D0E;}
+.anfrage-cell{font-size:11px;font-style:italic;color:var(--gray5);}
+@media(max-width:768px){.table-wrap{overflow-x:auto;}table{min-width:700px;}}
+
+/* FOOTER */
+footer{background:var(--black);border-top:3px solid var(--red);padding:1.5rem;text-align:center;font-size:11px;color:var(--gray4);margin-top:3rem;}
+footer strong{color:var(--gray5);}
+
+/* ═══════════════════════════════════════════
+   PRINT STYLES
+═══════════════════════════════════════════ */
+@media print {
+  @page { margin: 1.2cm 1.5cm; size: A4; }
+
+  /* hide everything screen-only */
+  header, .tabs-bar, .tab-panel:not(.active),
+  .chip-grid, #sec-marke, #sec-geraet,
+  .steps, .days-row, .days-ctrl, .tarif-grid,
+  .filter-bar, footer, .print-btn { display: none !important; }
+
+  body { background: #fff; font-size: 11px; color: #000; }
+  .page { padding: 0; max-width: 100%; }
+
+  /* ── Print header ── */
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding-bottom: .75rem;
+    border-bottom: 3px solid #CC1F1F;
+  }
+  .ph-name { font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+  .ph-sub  { font-size: 9px;  font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: #555; margin-top: 2px; }
+  .ph-right { font-size: 10px; color: #555; text-align: right; line-height: 1.6; }
+  .ph-date  { font-size: 9px; color: #999; margin-top: 4px; }
+
+  /* ── Result print ── */
+  .result-panel { box-shadow: none !important; border: 1px solid #ddd !important; border-radius: 4px !important; }
+  .rp-head { background: #111 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: .75rem 1rem !important; }
+  .rp-head h2 { font-size: 14px !important; }
+  .rp-body { padding: 1rem !important; }
+  .specs-strip { padding-bottom: .75rem !important; margin-bottom: .75rem !important; }
+  .summary .sum-row { padding: 5px 0 !important; font-size: 12px !important; }
+  .sum-total {
+    background: #111 !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    border-radius: 4px !important; padding: .75rem 1rem !important;
+  }
+  .sum-total .v { font-size: 20px !important; }
+  .tarif-pill { border: 1px solid #ccc !important; }
+
+  /* ── Table print ── */
+  .table-wrap { border: none !important; box-shadow: none !important; overflow: visible !important; }
+  table { font-size: 9.5px; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  thead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead th { font-size: 8px !important; padding: 6px 8px !important; }
+  td { padding: 5px 8px !important; }
+  .marke-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ── Print footer line ── */
+  .print-footer {
+    display: block !important;
+    margin-top: 1rem;
+    padding-top: .5rem;
+    border-top: 1px solid #ddd;
+    font-size: 9px;
+    color: #999;
+    text-align: center;
+  }
+}
+
+/* hidden on screen */
+.print-header, .print-footer { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="logo-name">Hilgenroth</div>
+      <div class="logo-sub">Straßen-, Tief- u. Kanalbau</div>
+    </div>
+    <div class="header-divider"></div>
+    <div class="header-app">Baumaschinen Mietrechner</div>
+    <div class="header-addr">Rudolf Hilgenroth GmbH &amp; Co. KG<br>Ewiger Weg 8 · 59846 Sundern</div>
+  </div>
+</header>
+
+<div class="tabs-bar">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="showTab('rechner',this)">Mietrechner</button>
+    <button class="tab-btn" onclick="showTab('preisliste',this)">Vollständige Preisliste</button>
+    <button class="print-btn" onclick="window.print()" title="Drucken / Als PDF speichern">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Drucken / PDF
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Print-only header (shown on every print page) -->
+  <div class="print-header">
+    <div>
+      <div class="ph-name">Hilgenroth</div>
+      <div class="ph-sub">Straßen-, Tief- u. Kanalbau</div>
+    </div>
+    <div class="ph-right">
+      Rudolf Hilgenroth GmbH &amp; Co. KG<br>
+      Ewiger Weg 8 · 59846 Sundern<br>
+      <span class="ph-date" id="print-date"></span>
+    </div>
+  </div>
+
+  <!-- TAB: RECHNER -->
+  <div class="tab-panel active" id="tab-rechner">
+    <div class="steps" id="steps">
+      <div class="step-card s-active" id="step1">
+        <div class="step-num">1</div>
+        <div class="step-lbl">Schritt 1</div>
+        <div class="step-val" id="s1v">Kategorie wählen</div>
+      </div>
+      <div class="step-card" id="step2">
+        <div class="step-num">2</div>
+        <div class="step-lbl">Schritt 2</div>
+        <div class="step-val" id="s2v">Marke wählen</div>
+      </div>
+      <div class="step-card" id="step3">
+        <div class="step-num">3</div>
+        <div class="step-lbl">Schritt 3</div>
+        <div class="step-val" id="s3v">Gerät wählen</div>
+      </div>
+    </div>
+    <div class="section-heading">Kategorie</div>
+    <div class="chip-grid" id="kat-chips"></div>
+    <div id="sec-marke" style="display:none">
+      <div class="section-heading">Marke</div>
+      <div class="chip-grid" id="marke-chips"></div>
+    </div>
+    <div id="sec-geraet" style="display:none">
+      <div class="section-heading">Gerät auswählen</div>
+      <div class="dev-grid" id="geraet-cards"></div>
+    </div>
+    <div id="result-wrap"></div>
+  </div>
+
+  <!-- TAB: PREISLISTE -->
+  <div class="tab-panel" id="tab-preisliste">
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Modell oder Spezifikation suchen…" oninput="renderTable()">
+      </div>
+      <select class="filter-select" id="f-marke" onchange="renderTable()">
+        <option value="">Alle Marken</option>
+        <option>Komatsu</option><option>Takeuchi</option>
+        <option>Sennebogen</option><option>Anbaugeräte</option>
+      </select>
+      <select class="filter-select" id="f-kat" onchange="renderTable()">
+        <option value="">Alle Kategorien</option>
+      </select>
+      <select class="filter-select" id="f-sb" onchange="renderTable()">
+        <option value="">Alle SB-Gruppen</option>
+        <option>A</option><option>B</option><option>C</option>
+      </select>
+      <span class="filter-count" id="filter-count"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('marke')">Marke</th>
+            <th onclick="sortBy('kat')">Kategorie</th>
+            <th onclick="sortBy('spec')">Spezifikation</th>
+            <th onclick="sortBy('model')">Modell</th>
+            <th onclick="sortBy('p1')" style="text-align:right">1–4 Tage</th>
+            <th onclick="sortBy('p5')" style="text-align:right">5–21 Tage</th>
+            <th onclick="sortBy('p22')" style="text-align:right">ab 22 Tage</th>
+            <th onclick="sortBy('ver')" style="text-align:right">Vers./Tag</th>
+            <th onclick="sortBy('sb')">SB</th>
+            <th style="text-align:right">F. 5–21</th>
+            <th style="text-align:right">F. 1–4</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Print-only footer -->
+  <div class="print-footer" id="print-footer">
+    Alle Preise netto zzgl. gesetzl. USt. &nbsp;·&nbsp; Irrtümer und Preisänderungen vorbehalten &nbsp;·&nbsp; Rudolf Hilgenroth GmbH &amp; Co. KG
+  </div>
+</div>
+
+<footer>
+  <strong>Rudolf Hilgenroth GmbH &amp; Co. KG</strong> · Straßen-, Tief- u. Kanalbau · Ewiger Weg 8, 59846 Sundern<br>
+  Alle Preise netto zzgl. gesetzl. USt. · Irrtümer und Preisänderungen vorbehalten
+</footer>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────
+const DATA = [
+  {marke:"Takeuchi",kat:"Minibagger",spec:"1,5 to.",model:"TB 216",p1:101,p5:78,p22:60,ver:3,sb:"A"},
+  {marke:"Takeuchi",kat:"Minibagger",spec:"2,0 to.",model:"TB 219",p1:117,p5:90,p22:69,ver:3,sb:"A"},
+  {marke:"Takeuchi",kat:"Minibagger",spec:"2,5 to.",model:"TB 228",p1:133,p5:102,p22:79,ver:4,sb:"A"},
+  {marke:"Takeuchi",kat:"Minibagger",spec:"3,5 to.",model:"TB 235",p1:154,p5:119,p22:91,ver:4,sb:"A"},
+  {marke:"Takeuchi",kat:"Minibagger",spec:"5,0 to.",model:"TB 250",p1:185,p5:142,p22:109,ver:5,sb:"A"},
+  {marke:"Takeuchi",kat:"Minibagger",spec:"6,0 to.",model:"TB 260",p1:201,p5:155,p22:119,ver:5,sb:"A"},
+  {marke:"Takeuchi",kat:"Minibagger",spec:"8,0 to.",model:"TB 290 CM",p1:216,p5:166,p22:128,ver:7,sb:"B"},
+  {marke:"Takeuchi",kat:"Minibagger",spec:"9,0 to.",model:"TB 290 CV",p1:234,p5:180,p22:138,ver:8,sb:"B"},
+  {marke:"Takeuchi",kat:"Kettenbagger",spec:"13 to.",model:"TB 1140",p1:263,p5:202,p22:156,ver:9,sb:"B"},
+  {marke:"Takeuchi",kat:"Mobilbagger",spec:"8 to.",model:"TB 295W",p1:210,p5:161,p22:124,ver:8,sb:"B"},
+  {marke:"Takeuchi",kat:"Dumper",spec:"1200 kg Nutzlast",model:"DS 1200 (Mini)",p1:101,p5:78,p22:60,ver:5,sb:"A"},
+  {marke:"Takeuchi",kat:"Dumper",spec:"3700 kg Nutzlast",model:"TCR 50 (Raupe)",p1:277,p5:213,p22:164,ver:6,sb:"B"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"100 kg > 2,0 to.",model:"GH 07 (NPK)",p1:60,p5:46,p22:36,ver:2,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"250 kg > 4,5 to.",model:"GH 2 (NPK)",p1:92,p5:71,p22:55,ver:2,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"400 kg > 9,0 to.",model:"GH 3 (NPK)",p1:112,p5:86,p22:66,ver:2,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"630 kg > 12 to.",model:"GH 4 (NPK)",p1:154,p5:119,p22:91,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"950 kg > 18 to.",model:"GH 6 (NPK)",p1:201,p5:154,p22:119,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"1300 kg > 20 to.",model:"GH 7 (NPK)",p1:222,p5:171,p22:131,ver:3,sb:"B"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"1600 kg > 24 to.",model:"GH 9 (NPK)",p1:270,p5:207,p22:160,ver:3,sb:"B"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"1900 kg > 28 to.",model:"GH 10 (NPK)",p1:366,p5:281,p22:216,ver:4,sb:"B"},
+  {marke:"Anbaugeräte",kat:"Abbruchhammer",spec:"2400 kg > 35 to.",model:"GH 12 (NPK)",p1:399,p5:307,p22:236,ver:4,sb:"B"},
+  {marke:"Anbaugeräte",kat:"Abbruchzangen",spec:"bis 25 to.",model:"G-18 J (NPK)",p1:290,p5:227,p22:180,ver:5,sb:"C"},
+  {marke:"Anbaugeräte",kat:"Abbruchzangen",spec:"bis 25 to.",model:"U-21 JR (NPK)",p1:310,p5:247,p22:200,ver:6,sb:"C"},
+  {marke:"Anbaugeräte",kat:"Greifer",spec:"bis 10 to.",model:"Greifer",p1:54,p5:41,p22:32,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Greifer",spec:"bis 19 to.",model:"Greifer",p1:67,p5:51,p22:40,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Greifer",spec:"bis 28 to.",model:"Greifer",p1:81,p5:62,p22:48,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Greifer",spec:"Polygreifer MU",model:"Polygreifer MU",p1:113,p5:87,p22:67,ver:5,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Sortiergreifer",spec:"3–6 to.",model:"A 05 H",p1:75,p5:53,p22:37,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Sortiergreifer",spec:"7–10 to.",model:"A 08 H",p1:95,p5:66,p22:48,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Sortiergreifer",spec:"12–14 to.",model:"DG-16",p1:106,p5:82,p22:63,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Sortiergreifer",spec:"16–24 to.",model:"DG-20",p1:154,p5:118,p22:91,ver:3,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Sortiergreifer",spec:"24–29 to.",model:"DG-30",p1:166,p5:127,p22:98,ver:4,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Grabenräumlöffel",spec:"bis 10 to.",model:"Grabenräumlöffel",p1:22,p5:17,p22:13,ver:2,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Grabenräumlöffel",spec:"bis 19 to.",model:"Grabenräumlöffel",p1:34,p5:26,p22:20,ver:2,sb:"A"},
+  {marke:"Anbaugeräte",kat:"Grabenräumlöffel",spec:"bis 30 to.",model:"Grabenräumlöffel",p1:44,p5:34,p22:26,ver:2,sb:"A"},
+  {marke:"Komatsu",kat:"Radlader",spec:"0,7 m³",model:"WA65",p1:122,p5:94,p22:72,ver:4,sb:"A"},
+  {marke:"Komatsu",kat:"Radlader",spec:"0,8 m³",model:"WA70",p1:128,p5:99,p22:76,ver:4,sb:"A"},
+  {marke:"Komatsu",kat:"Radlader",spec:"1,0 m³",model:"WA80",p1:144,p5:111,p22:85,ver:5,sb:"A"},
+  {marke:"Komatsu",kat:"Radlader",spec:"1,1 m³",model:"WA90",p1:158,p5:122,p22:94,ver:6,sb:"A"},
+  {marke:"Komatsu",kat:"Radlader",spec:"1,3 m³",model:"WA100",p1:188,p5:145,p22:111,ver:6,sb:"B"},
+  {marke:"Komatsu",kat:"Radlader",spec:"1,9 m³",model:"WA200",p1:259,p5:199,p22:153,ver:11,sb:"B"},
+  {marke:"Komatsu",kat:"Radlader",spec:"2,3 m³",model:"WA250",p1:276,p5:212,p22:163,ver:11,sb:"B"},
+  {marke:"Komatsu",kat:"Radlader",spec:"2,5 m³",model:"WA270",p1:282,p5:217,p22:167,ver:12,sb:"C"},
+  {marke:"Komatsu",kat:"Radlader",spec:"2,8 m³",model:"WA320",p1:296,p5:228,p22:175,ver:12,sb:"C"},
+  {marke:"Komatsu",kat:"Radlader",spec:"3,2 m³",model:"WA380",p1:338,p5:260,p22:200,ver:14,sb:"C"},
+  {marke:"Komatsu",kat:"Radlader",spec:"3,8 m³",model:"WA430",p1:370,p5:285,p22:219,ver:15,sb:"C"},
+  {marke:"Komatsu",kat:"Radlader",spec:"4,2 m³",model:"WA470",p1:451,p5:347,p22:267,ver:20,sb:"C"},
+  {marke:"Komatsu",kat:"Radlader",spec:"4,5 m³",model:"WA480",p1:474,p5:364,p22:280,ver:21,sb:"C"},
+  {marke:"Komatsu",kat:"Radlader",spec:"5,3 m³",model:"WA500",p1:592,p5:455,p22:350,ver:29,sb:"C"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"0,9 to.",model:"PC09",p1:85,p5:65,p22:50,ver:3,sb:"A"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"0,9 to.",model:"PC09 (Hammer)",p1:120,p5:90,p22:65,ver:3,sb:"A"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"1,5 to.",model:"PC16R",p1:101,p5:78,p22:60,ver:3,sb:"A"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"2,5 to.",model:"PC26MR",p1:133,p5:102,p22:79,ver:4,sb:"A"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"3,5 to.",model:"PC35MR",p1:154,p5:119,p22:91,ver:4,sb:"A"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"5,0 to.",model:"PC45MR",p1:185,p5:142,p22:109,ver:5,sb:"A"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"6,0 to.",model:"PC55MR",p1:201,p5:155,p22:119,ver:5,sb:"A"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"8,0 to.",model:"PC80MR",p1:216,p5:166,p22:128,ver:7,sb:"B"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"9,0 to.",model:"PC88MR",p1:234,p5:180,p22:138,ver:8,sb:"B"},
+  {marke:"Komatsu",kat:"Minibagger",spec:"12,5 to.",model:"PC118MR",p1:245,p5:189,p22:145,ver:9,sb:"B"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"13 to.",model:"PC138US (Kurzheck)",p1:269,p5:207,p22:159,ver:9,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"16 to.",model:"PC160/170LC",p1:292,p5:225,p22:173,ver:12,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"20 to.",model:"PC190LC",p1:311,p5:239,p22:184,ver:12,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"22 to.",model:"HB215LC (Hybrid)",p1:358,p5:276,p22:212,ver:15,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"23 to.",model:"PC210LC",p1:358,p5:276,p22:212,ver:16,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"23 to.",model:"PC210LCi**",p1:468,p5:386,p22:322,ver:23,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"24 to.",model:"PC228USLC (Kurzheck)",p1:385,p5:296,p22:228,ver:16,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"25 to.",model:"PC240NLC",p1:406,p5:312,p22:240,ver:16,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"30 to.",model:"PC290NLC",p1:482,p5:371,p22:285,ver:18,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"35 to.",model:"PC360NLC",p1:566,p5:436,p22:335,ver:20,sb:"C"},
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"45 to.",model:"PC490/LC",p1:735,p5:566,p22:435,ver:25,sb:"C"},
+  {marke:"Komatsu",kat:"Mobilbagger",spec:"10 to.",model:"PW98MR (Kurzheck)",p1:228,p5:176,p22:135,ver:8,sb:"B"},
+  {marke:"Komatsu",kat:"Mobilbagger",spec:"12 to.",model:"PW118MR (Kurzheck)",p1:262,p5:202,p22:155,ver:10,sb:"B"},
+  {marke:"Komatsu",kat:"Mobilbagger",spec:"15 to.",model:"PW148 (Kurzheck)",p1:277,p5:213,p22:164,ver:12,sb:"C"},
+  {marke:"Komatsu",kat:"Mobilbagger",spec:"17 to.",model:"PW160",p1:284,p5:219,p22:168,ver:12,sb:"C"},
+  {marke:"Komatsu",kat:"Mobilbagger",spec:"18 to.",model:"PW180",p1:307,p5:236,p22:182,ver:14,sb:"C"},
+  {marke:"Komatsu",kat:"Mobilbagger",spec:"20 to.",model:"PW200",p1:334,p5:257,p22:198,ver:15,sb:"C"},
+  {marke:"Komatsu",kat:"Mobilbagger",spec:"22 to.",model:"PW220",p1:367,p5:282,p22:217,ver:16,sb:"C"},
+  {marke:"Komatsu",kat:"Planierraupen",spec:"13 to.",model:"D51EX/PX",p1:367,p5:282,p22:217,ver:12,sb:"B"},
+  {marke:"Komatsu",kat:"Planierraupen",spec:"18 to.",model:"D61EX/PX",p1:491,p5:378,p22:290,ver:18,sb:"C"},
+  {marke:"Komatsu",kat:"Planierraupen",spec:"22 to.",model:"D65WX",p1:620,p5:477,p22:367,ver:20,sb:"C"},
+  {marke:"Komatsu",kat:"Kompaktlader",spec:"1,2 m / 0,25 m³",model:"SK510",p1:105,p5:81,p22:62,ver:3,sb:"A"},
+  {marke:"Komatsu",kat:"Kompaktlader",spec:"1,5 m / 0,40 m³",model:"SK820",p1:122,p5:94,p22:72,ver:4,sb:"A"},
+  {marke:"Komatsu",kat:"Dumper",spec:"28 to. / 17 m³",model:"HM300",p1:574,p5:441,p22:339,ver:18,sb:"C"},
+  {marke:"Komatsu",kat:"Dumper",spec:"36 to. / 22 m³",model:"HM400",p1:728,p5:560,p22:431,ver:22,sb:"C"},
+  {marke:"Sennebogen",kat:"Umschlagmaschinen",spec:"19 to.",model:"818 M",p1:415,p5:319,p22:245,ver:15,sb:"C"},
+  {marke:"Sennebogen",kat:"Umschlagmaschinen",spec:"23 to.",model:"821 M",p1:472,p5:363,p22:279,ver:20,sb:"C"},
+  {marke:"Sennebogen",kat:"Umschlagmaschinen",spec:"28 to.",model:"825 M",p1:519,p5:399,p22:307,ver:22,sb:"C"},
+  {marke:"Sennebogen",kat:"Umschlagmaschinen",spec:"38 to.",model:"830 M",p1:647,p5:498,p22:383,ver:25,sb:"C"},
+];
+const AUF_ANFRAGE=[
+  {marke:"Komatsu",kat:"Kettenbagger",spec:"70 to.",model:"PC700/LC"},
+  {marke:"Komatsu",kat:"Dumper",spec:"40 to. / 28 m³",model:"HD405"},
+  {marke:"Komatsu",kat:"Dumper",spec:"60 to. / 40 m³",model:"HD605"},
+  {marke:"Sennebogen",kat:"Umschlagmaschinen",spec:"44 to.",model:"835 M"},
+  {marke:"Sennebogen",kat:"Umschlagmaschinen",spec:"53 to.",model:"840 M"},
+  {marke:"Sennebogen",kat:"Umschlagmaschinen",spec:"61 to.",model:"850 M"},
+];
+
+// ── State ─────────────────────────────────────────────────────────
+let selKat=null,selMarke=null,selDev=null,days=5,sortCol='marke',sortAsc=true;
+
+function uniq(arr){return[...new Set(arr)].sort();}
+function eur(n){return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+
+// Set print date
+document.getElementById('print-date').textContent='Stand: '+new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function showTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='preisliste') renderTable();
+}
+
+// ── Rechner ───────────────────────────────────────────────────────
+function getKats(){return uniq(DATA.map(d=>d.kat));}
+function getMarken(k){return uniq(DATA.filter(d=>d.kat===k).map(d=>d.marke));}
+function getDevs(k,m){return DATA.filter(d=>d.kat===k&&d.marke===m);}
+function getAA(k,m){return AUF_ANFRAGE.filter(d=>d.kat===k&&d.marke===m);}
+function getRate(d){return days<=4?{r:d.p1,t:1}:days<=21?{r:d.p5,t:2}:{r:d.p22,t:3};}
+
+function renderKats(){
+  const el=document.getElementById('kat-chips');el.innerHTML='';
+  getKats().forEach(k=>{
+    const b=document.createElement('button');
+    b.className='chip'+(selKat===k?' sel':'');
+    b.textContent=k;
+    b.onclick=()=>{selKat=k;selMarke=null;selDev=null;render();};
+    el.appendChild(b);
+  });
+}
+function renderMarken(){
+  const sec=document.getElementById('sec-marke');
+  if(!selKat){sec.style.display='none';return;}
+  sec.style.display='';
+  const el=document.getElementById('marke-chips');el.innerHTML='';
+  getMarken(selKat).forEach(m=>{
+    const b=document.createElement('button');
+    b.className='chip'+(selMarke===m?' sel':'');
+    b.textContent=m;
+    b.onclick=()=>{selMarke=m;selDev=null;render();};
+    el.appendChild(b);
+  });
+}
+function renderGeraete(){
+  const sec=document.getElementById('sec-geraet');
+  if(!selKat||!selMarke){sec.style.display='none';return;}
+  sec.style.display='';
+  const el=document.getElementById('geraet-cards');el.innerHTML='';
+  getDevs(selKat,selMarke).forEach(d=>{
+    const c=document.createElement('div');
+    const isSel=selDev&&selDev.model===d.model&&selDev.spec===d.spec;
+    c.className='dev-card'+(isSel?' sel':'');
+    c.innerHTML=`<div class="dm">${d.model}</div><div class="ds">${d.spec}</div><div class="dp">ab 22 Tage: <strong>${d.p22} €/Tag</strong></div>`;
+    c.onclick=()=>{selDev=d;render();};
+    el.appendChild(c);
+  });
+  getAA(selKat,selMarke).forEach(d=>{
+    const c=document.createElement('div');
+    c.className='dev-card anfrage';
+    c.innerHTML=`<div class="dm">${d.model}</div><div class="ds">${d.spec}</div><div class="dp" style="color:var(--red)">auf Anfrage</div>`;
+    el.appendChild(c);
+  });
+}
+function renderSteps(){
+  document.getElementById('s1v').textContent=selKat||'Kategorie wählen';
+  document.getElementById('s2v').textContent=selMarke||'Marke wählen';
+  document.getElementById('s3v').textContent=selDev?selDev.model:'Gerät wählen';
+  document.getElementById('step1').className='step-card '+(selKat?'s-done':'s-active');
+  document.getElementById('step2').className='step-card '+(!selKat?'':selMarke?'s-done':'s-active');
+  document.getElementById('step3').className='step-card '+(!selMarke?'':selDev?'s-done':'s-active');
+}
+function renderResult(){
+  const wrap=document.getElementById('result-wrap');
+  if(!selDev){wrap.innerHTML='';return;}
+  const d=selDev;
+  const {r:rate,t:tier}=getRate(d);
+  const miet=rate*days,vers=d.ver*days,total=miet+vers,diff=rate-d.p22;
+  const tl=['','Tarif 1–4 Tage','Tarif 5–21 Tage','Tarif ab 22 Tage'][tier];
+  const tc=['','tp1','tp2','tp3'][tier];
+  const f5=(d.p5/d.p22).toFixed(2),f1=(d.p1/d.p22).toFixed(2);
+  wrap.innerHTML=`
+  <div class="result-panel">
+    <div class="rp-head">
+      <h2>${d.model} &mdash; ${d.spec}</h2>
+      <div class="rp-badge">${d.marke} · ${selKat}</div>
+    </div>
+    <div class="rp-body">
+      <div class="specs-strip">
+        <div class="sp-it"><div class="sp-l">SB-Gruppe</div><div class="sp-v">${d.sb}</div></div>
+        <div class="sp-it"><div class="sp-l">Versicherung / Tag</div><div class="sp-v">${d.ver} €</div></div>
+        <div class="sp-it"><div class="sp-l">Faktor 5–21 Tage</div><div class="sp-v">${f5}</div></div>
+        <div class="sp-it"><div class="sp-l">Faktor 1–4 Tage</div><div class="sp-v">${f1}</div></div>
+      </div>
+      <div class="days-row">
+        <label>Miettage</label>
+        <div class="days-ctrl">
+          <button onclick="chDays(-1)">−</button>
+          <input type="number" id="days-input" value="${days}" min="1" max="365" oninput="setDays(this.value)">
+          <button onclick="chDays(+1)">+</button>
+        </div>
+        <span class="tarif-pill ${tc}">${tl}</span>
+      </div>
+      <div class="tarif-grid">
+        ${[{range:'1–4 Tage',p:d.p1,t:1},{range:'5–21 Tage',p:d.p5,t:2},{range:'ab 22 Tage',p:d.p22,t:3}].map(x=>`
+        <div class="t-card ${tier===x.t?'t-active':''}">
+          <div class="tr">${x.range}</div>
+          <div class="tv">${x.p} €</div><div class="tu">pro Tag</div>
+          <div class="tt">${eur(x.p*days)} gesamt</div>
+          <div class="tf">${x.t===3?'Basis':'Faktor '+(x.t===1?f1:f5)}</div>
+          ${tier===x.t?'<div class="t-active-lbl">✓ Aktiv</div>':''}
+        </div>`).join('')}
+      </div>
+      <div class="summary">
+        <div class="sum-row"><span class="k">Tagessatz (${tl})</span><span class="v">${rate} €/Tag</span></div>
+        <div class="sum-row"><span class="k">Miete (${days} × ${rate} €)</span><span class="v">${eur(miet)}</span></div>
+        <div class="sum-row"><span class="k">Versicherung (${days} × ${d.ver} €)</span><span class="v">${eur(vers)}</span></div>
+        ${diff>0?`<div class="sum-row aufpreis"><span class="k">Aufpreis ggü. Langzeittarif</span><span class="v">+ ${eur(diff*days)}</span></div>`:''}
+      </div>
+      <div class="sum-total">
+        <span class="k">Gesamtbetrag (netto, zzgl. USt.)</span>
+        <span class="v">${eur(total)}</span>
+      </div>
+      <div class="sum-note">** zzgl. Topcon-Zubehör · Preisänderungen vorbehalten</div>
+    </div>
+  </div>`;
+}
+function render(){renderKats();renderMarken();renderGeraete();renderSteps();renderResult();}
+function chDays(d){days=Math.max(1,Math.min(365,days+d));render();}
+function setDays(v){const n=parseInt(v);if(!isNaN(n)&&n>0){days=Math.min(365,n);render();}}
+
+// ── Preisliste ────────────────────────────────────────────────────
+function sortBy(col){
+  if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}
+  renderTable();
+}
+function renderTable(){
+  const q=(document.getElementById('search-input').value||'').toLowerCase();
+  const fM=document.getElementById('f-marke').value;
+  const fK=document.getElementById('f-kat').value;
+  const fS=document.getElementById('f-sb').value;
+  let rows=[...DATA].filter(d=>{
+    if(fM&&d.marke!==fM)return false;
+    if(fK&&d.kat!==fK)return false;
+    if(fS&&d.sb!==fS)return false;
+    if(q&&!(d.model.toLowerCase().includes(q)||d.spec.toLowerCase().includes(q)||d.kat.toLowerCase().includes(q)))return false;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    let av=a[sortCol],bv=b[sortCol];
+    return typeof av==='number'?(sortAsc?av-bv:bv-av):(sortAsc?av.localeCompare(bv,'de'):bv.localeCompare(av,'de'));
+  });
+  let aa=[...AUF_ANFRAGE].filter(d=>{
+    if(fM&&d.marke!==fM)return false;
+    if(fK&&d.kat!==fK)return false;
+    if(q&&!(d.model.toLowerCase().includes(q)||d.spec.toLowerCase().includes(q)||d.kat.toLowerCase().includes(q)))return false;
+    return true;
+  });
+  document.getElementById('filter-count').textContent=`${rows.length+aa.length} Einträge`;
+  const mBadge={Komatsu:'mb-k',Takeuchi:'mb-t',Sennebogen:'mb-s',Anbaugeräte:'mb-a'};
+  const tbody=document.getElementById('table-body');tbody.innerHTML='';
+  rows.forEach(d=>{
+    const f5=(d.p5/d.p22).toFixed(2),f1=(d.p1/d.p22).toFixed(2);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><span class="marke-badge ${mBadge[d.marke]||''}">${d.marke}</span></td>
+      <td>${d.kat}</td><td>${d.spec}</td>
+      <td style="font-weight:600">${d.model}</td>
+      <td class="num red-text">${d.p1} €</td>
+      <td class="num orange">${d.p5} €</td>
+      <td class="num green">${d.p22} €</td>
+      <td class="num">${d.ver} €</td>
+      <td style="font-weight:700">${d.sb}</td>
+      <td class="num">${f5}</td>
+      <td class="num">${f1}</td>`;
+    tbody.appendChild(tr);
+  });
+  aa.forEach(d=>{
+    const tr=document.createElement('tr');tr.className='anfrage-row';
+    tr.innerHTML=`<td><span class="marke-badge ${mBadge[d.marke]||''}">${d.marke}</span></td><td>${d.kat}</td><td>${d.spec}</td><td style="font-weight:600">${d.model}</td><td class="anfrage-cell" colspan="7">auf Anfrage</td>`;
+    tbody.appendChild(tr);
+  });
+  const fk=document.getElementById('f-kat');const cur=fk.value;
+  const kats=uniq(DATA.map(d=>d.kat));
+  fk.innerHTML='<option value="">Alle Kategorien</option>'+kats.map(k=>`<option${cur===k?' selected':''}>${k}</option>`).join('');
+}
+
+render();
+</script>
+</body>
+</html>
