@@ -248,6 +248,7 @@ iframe.frame.active{opacity:1;pointer-events:auto;}
       <button class="admin-gear" id="admin-btn" style="display:none" onclick="openAdmin()" title="Nutzerverwaltung">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
+      <span id="current-user-name" style="font-size:12px;font-weight:600;color:var(--slate);display:none"></span>
       <button class="logout-btn" id="logout-btn" style="display:none" onclick="doLogout()">Abmelden</button>
     </div>
   </div>
@@ -396,10 +397,23 @@ function switchCompany(company,btn){
   logo.classList.add('fade');
   setTimeout(()=>{logo.src=LOGOS[company];logo.classList.remove('fade');},180);
   document.getElementById('subbar').classList.remove('visible');
-  renderTabs(company);
-  hideAll();
-  const first=TOOLS[company][0];
-  if(first)activate(first.id);
+  // Gefilterte Tabs rendern
+  if(currentUser){
+    const perms=currentUser.perms||[];
+    const ft={
+      sundern: TOOLS.sundern.filter(t=>t.sub||perms.includes(t.id)),
+      hellefeld: TOOLS.hellefeld.filter(t=>t.sub||perms.includes(t.id)),
+    };
+    renderTabsFiltered(company, ft);
+    hideAll();
+    const first=ft[company]?.[0];
+    if(first) activate(first.id);
+  } else {
+    renderTabs(company);
+    hideAll();
+    const first=TOOLS[company][0];
+    if(first) activate(first.id);
+  }
 }
 
 // ── Alle Tool-IDs für Berechtigungen ──
@@ -524,6 +538,7 @@ function doLogout(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('admin-btn').style.display='none';
   document.getElementById('logout-btn').style.display='none';
+  const ne=document.getElementById('current-user-name');if(ne)ne.style.display='none';
   document.getElementById('login-pass').value='';
   document.getElementById('login-err').textContent='';
 }
@@ -540,6 +555,8 @@ function startCockpit(){
   const abtn2=document.getElementById('admin-btn');
   if(lbtn2) lbtn2.style.display='inline-flex';
   if(abtn2) abtn2.style.display=currentUser.isAdmin?'inline-flex':'none';
+  const nameEl=document.getElementById('current-user-name');
+  if(nameEl){nameEl.textContent=currentUser.name||'';nameEl.style.display='';}
 
   // TOOLS nach Berechtigungen filtern
   const perms = currentUser.perms;
