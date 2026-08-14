@@ -634,22 +634,44 @@ function handleCSV(file){
     csvRows=[];
     for(let i=1;i<lines.length;i++){
       const cols=lines[i].split(sep);
-      if(cols.length<8)continue;
-      // Format: Datum;Von;Kunde;Bst-Nr;Baustelle;Material;Entfernung;Preis;Bemerkung;Spediteur
-      const row={
-        datum:parseCSVDate(cols[0]?.trim()||''),
-        von:cols[1]?.trim()||'',
-        kunde:cols[2]?.trim()||'',
-        bstnr:cols[3]?.trim()||'',
-        baustelle:cols[4]?.trim()||'',
-        material:cols[5]?.trim()||'SB',
-        km:cols[6]?.trim()||'',
-        preis:cols[7]?.trim().replace(',','.')||'',
-        bemerkung:cols[8]?.trim()||'',
-        spediteur:cols[9]?.trim()||'',
-        ts:Date.now()
-      };
-      if(row.baustelle) csvRows.push(row);
+      if(cols.length<6)continue; // mind. bis Material
+      // Zwei Formate unterstützt:
+      // 10 Spalten: Datum;Von;Kunde;Bst-Nr;Baustelle;Material;Entfernung;Preis;Bemerkung;Spediteur
+      // 12 Spalten: Datum;Von;Kunde;Bst-Nr;Baustelle;Material;Entfernung;Preis;EKZ5;EKZ10;PreisEndg;Bemerkung
+      let row;
+      if(cols.length>=12){
+        // 12-Spalten-Format (mit EKZ) — letzter Preis (Spalte K, Index 10) = Endpreis
+        row={
+          datum:parseCSVDate(cols[0]?.trim()||''),
+          von:cols[1]?.trim()||'',
+          kunde:cols[2]?.trim()||'',
+          bstnr:cols[3]?.trim()||'',
+          baustelle:cols[4]?.trim()||'',
+          material:cols[5]?.trim()||'SB',
+          km:cols[6]?.trim()||'',
+          preis:cleanPreis(cols[10]?.trim()||cols[7]?.trim()||''), // Endpreis, sonst Grundpreis
+          bemerkung:cols[11]?.trim()||'',
+          spediteur:'', // wird beim Import gesetzt
+          ts:Date.now()
+        };
+      } else {
+        // 10-Spalten-Format
+        row={
+          datum:parseCSVDate(cols[0]?.trim()||''),
+          von:cols[1]?.trim()||'',
+          kunde:cols[2]?.trim()||'',
+          bstnr:cols[3]?.trim()||'',
+          baustelle:cols[4]?.trim()||'',
+          material:cols[5]?.trim()||'SB',
+          km:cols[6]?.trim()||'',
+          preis:cleanPreis(cols[7]?.trim()||''),
+          bemerkung:cols[8]?.trim()||'',
+          spediteur:cols[9]?.trim()||'',
+          ts:Date.now()
+        };
+      }
+      // Zeile übernehmen wenn Baustelle ODER Von vorhanden (auch ohne Datum)
+      if(row.baustelle || row.von) csvRows.push(row);
     }
     const prev=document.getElementById('csv-preview');
     prev.style.display='';
