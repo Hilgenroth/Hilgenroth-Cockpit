@@ -154,10 +154,10 @@ iframe.frame.active{opacity:1;pointer-events:auto;}
 .perm-pill{
   display:flex;align-items:center;gap:4px;
   font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;
-  border:1px solid #E6E8EC;background:#F7F8FA;color:#4A4F58;cursor:pointer;
+  border:1px solid #E6E8EC;background:#F7F8FA;color:#8A909B;cursor:pointer;
   transition:.12s;user-select:none;
 }
-.perm-pill.on{background:#FCE9EC;border-color:#C8102E;color:#C8102E;font-weight:600;}
+.perm-pill.on{background:#dcfce7;border-color:#16a34a;color:#16a34a;font-weight:600;}
 .user-del{width:26px;height:26px;border-radius:4px;border:1px solid #E6E8EC;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .user-del:hover{border-color:#ef4444;color:#ef4444;}
 .user-del svg{width:13px;height:13px;stroke-width:1.8;}
@@ -404,7 +404,7 @@ function switchCompany(company,btn){
   document.getElementById('subbar').classList.remove('visible');
   // Gefilterte Tabs rendern
   if(currentUser){
-    const perms=currentUser.perms||[];
+    const perms=toArray(currentUser.perms);
     const ft={
       sundern: TOOLS.sundern.filter(t=>t.sub||perms.includes(t.id)),
       hellefeld: TOOLS.hellefeld.filter(t=>t.sub||perms.includes(t.id)),
@@ -531,9 +531,17 @@ function doLogin(){
   applyUser(u);
 }
 
+function toArray(v){
+  // Firebase speichert Arrays manchmal als Objekte {0:'a',1:'b'} → in echtes Array umwandeln
+  if(!v) return [];
+  if(Array.isArray(v)) return v;
+  if(typeof v === 'object') return Object.values(v);
+  return [];
+}
+
 function applyUser(u){
-  currentUser = {name:u.name, perms: u.perms||[], isAdmin:!!u.isAdmin};
-  localStorage.setItem('cockpit_user', JSON.stringify({name:u.name, pass:u.pass, isAdmin:u.isAdmin}));
+  currentUser = {name:u.name, perms: toArray(u.perms), isAdmin:!!u.isAdmin};
+  localStorage.setItem('cockpit_user', JSON.stringify({name:u.name, pass:u.pass, isAdmin:u.isAdmin, perms:currentUser.perms}));
   startCockpit();
 }
 
@@ -567,7 +575,7 @@ function startCockpit(){
   if(nameEl){nameEl.textContent=currentUser.name||'';nameEl.style.display='';}
 
   // TOOLS nach Berechtigungen filtern
-  const perms = currentUser.perms;
+  const perms = toArray(currentUser.perms);
   const filteredTools = {
     sundern: TOOLS.sundern.filter(t=> t.sub || perms.includes(t.id)),
     hellefeld: TOOLS.hellefeld.filter(t=> t.sub || perms.includes(t.id)),
