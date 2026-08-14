@@ -649,7 +649,7 @@ function handleCSV(file){
           baustelle:cols[4]?.trim()||'',
           material:cols[5]?.trim()||'SB',
           km:cols[6]?.trim()||'',
-          preis:cleanPreis(cols[10]?.trim()||cols[7]?.trim()||''), // Endpreis, sonst Grundpreis
+          preis:fixPreis(cols[10]?.trim()||cols[7]?.trim()||''), // Endpreis, sonst Grundpreis
           bemerkung:cols[11]?.trim()||'',
           spediteur:'', // wird beim Import gesetzt
           ts:Date.now()
@@ -664,7 +664,7 @@ function handleCSV(file){
           baustelle:cols[4]?.trim()||'',
           material:cols[5]?.trim()||'SB',
           km:cols[6]?.trim()||'',
-          preis:cleanPreis(cols[7]?.trim()||''),
+          preis:fixPreis(cols[7]?.trim()||''),
           bemerkung:cols[8]?.trim()||'',
           spediteur:cols[9]?.trim()||'',
           ts:Date.now()
