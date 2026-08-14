@@ -308,10 +308,15 @@ let currentSub = 'labor-beton';
 function buildFrames(){
   const stage = document.getElementById('stage');
   stage.innerHTML = '';
+  // Nur erlaubte Tool-IDs als iframes anlegen
+  const perms = currentUser ? (currentUser.perms||[]) : null;
+  const subIds = Object.keys(SUB);
   const all = [];
   for(const tools of Object.values(TOOLS)) for(const t of tools) if(!t.sub) all.push(t);
   for(const [id,s] of Object.entries(SUB)) all.push({id, label:s.label, file:s.file});
   for(const t of all){
+    // Nicht erlaubte Tools überspringen (Sub-Tools immer bauen)
+    if(perms && !subIds.includes(t.id) && !perms.includes(t.id)) continue;
     const loader=document.createElement('div');
     loader.className='loader';loader.id='loader-'+t.id;
     loader.innerHTML=`<div class="spinner"></div><div class="loader-text">${t.label} wird geladen</div>`;
@@ -545,6 +550,9 @@ function doLogout(){
 
 function startCockpit(){
   document.getElementById('login-screen').style.display='none';
+  // Frames erst jetzt bauen — nach Login, mit bekannten Berechtigungen
+  buildFrames();
+  renderSubbar();
   const ui=document.getElementById('cockpit-ui');
   const cb=document.getElementById('company-bar-el');
   const st=document.getElementById('stage');
@@ -696,11 +704,8 @@ function initCockpitUI(){
 // Login-Liste sofort befüllen — MUSS vor allem anderen laufen
 buildLoginList();
 
-// Frames vorab bauen (unsichtbar)
-buildFrames();
-renderSubbar();
-
 // Session prüfen — nach buildLoginList
+// Frames und Tabs werden erst in startCockpit() gebaut
 checkSession();
 
 const DAYS=['So','Mo','Di','Mi','Do','Fr','Sa'];
