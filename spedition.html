@@ -248,14 +248,23 @@ tr:hover .ra{opacity:1;}
 
 <script>
 // ── Firebase (Dispo-Hellefeld) ──
-firebase.initializeApp({
-  apiKey:"AIzaSyA_DISPO_KEY", // ← hier Dispo-Firebase-Config eintragen
-  databaseURL:"https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:"dispo-hellefeld",
-});
-const db = firebase.database();
-const SR = db.ref('spedition/spediteure');
-const PR = db.ref('spedition/preise');
+let db=null, SR=null, PR=null;
+try {
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp({
+      apiKey:"AIzaSyAuU6mF5p5JQ5qvwLVbYUGc1v-HoQ8ZUMw",
+      authDomain:"dispo-hellefeld.firebaseapp.com",
+      databaseURL:"https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:"dispo-hellefeld",
+      storageBucket:"dispo-hellefeld.firebasestorage.app",
+      messagingSenderId:"34994251645",
+      appId:"1:34994251645:web:2f8a076d385bb245354e14"
+    });
+    db = firebase.database();
+    SR = db.ref('spedition/spediteure');
+    PR = db.ref('spedition/preise');
+  }
+} catch(e){ console.warn('Firebase nicht verfügbar:', e.message); }
 
 // ── State ──
 let speds={}, preise={};
@@ -515,8 +524,8 @@ function saveAnfrage(){
     bemerkung:document.getElementById('a-bem').value.trim(),
     ts:Date.now()
   };
-  const k=PR.push().key;
-  PR.child(k).set(e);
+  const k=(PR?PR.push().key:'local_'+Date.now());
+  if(PR)PR.child(k).set(e);
   preise[k]=e;
   ['a-bstnr','a-bst','a-km','a-preis','a-bem'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('a-sped').value='';
@@ -570,11 +579,11 @@ function savePreis(){
   const bst=document.getElementById('p-bst').value.trim();
   if(!sped||!bst){alert('Spediteur und Baustelle sind Pflichtfelder.');return;}
   const e={datum:document.getElementById('p-datum').value,bstnr:document.getElementById('p-bstnr').value.trim(),spediteur:sped,von:document.getElementById('p-von').value.trim(),kunde:document.getElementById('p-kunde').value.trim(),baustelle:bst,material:document.getElementById('p-mat').value,km:document.getElementById('p-km').value.trim(),preis:document.getElementById('p-preis').value.trim(),bemerkung:document.getElementById('p-bem').value.trim(),ts:Date.now()};
-  if(preisKey){PR.child(preisKey).update(e);preise[preisKey]={...preise[preisKey],...e};}
-  else{const k=PR.push().key;PR.child(k).set(e);preise[k]=e;}
+  if(preisKey){if(PR)PR.child(preisKey).update(e);preise[preisKey]={...preise[preisKey],...e};}
+  else{const k=(PR?PR.push().key:'local_'+Date.now());if(PR)PR.child(k).set(e);preise[k]=e;}
   closeM('bd-preis');draw();
 }
-function delPreis(k){if(!confirm('Löschen?'))return;PR.child(k).remove();delete preise[k];draw();}
+function delPreis(k){if(!confirm('Löschen?'))return;if(PR)PR.child(k).remove();delete preise[k];draw();}
 
 // ── Spediteur Modal ──
 function openSped(key){
@@ -588,8 +597,8 @@ function saveSped(){
   const name=document.getElementById('s-name').value.trim();
   if(!name){alert('Name ist Pflichtfeld.');return;}
   const e={name,notiz:document.getElementById('s-not').value.trim()};
-  if(spedKey){SR.child(spedKey).update(e);speds[spedKey]={...speds[spedKey],...e};}
-  else{const k=SR.push().key;SR.child(k).set(e);speds[k]=e;}
+  if(spedKey){if(SR)SR.child(spedKey).update(e);speds[spedKey]={...speds[spedKey],...e};}
+  else{const k=(SR?SR.push().key:'local_'+Date.now());if(SR)SR.child(k).set(e);speds[k]=e;}
   closeM('bd-sped');draw();
 }
 function delSped(k){
@@ -600,7 +609,7 @@ function delSped(k){
   const batch={};
   toDelete.forEach(([pk])=>{batch[pk]=null;delete preise[pk];});
   if(Object.keys(batch).length) PR.update(batch);
-  SR.child(k).remove();
+  if(SR)SR.child(k).remove();
   delete speds[k];
   if(curSped===name) curSped=null;
   draw();
@@ -697,17 +706,17 @@ async function importCSV(){
   csvRows.forEach(row=>{
     // Spediteur überschreiben falls gewählt
     if(fixedSped) row.spediteur=fixedSped;
-    const k=PR.push().key;
+    const k=(PR?PR.push().key:'local_'+Date.now());
     batch[k]=row;
     preise[k]=row;
     // Spediteur automatisch anlegen falls nicht vorhanden
     if(row.spediteur&&!Object.values(speds).find(s=>s&&s.name===row.spediteur)){
-      const sk=SR.push().key;
+      const sk=(SR?SR.push().key:'local_'+Date.now());
       speds[sk]={name:row.spediteur,notiz:''};
-      SR.child(sk).set(speds[sk]);
+      if(SR)SR.child(sk).set(speds[sk]);
     }
   });
-  await PR.update(batch);
+  if(PR)await PR.update(batch);
   document.getElementById('upload-result').textContent=`${csvRows.length} Einträge importiert ✓`;
   document.getElementById('upload-result').className='upload-result ok';
   document.getElementById('import-btn').style.display='none';
@@ -735,16 +744,19 @@ async function bereinigenFirebase(){
   // Einzeln updaten (Firebase batch via update mit Slash-Pfaden)
   const updateObj={};
   kaputt.forEach(([k,v])=>{ updateObj[k+'/preis']=fixPreis(v.preis); });
-  await PR.update(updateObj);
+  if(PR)await PR.update(updateObj);
   showToast(`${kaputt.length} Preise repariert ✓`);
   draw();
 }
 
 // ── Firebase ──
 function initFB(){
-  db.ref('.info/connected').on('value',s=>sync(!!s.val()));
-  SR.on('value',s=>{const v=s.val();if(v)speds=v;draw();},()=>{});
-  PR.on('value',s=>{const v=s.val();if(v)preise=v;draw();},()=>{});
+  if(!db || !SR || !PR){ sync(false); return; }
+  try {
+    db.ref('.info/connected').on('value',s=>sync(!!s.val()));
+    SR.on('value',s=>{const v=s.val();if(v)speds=v;draw();},()=>{});
+    PR.on('value',s=>{const v=s.val();if(v)preise=v;draw();},()=>{});
+  } catch(e){ sync(false); }
 }
 
 // ── Start ──
