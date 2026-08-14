@@ -530,6 +530,10 @@ function doLogin(){
   if(!name){ err.textContent='Bitte Namen wählen.'; return; }
 
   // Firebase-Nutzer
+  if(!allUsers || Object.keys(allUsers).length===0){
+    err.textContent='Verbindung wird aufgebaut … bitte 2 Sekunden warten und erneut versuchen.';
+    return;
+  }
   const u = Object.values(allUsers).find(x=>x&&x.name===name&&x.pass===pass);
   if(!u){ err.textContent='Falsches Passwort.'; return; }
   applyUser(u);
@@ -544,8 +548,10 @@ function toArray(v){
 }
 
 function applyUser(u){
-  currentUser = {name:u.name, perms: toArray(u.perms), isAdmin:!!u.isAdmin};
-  localStorage.setItem('cockpit_user', JSON.stringify({name:u.name, pass:u.pass, isAdmin:u.isAdmin, perms:currentUser.perms}));
+  const permsArr = toArray(u.perms);
+  currentUser = {name:u.name, perms: permsArr, isAdmin:!!u.isAdmin};
+  localStorage.setItem('cockpit_user', JSON.stringify({name:u.name, pass:u.pass, isAdmin:u.isAdmin, perms:permsArr}));
+  console.log('Login:', u.name, 'Berechtigungen:', permsArr);
   startCockpit();
 }
 
