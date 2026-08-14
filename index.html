@@ -329,7 +329,7 @@ function buildFrames(){
     stage.appendChild(err);
 
     const fr=document.createElement('iframe');
-    fr.className='frame';fr.id='frame-'+t.id;fr.dataset.file=t.file||'';
+    fr.className='frame';fr.id='frame-'+t.id;fr.dataset.file=t.file?t.file:'';
     fr.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-downloads');
     fr.addEventListener('load',()=>{
       document.getElementById('loader-'+t.id)?.classList.remove('visible');
@@ -346,7 +346,11 @@ function hideAll(){
 
 function loadShow(id,file){
   const fr=document.getElementById('frame-'+id);if(!fr)return;
-  if(!loaded.has(id)){loaded.add(id);document.getElementById('loader-'+id)?.classList.add('visible');fr.src=fr.dataset.file||file||'';}
+  if(!loaded.has(id)){
+    loaded.add(id);
+    const src = (fr.dataset.file && fr.dataset.file!=='undefined') ? fr.dataset.file : (file||'');
+    if(src){ document.getElementById('loader-'+id)?.classList.add('visible'); fr.src=src; }
+  }
   fr.classList.add('active');
 }
 
@@ -436,7 +440,7 @@ const ALL_PERMS = [
 const ADMIN_PASS = 'Hilgenroth2026!'; // ← Master-Admin-Passwort
 // Feste Nutzer (funktionieren auch ohne Firebase)
 const FIXED_USERS = [
-  {name:'Pascal', pass:'Albufeira1!', perms: 'ALL', isAdmin: true},
+  {name:'Pascal', pass:'Albufeira1!', perms: ['su-urlaub','su-miet','su-lief','he-dispo','he-lief','he-labor','he-einkauf','he-sped'], isAdmin: true},
 ];
 let currentUser = null; // {name, perms:[...ids]}
 
@@ -516,7 +520,7 @@ function doLogin(){
   if(fixed){
     currentUser = {
       name: fixed.name,
-      perms: fixed.perms==='ALL' ? ALL_PERMS.map(p=>p.id) : (fixed.perms||[]),
+      perms: fixed.perms==='ALL' ? ALL_PERMS.map(p=>p.id) : toArray(fixed.perms),
       isAdmin: !!fixed.isAdmin
     };
     localStorage.setItem('cockpit_user', JSON.stringify({name:fixed.name, pass, isAdmin:fixed.isAdmin, fixed:true}));
