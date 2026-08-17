@@ -487,18 +487,47 @@ function buildLoginList(){
 
 // Session prüfen
 function checkSession(){
-  // Nur Felder vorausfüllen — KEIN Auto-Login
   const saved = localStorage.getItem('cockpit_user');
   if(!saved) return false;
   try {
     const u = JSON.parse(saved);
-    // Name im Dropdown vorwählen
-    const sel = document.getElementById('login-user');
-    if(sel && u.name){
-      sel.value = u.name;
+
+    // Admin-Session sofort wiederherstellen
+    if(u.pass === ADMIN_PASS){
+      currentUser = {name:u.name, perms:ALL_PERMS.map(p=>p.id), isAdmin:true};
+      startCockpit(); return true;
     }
-    // Passwort NICHT vorausfüllen — Nutzer muss es eingeben
-  } catch(e){}
+
+    // Feste Nutzer sofort wiederherstellen (kein Firebase nötig)
+    const fixed = FIXED_USERS.find(f=>f.name===u.name && f.pass===u.pass);
+    if(fixed){
+      currentUser = {name:fixed.name, perms:fixed.perms==='ALL'?ALL_PERMS.map(p=>p.id):toArray(fixed.perms), isAdmin:!!fixed.isAdmin};
+      startCockpit(); return true;
+    }
+
+    // Firebase-Nutzer: perms aus localStorage laden (wurden beim Login gespeichert)
+    if(u.perms && toArray(u.perms).length > 0){
+      currentUser = {name:u.name, perms:toArray(u.perms), isAdmin:!!u.isAdmin};
+      startCockpit();
+      // Im Hintergrund gegen Firebase verifizieren und ggf. aktualisieren
+      setTimeout(()=>{
+        const found = Object.values(allUsers).find(x=>x&&x.name===u.name&&x.pass===u.pass);
+        if(found){
+          currentUser.perms = toArray(found.perms);
+          // Tabs neu rendern falls Berechtigungen geändert
+        } else if(Object.keys(allUsers).length > 0){
+          // Nutzer existiert nicht mehr → abmelden
+          doLogout();
+        }
+      }, 2000);
+      return true;
+    }
+
+    // Nur Name vorausfüllen wenn keine perms gespeichert
+    const sel = document.getElementById('login-user');
+    if(sel && u.name) sel.value = u.name;
+
+  } catch(e){ localStorage.removeItem('cockpit_user'); }
   return false;
 }
 
