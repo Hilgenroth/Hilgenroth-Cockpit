@@ -249,7 +249,7 @@ tr:hover .ra{opacity:1;}
 
 <script>
 // ── Firebase ──
-let db=null, MR=null, LR=null, PR=null;
+let db=null, MR=null, LR=null, PR=null, HR=null;
 try {
   if(typeof firebase !== 'undefined'){
     firebase.initializeApp({
@@ -265,6 +265,7 @@ try {
     MR = db.ref('einkauf/materialien');
     LR = db.ref('einkauf/lieferanten');
     PR = db.ref('einkauf/projekte');
+    HR = db.ref('einkauf/historie');
   }
 } catch(e){ console.warn('Firebase nicht verfügbar:', e.message); }
 
@@ -327,7 +328,7 @@ const SLIEF=[
 ];
 
 // ── State ──
-let mats={}, liefs={}, projs={};
+let mats={}, liefs={}, projs={}, hist={};
 let curTab='preise', curKat='alle', curLief=null, curProj=null;
 let matKey=null, liefKey=null, projKey=null, ppKey=null;
 let sq=''; // Suchquery — persistent
@@ -342,6 +343,23 @@ function sync(on){
 function ktag(k){return {'Gesteinskörnung & Sand':'ts','Asphalt':'ta','Beton':'tb','Schmierstoffe':'tsc','Sonstige':'to'}[k]||'to';}
 function pnum(p){return p?parseFloat(p.replace(',','.'))||0:null;}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtPreis(p){
+  // Bereinigt Preise: "13.90" → "13,90", "9.8" → "9,80", entfernt Artefakte
+  if(!p) return '';
+  // Erst Artefakte entfernen
+  let s = String(p).replace(/[€ \/t\s]/g,'').trim();
+  // Punkt als Dezimaltrennzeichen → Komma
+  // Aber nur wenn es ein echter Dezimalpunkt ist (nicht Tausender)
+  if(s.includes('.') && !s.includes(',')){
+    s = s.replace('.', ',');
+  }
+  // Auf 2 Nachkommastellen normalisieren
+  const n = parseFloat(s.replace(',','.'));
+  if(isNaN(n)) return p;
+  // Immer 2 Nachkommastellen, nur wenn nötig
+  const fmt = n % 1 === 0 ? String(n) : n.toFixed(2).replace('.',',');
+  return fmt;
+}
 
 // ── Tab ──
 function goTab(t){
@@ -365,6 +383,7 @@ function goKat(k,btn){
 function draw(){
   if(curTab==='preise') drawPreise();
   else if(curTab==='lief') drawLief();
+  else if(curTab==='hist') drawHist();
   else drawProj();
 }
 
@@ -423,7 +442,7 @@ function drawPreise(){
             <td style="font-weight:600;position:sticky;left:0;background:var(--white);z-index:1;cursor:pointer;color:var(--red)" onclick="goLief('${esc(lief)}')">${esc(lief)}</td>
             ${matOrder.map(mat=>{
               const entry = liefRows.find(([k,v])=>v.material===mat);
-              const preis = entry?entry[1].preis:'';
+              const preis = entry?fmtPreis(entry[1].preis):'';
               return preis
                 ? `<td style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${esc(preis)}</td>`
                 : `<td style="text-align:center;color:var(--line)">–</td>`;
@@ -469,7 +488,7 @@ function drawPreise(){
         <td style="font-weight:500;cursor:pointer;color:var(--red)" onclick="goLief('${esc(v.lieferant)}')">${esc(v.lieferant)}</td>
         <td style="color:var(--slate)">${esc(v.material)}</td>
         <td><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span></td>
-        <td class="${v.preis?'p-val':'p-afr'}">${v.preis?esc(v.preis)+(v.einheit!=='Auf Anfrage'?' '+esc(v.einheit):''):'Auf Anfrage'}</td>
+        <td class="${v.preis?'p-val':'p-afr'}">${v.preis?fmtPreis(v.preis)+(v.einheit!=='Auf Anfrage'?' '+esc(v.einheit):''):'Auf Anfrage'}</td>
         <td class="mono" style="color:var(--muted)">${v.einheit!=='Auf Anfrage'?esc(v.einheit):''}</td>
         <td style="font-size:12px;color:var(--muted)">${esc(v.notiz||'')}</td>
         <td><div class="ra">
@@ -506,7 +525,7 @@ function drawLief(){
     if(!items.length) html+=`<tr><td colspan="6"><div class="empty"><p>Noch keine Preise eingetragen.</p></div></td></tr>`;
     items.forEach(([k,v])=>{
       html+=`<tr><td style="font-weight:500">${esc(v.material)}</td><td><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span></td>
-        <td class="${v.preis?'p-val':'p-afr'}">${v.preis?esc(v.preis)+(v.einheit!=='Auf Anfrage'?' '+esc(v.einheit):''):'Auf Anfrage'}</td>
+        <td class="${v.preis?'p-val':'p-afr'}">${v.preis?fmtPreis(v.preis)+(v.einheit!=='Auf Anfrage'?' '+esc(v.einheit):''):'Auf Anfrage'}</td>
         <td class="mono" style="color:var(--muted)">${v.einheit!=='Auf Anfrage'?esc(v.einheit):''}</td>
         <td style="font-size:12px;color:var(--muted)">${esc(v.notiz||'')}</td>
         <td><div class="ra">
@@ -717,8 +736,19 @@ function saveMat(){
   const l=document.getElementById('mat-lief').value;
   if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
   const e={lieferant:l,material:m,kategorie:document.getElementById('mat-kat').value,preis:document.getElementById('mat-preis').value.trim(),einheit:document.getElementById('mat-ein').value,notiz:document.getElementById('mat-not').value.trim(),ts:Date.now()};
-  if(matKey){MR&&MR.child(matKey).update(e);mats[matKey]={...mats[matKey],...e};}
-  else{const k=(MR?MR.push().key:'_'+Date.now());MR&&MR.child(k).set(e);mats[k]=e;}
+  if(matKey){
+    const old=mats[matKey];
+    if(old&&old.preis&&old.preis!==e.preis){
+      // Preisänderung → Historie schreiben
+      const hk=HR?HR.push().key:'h_'+Date.now();
+      const he={datum:new Date().toLocaleDateString('de-DE'),lieferant:e.lieferant,material:e.material,
+        preisAlt:old.preis,preisNeu:e.preis,einheit:e.einheit,notiz:e.notiz||'',ts:Date.now()};
+      if(HR)HR.child(hk).set(he); hist[hk]=he;
+    }
+    MR&&MR.child(matKey).update(e);mats[matKey]={...mats[matKey],...e};
+  } else {
+    const k=(MR?MR.push().key:'_'+Date.now());MR&&MR.child(k).set(e);mats[k]=e;
+  }
   closeM('bd-mat'); draw();
 }
 function delMat(k){if(!confirm('Löschen?'))return;MR&&MR.child(k).remove();delete mats[k];draw();}
@@ -1074,6 +1104,59 @@ document.addEventListener('click', function(e){
     if(d)d.style.display='none';
   }
 });
+
+// ── PREISHISTORIE ──
+function drawHist(){
+  const main=document.getElementById('main');
+  const entries=Object.values(hist).sort((a,b)=>b.ts-a.ts);
+  let html=`<div class="ph">
+    <div class="pht">Preishistorie</div>
+    <span style="font-size:12px;color:var(--muted)">${entries.length} Änderungen</span>
+  </div>`;
+  if(!entries.length){
+    html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg><p>Noch keine Preisänderungen aufgezeichnet</p></div>`;
+  } else {
+    html+=`<div class="twrap"><table class="tbl"><thead><tr>
+      <th>Datum</th><th>Lieferant</th><th>Material</th><th>Alt</th><th>Neu</th><th>Änderung</th><th>Notiz</th><th>Nachweis</th>
+    </tr></thead><tbody>`;
+    entries.forEach(v=>{
+      const alt=pnum(v.preisAlt), neu=pnum(v.preisNeu);
+      const diff=alt?((neu-alt)/alt*100).toFixed(1):null;
+      const color=diff&&parseFloat(diff)<0?'var(--green)':'var(--red)';
+      html+=`<tr>
+        <td class="mono" style="color:var(--muted)">${esc(v.datum||'')}</td>
+        <td style="font-weight:500">${esc(v.lieferant||'')}</td>
+        <td>${esc(v.material||'')}</td>
+        <td class="mono" style="color:var(--muted)">${fmtPreis(v.preisAlt)} ${esc(v.einheit||'')}</td>
+        <td class="p-val">${fmtPreis(v.preisNeu)} ${esc(v.einheit||'')}</td>
+        <td style="font-weight:600;color:${color}">${diff?(parseFloat(diff)>0?'+':'')+diff+'%':'-'}</td>
+        <td style="font-size:12px;color:var(--muted)">${esc(v.notiz||'')}</td>
+        <td>
+          ${v.pdfUrl?`<a href="${esc(v.pdfUrl)}" target="_blank" style="color:var(--red);font-size:12px;font-weight:500">📄 PDF</a>`:''}
+          ${v.mailUrl?`<a href="${esc(v.mailUrl)}" target="_blank" style="color:var(--blue);font-size:12px;font-weight:500;margin-left:6px">✉ Mail</a>`:''}
+          ${!v.pdfUrl&&!v.mailUrl?`<button class="btn btn-g btn-sm" onclick="addNachweis('${Object.keys(hist).find(k=>hist[k]===v)||''}')">+ Anhang</button>`:''}
+        </td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }
+  main.innerHTML=html;
+}
+
+// ── Nachweis-Modal ──
+function addNachweis(hk){
+  const entry=hist[hk];
+  if(!entry)return;
+  const typ=prompt('Art des Nachweises:\n1 = PDF-Link eingeben\n2 = Mail-Link eingeben\n\nBitte 1 oder 2 eingeben:');
+  if(!typ)return;
+  if(typ==='1'){
+    const url=prompt('PDF-URL oder Google Drive Link:');
+    if(url&&HR){HR.child(hk).update({pdfUrl:url});hist[hk].pdfUrl=url;draw();}
+  } else if(typ==='2'){
+    const url=prompt('Mail-Link (z.B. mailto: oder Outlook-Link):');
+    if(url&&HR){HR.child(hk).update({mailUrl:url});hist[hk].mailUrl=url;draw();}
+  }
+}
 
 // ── Start ──
 // Seed-Daten sofort lokal laden
