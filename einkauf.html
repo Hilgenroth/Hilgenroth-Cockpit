@@ -346,6 +346,11 @@ function sync(on){
 function ktag(k){return {'Gesteinskörnung & Sand':'ts','Asphalt':'ta','Beton':'tb','Schmierstoffe':'tsc','Sonstige':'to'}[k]||'to';}
 function pnum(p){return p?parseFloat(p.replace(',','.'))||0:null;}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function normName(s){return String(s||'').toLowerCase().replace(/[^a-z0-9äöüß]/g,'');}
+function matchLief(liefName, matLieferant){
+  // Exakter Match oder normalisierter Match (ohne Sonderzeichen)
+  return liefName===matLieferant || normName(liefName)===normName(matLieferant);
+}
 function fmtPreis(p){
   // Bereinigt Preise: "13.90" → "13,90", "9.8" → "9,80", entfernt Artefakte
   if(!p) return '';
@@ -441,7 +446,7 @@ function drawPreise(){
       </tr></thead>
       <tbody>
         ${liefs.map(lief=>{
-          const liefRows = gsRows.filter(([k,v])=>v.lieferant===lief);
+          const liefRows = gsRows.filter(([k,v])=>matchLief(lief,v.lieferant));
           return `<tr>
             <td style="font-weight:600;position:sticky;left:0;background:var(--white);z-index:1;cursor:pointer;color:var(--red)" onclick="goLief('${esc(lief)}')">${esc(lief)}</td>
             ${matOrder.map(mat=>{
@@ -520,7 +525,7 @@ function goLief(name){curLief=name;curTab='lief';document.getElementById('nt-lie
 function drawLief(){
   const main=document.getElementById('main');
   if(curLief){
-    const items=Object.entries(mats).filter(([k,v])=>v&&v.lieferant===curLief);
+    const items=Object.entries(mats).filter(([k,v])=>v&&matchLief(curLief,v.lieferant));
     const lf=Object.values(liefs).find(l=>l&&l.name===curLief)||{};
     let html=`<div class="back" onclick="curLief=null;drawLief()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Zurück</div>
     <div class="ph"><div><div class="pht">${esc(curLief)}</div><span class="badge ${ktag(lf.kategorie)}" style="margin-top:4px;display:inline-block">${esc(lf.kategorie||'')}</span>${lf.notiz?` <span style="font-size:11px;color:var(--muted)">${esc(lf.notiz)}</span>`:''}</div>
@@ -544,7 +549,7 @@ function drawLief(){
   let html=`<div class="ph"><div class="pht">Lieferanten</div><button class="btn btn-p" onclick="openLief()">+ Lieferant</button></div><div class="lgrid">`;
   items.forEach(([k,v])=>{
     if(!v||!v.name) return;
-    const cnt=Object.values(mats).filter(m=>m&&m.lieferant===v.name).length;
+    const cnt=Object.values(mats).filter(m=>m&&matchLief(v.name,m.lieferant)).length;
     html+=`<div class="lcard" onclick="goLief('${esc(v.name)}')">
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(v.name)}</div>
       <div style="display:flex;align-items:center;gap:6px"><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span><span style="font-size:11px;color:var(--muted)">${cnt} Preis${cnt!==1?'e':''}</span></div>
@@ -817,7 +822,7 @@ function pjUpdateMat(){
   const lief=document.getElementById('pj-lief').value;
   const sel=document.getElementById('pj-mat');
   if(!lief){sel.innerHTML='<option value="">— erst Lieferant wählen —</option>';document.getElementById('pj-std').textContent='–';return;}
-  const items=Object.values(mats).filter(m=>m&&m.lieferant===lief).sort((a,b)=>{
+  const items=Object.values(mats).filter(m=>m&&matchLief(lief,m.lieferant)).sort((a,b)=>{
     const ap=a.kategorie==='Gesteinskörnung & Sand'?0:1,bp=b.kategorie==='Gesteinskörnung & Sand'?0:1;
     return ap!==bp?ap-bp:a.material.localeCompare(b.material);
   });
@@ -907,7 +912,7 @@ function delProj(k){if(!confirm('Projekt und alle Preise löschen?'))return;PR&&
 function ppUpdateMat(){
   const lief=document.getElementById('pp-lief').value;
   const sel=document.getElementById('pp-mat');
-  const items=Object.values(mats).filter(m=>m&&m.lieferant===lief).sort((a,b)=>{
+  const items=Object.values(mats).filter(m=>m&&matchLief(lief,m.lieferant)).sort((a,b)=>{
     const ap=a.kategorie==='Gesteinskörnung & Sand'?0:1, bp=b.kategorie==='Gesteinskörnung & Sand'?0:1;
     return ap!==bp?ap-bp:a.material.localeCompare(b.material);
   });
