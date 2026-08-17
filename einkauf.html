@@ -352,21 +352,11 @@ function matchLief(liefName, matLieferant){
   return liefName===matLieferant || normName(liefName)===normName(matLieferant);
 }
 function fmtPreis(p){
-  // Bereinigt Preise: "13.90" → "13,90", "9.8" → "9,80", entfernt Artefakte
-  if(!p) return '';
-  // Erst Artefakte entfernen
-  let s = String(p).replace(/[€ \/t\s]/g,'').trim();
-  // Punkt als Dezimaltrennzeichen → Komma
-  // Aber nur wenn es ein echter Dezimalpunkt ist (nicht Tausender)
-  if(s.includes('.') && !s.includes(',')){
-    s = s.replace('.', ',');
-  }
-  // Auf 2 Nachkommastellen normalisieren
-  const n = parseFloat(s.replace(',','.'));
-  if(isNaN(n)) return p;
-  // Immer 2 Nachkommastellen, nur wenn nötig
-  const fmt = n % 1 === 0 ? String(n) : n.toFixed(2).replace('.',',');
-  return fmt;
+  if(!p && p!==0) return '';
+  const s=String(p).replace(/[€\s]/g,'').replace('/t','').trim();
+  const n=parseFloat(s.replace(',','.'));
+  if(isNaN(n)) return String(p);
+  return n.toFixed(2).replace('.',',');
 }
 
 // ── Tab ──
@@ -483,7 +473,7 @@ function drawPreise(){
         html+=`<div class="ccard${isBest?' best':''}" onclick="goLief('${esc(v.lieferant)}')">
           ${isBest?'<span class="cb">Günstigster</span>':''}
           <div class="cl">${esc(v.lieferant)}</div>
-          ${v.preis?`<div class="cp">${esc(v.preis)} ${v.einheit!=='Auf Anfrage'?esc(v.einheit):''}</div>`:'<div class="ca">Auf Anfrage</div>'}
+          ${v.preis?`<div class="cp">${fmtPreis(v.preis)} ${v.einheit!=='Auf Anfrage'?esc(v.einheit):''}</div>`:'<div class="ca">Auf Anfrage</div>'}
           ${v.notiz?`<div class="cn">${esc(v.notiz)}</div>`:''}
         </div>`;
       });
@@ -584,7 +574,7 @@ function drawProj(){
         <td style="font-weight:500">${esc(pv.lieferant)}</td><td>${esc(pv.material)}</td>
         <td><span class="badge ${ktag(pv.kategorie)}">${esc(pv.kategorie)}</span></td>
         <td class="mono" style="font-weight:600">${pv.menge?pv.menge+' t':'-'}</td>
-        <td class="${pv.preis?'p-val':'p-afr'}">${pv.preis?esc(pv.preis)+' '+esc(pv.einheit||''):'Auf Anfrage'}</td>
+        <td class="${pv.preis?'p-val':'p-afr'}">${pv.preis?fmtPreis(pv.preis)+' '+esc(pv.einheit||''):'Auf Anfrage'}</td>
         <td class="mono" style="color:var(--muted)">${std&&std.preis?esc(std.preis)+' '+esc(std.einheit||''):'-'}</td>
         <td>${diff?`<span style="color:var(--green);font-weight:600;font-size:12px">${parseFloat(diff)>0?'–'+diff+'%':'±0%'}</span>`:'-'}</td>
         <td style="font-size:12px;color:var(--muted)">${esc(pv.notiz||'')}</td>
@@ -610,7 +600,7 @@ function drawProj(){
           <div style="font-size:11px;color:var(--muted)">${esc(p.lieferant||'')}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:8px">
-          ${p.preis?`<div style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:700;color:var(--green)">${esc(p.preis)} ${esc(p.einheit||'')}</div>`:'<div style="font-size:11px;color:var(--amber)">Auf Anfrage</div>'}
+          ${p.preis?`<div style="font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:700;color:var(--green)">${fmtPreis(p.preis)} ${esc(p.einheit||'')}</div>`:'<div style="font-size:11px;color:var(--amber)">Auf Anfrage</div>'}
           ${p.menge?`<div style="font-size:11px;color:var(--muted)">${esc(p.menge)} t</div>`:''}
         </div>
       </div>`).join('');
