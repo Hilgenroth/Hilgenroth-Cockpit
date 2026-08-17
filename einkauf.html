@@ -630,11 +630,11 @@ function drawProj(){
 }
 
 // ── Lieferant-Select befüllen ──
-function fillLS(id){
+function fillLS(id, selectVal){
   const sel=document.getElementById(id); if(!sel)return;
-  const cur=sel.value;
   const names=[...new Set(Object.values(liefs).filter(l=>l&&l.name).map(l=>l.name))].sort();
-  sel.innerHTML=names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+  sel.innerHTML='<option value="">— Lieferant wählen —</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if(selectVal) sel.value=selectVal;
 }
 
 // ── Sortenlisten ──
@@ -729,9 +729,20 @@ function goSorte(sorte){
 function openMat(key,forLief){
   matKey=key||null;
   document.getElementById('mat-title').textContent=key?'Material bearbeiten':'Neues Material';
-  fillLS('mat-lief');
-  if(key&&mats[key]){const v=mats[key];document.getElementById('mat-lief').value=v.lieferant||'';document.getElementById('mat-mat').value=v.material||'';document.getElementById('mat-kat').value=v.kategorie||'Gesteinskörnung & Sand';document.getElementById('mat-preis').value=v.preis||'';document.getElementById('mat-ein').value=v.einheit||'€/t';document.getElementById('mat-not').value=v.notiz||'';}
-  else{['mat-mat','mat-preis','mat-not'].forEach(id=>document.getElementById(id).value='');document.getElementById('mat-kat').value='Gesteinskörnung & Sand';document.getElementById('mat-ein').value='€/t';if(forLief)document.getElementById('mat-lief').value=forLief;}
+  if(key&&mats[key]){
+    const v=mats[key];
+    fillLS('mat-lief', v.lieferant||'');
+    document.getElementById('mat-mat').value=v.material||'';
+    document.getElementById('mat-kat').value=v.kategorie||'Gesteinskörnung & Sand';
+    document.getElementById('mat-preis').value=v.preis||'';
+    document.getElementById('mat-ein').value=v.einheit||'€/t';
+    document.getElementById('mat-not').value=v.notiz||'';
+  } else {
+    fillLS('mat-lief', forLief||'');
+    ['mat-mat','mat-preis','mat-not'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mat-kat').value='Gesteinskörnung & Sand';
+    document.getElementById('mat-ein').value='€/t';
+  }
   const _d=document.getElementById('sorten-drop');if(_d)_d.style.display='none';
   openM('bd-mat');
 }
@@ -1139,6 +1150,9 @@ function drawHist(){
           ${v.pdfUrl?`<a href="${esc(v.pdfUrl)}" target="_blank" style="color:var(--red);font-size:12px;font-weight:500">📄 PDF</a>`:''}
           ${v.mailUrl?`<a href="${esc(v.mailUrl)}" target="_blank" style="color:var(--blue);font-size:12px;font-weight:500;margin-left:6px">✉ Mail</a>`:''}
           ${!v.pdfUrl&&!v.mailUrl?`<button class="btn btn-g btn-sm" onclick="addNachweis('${Object.keys(hist).find(k=>hist[k]===v)||''}')">+ Anhang</button>`:''}
+        <button class="ib d" style="margin-left:4px" onclick="delHist('${Object.keys(hist).find(k=>hist[k]===v)||''}')" title="Eintrag löschen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
         </td>
       </tr>`;
     });
@@ -1148,6 +1162,13 @@ function drawHist(){
 }
 
 // ── Nachweis-Modal ──
+function delHist(hk){
+  if(!hk||!hist[hk])return;
+  if(!confirm('Diesen Historieneintrag löschen?'))return;
+  if(HR)HR.child(hk).remove();
+  delete hist[hk];
+  draw();
+}
 function addNachweis(hk){
   const entry=hist[hk];
   if(!entry)return;
