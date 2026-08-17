@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Einkauf – Materialliste | Hilgenroth</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
@@ -811,6 +812,109 @@ function initFB(){
   LR.once('value').then(s=>{if(!s.val()){const b={};SLIEF.forEach(l=>{const k=LR.push().key;b[k]={...l};});LR.update(b);}}).catch(()=>{});
   LR.on('value',s=>{const v=s.val();if(v&&Object.keys(v).length>0){liefs=v;}draw();},()=>{});
   PR.on('value',s=>{projs=s.val()||{};draw();},()=>{});
+}
+
+// ── Excel Import ──
+function importExcel(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      let imported = 0;
+      const katMap = {
+        'Gesteinskörnung & Sand':'Gesteinskörnung & Sand',
+        'Asphalt':'Asphalt',
+        'Beton':'Beton',
+        'Schmierstoffe':'Schmierstoffe',
+      };
+      
+      for(const sheetName of wb.SheetNames){
+        const kat = katMap[sheetName] || 'Sonstige';
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        
+        // Header-Zeile finden (enthält "Jahr" oder "Steinbruch")
+        let headerIdx = -1;
+        for(let r=0; r<Math.min(10,rows.length); r++){
+          const row = rows[r].map(v=>String(v||''));
+          if(row.some(v=>v.includes('Jahr') || v.includes('Steinbruch') || v.includes('Lieferant'))){
+            headerIdx = r; break;
+          }
+        }
+        
+        if(headerIdx < 0){
+          // Sonderbehandlung Beton: Zeile 2 = Lieferant, Zeile 2 = Materialien
+          if(sheetName === 'Beton'){
+            const matRow = rows[2] || [];
+            const lieferant = String(rows[2]?.[0]||'').replace('\n',' ').trim();
+            if(!lieferant) continue;
+            // Letzte Zeile mit Preisen nehmen (neuestes Jahr)
+            for(let r = rows.length-1; r >= 3; r--){
+              const row = rows[r];
+              if(!row || !String(row[0]||'').includes('Freipreis')) continue;
+              for(let ci=1; ci<matRow.length; ci++){
+                const mat = String(matRow[ci]||'').replace('\n',' ').trim();
+                const val = cleanXLVal(row[ci]);
+                if(mat && val){
+                  saveImportEntry(lieferant, mat, kat, val, '€/t', 'Import 2026');
+                  imported++;
+                }
+              }
+              break; // nur neueste Zeile
+            }
+          }
+          continue;
+        }
+        
+        // Normale Matrix-Struktur (Gesteinskörnung)
+        const headers = rows[headerIdx].map(v=>String(v||'').trim());
+        const materials = headers.slice(2); // ab Spalte C
+        
+        let currentLief = '';
+        for(let r = headerIdx+1; r < rows.length; r++){
+          const row = rows[r];
+          const lief = String(row[0]||'').replace('\n',' ').trim();
+          const jahr = String(row[1]||'').trim();
+          if(lief) currentLief = lief;
+          if(!jahr || !currentLief) continue;
+          if(jahr !== '2026') continue;
+          
+          for(let ci=0; ci<materials.length; ci++){
+            const mat = materials[ci];
+            if(!mat || ['div','m²','vorab.','fr.','m2'].includes(mat.toLowerCase())) continue;
+            const val = cleanXLVal(row[ci+2]);
+            if(val){
+              saveImportEntry(currentLief, mat, kat, val, '€/t', '2026 Import');
+              imported++;
+            }
+          }
+        }
+      }
+      
+      alert(imported + ' Preise aus Excel importiert!');
+      draw();
+    } catch(err){
+      alert('Import-Fehler: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function cleanXLVal(v){
+  if(v === null || v === undefined || v === '') return '';
+  const s = String(v).replace(/€/g,'').replace(/ /g,'').replace(/[^\d,\.]/g,'').trim();
+  if(!s || !/\d/.test(s)) return '';
+  const n = parseFloat(s.replace(',','.'));
+  return isNaN(n) ? '' : String(n).replace('.',',');
+}
+
+function saveImportEntry(lieferant, material, kategorie, preis, einheit, notiz){
+  const e = {lieferant, material, kategorie, preis, einheit, notiz, ts:Date.now()};
+  const k = MR.push().key;
+  MR.child(k).set(e).catch(()=>{});
+  mats[k] = e;
 }
 
 // ── Start ──
