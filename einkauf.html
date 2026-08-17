@@ -152,6 +152,9 @@ tr:hover .ra{opacity:1;}
   <button class="ntab" id="nt-proj" onclick="goTab('proj')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projektpreise
   </button>
+  <button class="ntab" id="nt-hist" onclick="goTab('hist')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>Preishistorie
+  </button>
 </div>
 
 <div class="wrap">
@@ -364,8 +367,9 @@ function fmtPreis(p){
 // ── Tab ──
 function goTab(t){
   curTab=t; curLief=null; curProj=null;
-  ['preise','lief','proj'].forEach(id=>{
-    document.getElementById('nt-'+id).className='ntab'+(t===id?' on':'');
+  ['preise','lief','proj','hist'].forEach(id=>{
+    const el=document.getElementById('nt-'+id);
+    if(el) el.className='ntab'+(t===id?' on':'');
   });
   document.getElementById('side').style.display=t==='preise'?'':'none';
   draw();
