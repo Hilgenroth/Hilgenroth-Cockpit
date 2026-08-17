@@ -198,7 +198,15 @@ tr:hover .ra{opacity:1;}
     <div class="mdt" id="lief-title">Lieferant</div>
     <div class="fr"><label>Name *</label><input class="fi" id="lf-name" placeholder="z.B. Mineral Berge Diabas"></div>
     <div class="fr"><label>Kategorie</label><select class="fs" id="lf-kat"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select></div>
-    <div class="fr"><label>Notiz</label><input class="fi" id="lf-not" placeholder="z.B. Steinbruch"></div>
+    <div class="fr"><label>Notiz</label><input class="fi" id="lf-not" placeholder="z.B. Steinbruch, Zuschläge"></div>
+    <div style="height:1px;background:var(--line);margin:14px 0"></div>
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Ansprechpartner</div>
+    <div class="fr"><label>Name</label><input class="fi" id="lf-ap-name" placeholder="z.B. Max Mustermann"></div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Telefon</label><input class="fi" id="lf-ap-tel" placeholder="z.B. 02935 12345" type="tel"></div>
+      <div class="fr" style="margin:0"><label>Mobil</label><input class="fi" id="lf-ap-mob" placeholder="z.B. 0171 12345" type="tel"></div>
+    </div>
+    <div class="fr" style="margin-top:11px"><label>E-Mail</label><input class="fi" id="lf-ap-mail" placeholder="z.B. max@lieferant.de" type="email"></div>
     <div class="ma"><button class="btn btn-g" onclick="closeM('bd-lief')">Abbrechen</button><button class="btn btn-p" onclick="saveLief()">Speichern</button></div>
   </div>
 </div>
@@ -518,7 +526,16 @@ function drawLief(){
     const items=Object.entries(mats).filter(([k,v])=>v&&matchLief(curLief,v.lieferant));
     const lf=Object.values(liefs).find(l=>l&&l.name===curLief)||{};
     let html=`<div class="back" onclick="curLief=null;drawLief()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Zurück</div>
-    <div class="ph"><div><div class="pht">${esc(curLief)}</div><span class="badge ${ktag(lf.kategorie)}" style="margin-top:4px;display:inline-block">${esc(lf.kategorie||'')}</span>${lf.notiz?` <span style="font-size:11px;color:var(--muted)">${esc(lf.notiz)}</span>`:''}</div>
+    <div class="ph"><div><div class="pht">${esc(curLief)}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:5px;flex-wrap:wrap">
+        <span class="badge ${ktag(lf.kategorie)}">${esc(lf.kategorie||'')}</span>
+        ${lf.notiz?`<span style="font-size:11px;color:var(--muted)">${esc(lf.notiz)}</span>`:''}
+        ${lf.apName?`<span style="font-size:12px;font-weight:600;color:var(--slate)">${esc(lf.apName)}</span>`:''}
+        ${lf.apTel?`<a href="tel:${esc(lf.apTel)}" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--slate);text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.62 4.9 2 2 0 0 1 3.6 2.69h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.1a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 17.92z"/></svg>${esc(lf.apTel)}</a>`:''}
+        ${lf.apMob?`<a href="tel:${esc(lf.apMob)}" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--slate);text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>${esc(lf.apMob)}</a>`:''}
+        ${lf.apMail?`<a href="mailto:${esc(lf.apMail)}" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--red);text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>${esc(lf.apMail)}</a>`:''}
+      </div>
+    </div>
     <button class="btn btn-p" onclick="openMat(null,'${esc(curLief)}')">+ Preis hinzufügen</button></div>
     <div class="twrap"><table class="tbl"><thead><tr><th>Material</th><th>Kategorie</th><th>EK-Preis</th><th>Einheit</th><th>Notiz</th><th></th></tr></thead><tbody>`;
     if(!items.length) html+=`<tr><td colspan="6"><div class="empty"><p>Noch keine Preise eingetragen.</p></div></td></tr>`;
@@ -544,6 +561,21 @@ function drawLief(){
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(v.name)}</div>
       <div style="display:flex;align-items:center;gap:6px"><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span><span style="font-size:11px;color:var(--muted)">${cnt} Preis${cnt!==1?'e':''}</span></div>
       ${v.notiz?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(v.notiz)}</div>`:''}
+      ${(v.apName||v.apTel||v.apMob||v.apMail)?`
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line)">
+        ${v.apName?`<div style="font-size:12px;font-weight:600;color:var(--slate);margin-bottom:4px">${esc(v.apName)}</div>`:''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${v.apTel?`<a href="tel:${esc(v.apTel)}" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--slate);text-decoration:none" title="${esc(v.apTel)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.62 4.9 2 2 0 0 1 3.6 2.69h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.1a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 17.92z"/></svg>
+            ${esc(v.apTel)}</a>`:''}
+          ${v.apMob?`<a href="tel:${esc(v.apMob)}" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--slate);text-decoration:none" title="Mobil: ${esc(v.apMob)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            ${esc(v.apMob)}</a>`:''}
+          ${v.apMail?`<a href="mailto:${esc(v.apMail)}" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--red);text-decoration:none" title="${esc(v.apMail)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            ${esc(v.apMail)}</a>`:''}
+        </div>
+      </div>`:''}
       <div style="display:flex;gap:4px;margin-top:10px;justify-content:flex-end">
         <button class="btn btn-g btn-sm" onclick="event.stopPropagation();openLief('${k}')">Bearb.</button>
         <button class="btn btn-g btn-sm" style="color:#ef4444" onclick="event.stopPropagation();delLief('${k}')">Löschen</button>
@@ -767,14 +799,32 @@ function delMat(k){if(!confirm('Löschen?'))return;MR&&MR.child(k).remove();dele
 function openLief(key){
   liefKey=key||null;
   document.getElementById('lief-title').textContent=key?'Lieferant bearbeiten':'Lieferant hinzufügen';
-  if(key&&liefs[key]){const v=liefs[key];document.getElementById('lf-name').value=v.name||'';document.getElementById('lf-kat').value=v.kategorie||'Gesteinskörnung & Sand';document.getElementById('lf-not').value=v.notiz||'';}
-  else{['lf-name','lf-not'].forEach(id=>document.getElementById(id).value='');document.getElementById('lf-kat').value='Gesteinskörnung & Sand';}
+  if(key&&liefs[key]){
+    const v=liefs[key];
+    document.getElementById('lf-name').value=v.name||'';
+    document.getElementById('lf-kat').value=v.kategorie||'Gesteinskörnung & Sand';
+    document.getElementById('lf-not').value=v.notiz||'';
+    document.getElementById('lf-ap-name').value=v.apName||'';
+    document.getElementById('lf-ap-tel').value=v.apTel||'';
+    document.getElementById('lf-ap-mob').value=v.apMob||'';
+    document.getElementById('lf-ap-mail').value=v.apMail||'';
+  } else {
+    ['lf-name','lf-not','lf-ap-name','lf-ap-tel','lf-ap-mob','lf-ap-mail'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('lf-kat').value='Gesteinskörnung & Sand';
+  }
   openM('bd-lief');
 }
 function saveLief(){
   const name=document.getElementById('lf-name').value.trim();
   if(!name){alert('Name ist Pflichtfeld.');return;}
-  const e={name,kategorie:document.getElementById('lf-kat').value,notiz:document.getElementById('lf-not').value.trim()};
+  const e={name,
+    kategorie:document.getElementById('lf-kat').value,
+    notiz:document.getElementById('lf-not').value.trim(),
+    apName:document.getElementById('lf-ap-name').value.trim(),
+    apTel:document.getElementById('lf-ap-tel').value.trim(),
+    apMob:document.getElementById('lf-ap-mob').value.trim(),
+    apMail:document.getElementById('lf-ap-mail').value.trim(),
+  };
   if(liefKey){LR&&LR.child(liefKey).update(e);liefs[liefKey]={...liefs[liefKey],...e};}
   else{const k=(LR?LR.push().key:'_'+Date.now());LR&&LR.child(k).set(e);liefs[k]=e;}
   closeM('bd-lief'); draw();
