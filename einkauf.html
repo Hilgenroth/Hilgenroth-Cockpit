@@ -396,11 +396,12 @@ function drawPreise(){
         <button class="btn btn-p" onclick="openMat()">+ Material</button>
     </div>
   </div>
-  <div class="sbar">
-    <div class="swrap">
+  <div class="sbar" style="position:relative">
+    <div class="swrap" style="max-width:100%;flex:1;max-width:360px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="sinp" id="sq-inp" value="${esc(sq)}" placeholder="Material suchen – Lieferanten werden verglichen …">
+      <input class="sinp" id="sq-inp" value="${esc(sq)}" placeholder="Sorte wählen oder suchen …" style="width:100%">
     </div>
+    <div id="sq-drop" style="display:none;position:absolute;top:38px;left:0;width:340px;background:#fff;border:1px solid var(--red);border-top:none;border-radius:0 0 8px 8px;max-height:240px;overflow-y:auto;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.1)"></div>
   </div>`;
 
   // Matrix-Ansicht für Gesteinskörnung & Sand
@@ -434,7 +435,12 @@ function drawPreise(){
     
     main.innerHTML = html;
     const inp=document.getElementById('sq-inp');
-    if(inp){inp.addEventListener('input',function(){sq=this.value.trim().toLowerCase();drawPreise();});const l=inp.value.length;inp.setSelectionRange(l,l);}
+    if(inp){
+      inp.addEventListener('input',function(){sq=this.value.trim().toLowerCase();fillSqDrop(sq);drawPreise();});
+      inp.addEventListener('focus',function(){fillSqDrop(this.value);});
+      inp.addEventListener('blur',function(){setTimeout(()=>{const d=document.getElementById('sq-drop');if(d)d.style.display='none';},200);});
+      const l=inp.value.length;inp.setSelectionRange(l,l);
+    }
     return;
   }
 
@@ -666,6 +672,27 @@ function updateMatList(){
   const drop=document.getElementById('sorten-drop');
   if(drop&&drop.style.display!=='none') showSortenList();
 }
+function fillSqDrop(q){
+  const drop=document.getElementById('sq-drop');
+  if(!drop)return;
+  // Alle Sorten aus Gesteinskörnung + bestehenden Einträgen
+  const baseList=['Sand 0/2','Sand 0/5','1/3','0/5L-Bettung','2/5','0/8','2/8','5/8','0/11','8/11','0/16','8/16','11/16','0/22','5/22','16/22','16/32','22/32','0/32','0/45','STS 0/45'];
+  const existing=[...new Set(Object.values(mats).filter(m=>m&&m.material).map(m=>m.material))];
+  const all=[...new Set([...baseList,...existing])];
+  const filtered=q?all.filter(s=>s.toLowerCase().includes(q.toLowerCase())):all;
+  if(!filtered.length){drop.style.display='none';return;}
+  drop.innerHTML=filtered.map(s=>`<div onclick="pickSqSorte('${esc(s)}')" style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #F0F1F4" onmouseover="this.style.background='#FCE9EC';this.style.color='#C8102E'" onmouseout="this.style.background='';this.style.color=''">${esc(s)}</div>`).join('');
+  drop.style.display='';
+}
+function pickSqSorte(s){
+  const inp=document.getElementById('sq-inp');
+  const drop=document.getElementById('sq-drop');
+  if(inp){inp.value=s;}
+  if(drop)drop.style.display='none';
+  sq=s.toLowerCase();
+  drawPreise();
+}
+
 function goSorte(sorte){
   curKat='alle';
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('on'));
@@ -1036,6 +1063,18 @@ function saveImportEntry(lieferant, material, kategorie, preis, einheit, notiz){
   MR&&MR.child(k).set(e).catch(()=>{});
   mats[k] = e;
 }
+
+// Event-Delegation für Suchfeld-Dropdown (funktioniert immer)
+document.addEventListener('focusin', function(e){
+  if(e.target && e.target.id==='sq-inp') fillSqDrop(e.target.value||'');
+});
+document.addEventListener('click', function(e){
+  // Klick außerhalb schließt Dropdown
+  if(!e.target.closest('#sq-drop') && e.target.id!=='sq-inp'){
+    const d=document.getElementById('sq-drop');
+    if(d)d.style.display='none';
+  }
+});
 
 // ── Start ──
 // Seed-Daten sofort lokal laden
