@@ -713,9 +713,8 @@ function openMat(key,forLief){
   openM('bd-mat');
 }
 function saveMat(){
-  const matInp=document.getElementById('mat-mat').value.trim();
-  const matSel=document.getElementById('mat-sel').value;
-  const l=document.getElementById('mat-lief').value, m=matInp||matSel;
+  const m=document.getElementById('mat-mat').value.trim();
+  const l=document.getElementById('mat-lief').value;
   if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
   const e={lieferant:l,material:m,kategorie:document.getElementById('mat-kat').value,preis:document.getElementById('mat-preis').value.trim(),einheit:document.getElementById('mat-ein').value,notiz:document.getElementById('mat-not').value.trim(),ts:Date.now()};
   if(matKey){MR&&MR.child(matKey).update(e);mats[matKey]={...mats[matKey],...e};}
