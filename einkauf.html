@@ -172,13 +172,11 @@ tr:hover .ra{opacity:1;}
   <div class="md">
     <div class="mdt" id="mat-title">Neues Material</div>
     <div class="fr"><label>Lieferant *</label><select class="fs" id="mat-lief"></select></div>
-    <div class="fr"><label>Sorte / Material *</label>
-      <div style="display:flex;gap:6px">
-        <select class="fs" id="mat-sel" onchange="document.getElementById('mat-mat').value=this.value" style="flex:1">
-          <option value="">— aus Liste wählen —</option>
-        </select>
-        <input class="fi" id="mat-mat" placeholder="oder frei eingeben" style="flex:1">
-      </div>
+    <div class="fr" style="position:relative">
+      <label>Sorte / Material *</label>
+      <input class="fi" id="mat-mat" placeholder="Tippen oder klicken …" autocomplete="off"
+        onfocus="showSortenList()" oninput="filterSortenList(this.value)" onblur="hideSortenDrop()" style="width:100%">
+      <div id="sorten-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #C8102E;border-top:none;border-radius:0 0 6px 6px;max-height:220px;overflow-y:auto;z-index:300;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
     </div>
     <div class="fr"><label>Kategorie</label>
       <select class="fs" id="mat-kat" onchange="updateMatList()"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select>
@@ -251,19 +249,24 @@ tr:hover .ra{opacity:1;}
 
 <script>
 // ── Firebase ──
-firebase.initializeApp({
-  apiKey:"AIzaSyBnFgq0jZsdSMMaWUNzR0rMk6ezLEr9quE",
-  authDomain:"preisliste-einkauf.firebaseapp.com",
-  databaseURL:"https://preisliste-einkauf-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:"preisliste-einkauf",
-  storageBucket:"preisliste-einkauf.firebasestorage.app",
-  messagingSenderId:"572552313968",
-  appId:"1:572552313968:web:5969b0ac5252a9bb0d08b5"
-});
-const db = firebase.database();
-const MR = db.ref('einkauf/materialien');
-const LR = db.ref('einkauf/lieferanten');
-const PR = db.ref('einkauf/projekte');
+let db=null, MR=null, LR=null, PR=null;
+try {
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp({
+      apiKey:"AIzaSyBnFgq0jZsdSMMaWUNzR0rMk6ezLEr9quE",
+      authDomain:"preisliste-einkauf.firebaseapp.com",
+      databaseURL:"https://preisliste-einkauf-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:"preisliste-einkauf",
+      storageBucket:"preisliste-einkauf.firebasestorage.app",
+      messagingSenderId:"572552313968",
+      appId:"1:572552313968:web:5969b0ac5252a9bb0d08b5"
+    });
+    db = firebase.database();
+    MR = db.ref('einkauf/materialien');
+    LR = db.ref('einkauf/lieferanten');
+    PR = db.ref('einkauf/projekte');
+  }
+} catch(e){ console.warn('Firebase nicht verfügbar:', e.message); }
 
 // ── Seed ──
 const SMAT=[
@@ -605,6 +608,73 @@ function fillLS(id){
   sel.innerHTML=names.map(n=>`<option${n===cur?' selected':''}>${esc(n)}</option>`).join('');
 }
 
+// ── Sortenlisten ──
+const SORTEN={
+  'Gesteinskörnung & Sand':['Sand 0/2','Sand 0/5','1/3','0/5L-Bettung','2/5','0/8','2/8','5/8','0/11','8/11','0/16','8/16','11/16','0/22','5/22','16/22','16/32','22/32','0/32','0/45','STS 0/45'],
+  'Asphalt':['AC 8 D S','AC 11 D S','AC 16 D S','AC 22 D S','AC 32 D S','SMA 8 S','SMA 11 S','MA 8','MA 11','PA 8'],
+  'Beton':['CEM I 42,5 N','CEM I 52,5 N','CEM II-B-S 42,5 N','CEM III A 42,5 N','CEM II A-LL 42,5 N','CEM I 52,5 R (ft)','EFA-Füller','ISOPLAST 1500 (Cont.)','ISOPLAST 1500 (Fass)','ISOSPHERE 9015 (Fass)','ISOFLOW 3740 (Cont.)','ISOFLOW 3740 (Fass)','Stahldrahtfasern'],
+  'Schmierstoffe':['Trennmittel-Emulsionen','Schal- und Trennmittel','esterbasierte Trennmittel','Warmumformschmierstoff','Kornhaus'],
+};
+function showSortenList(){
+  const kat=document.getElementById('mat-kat')?.value||'Gesteinskörnung & Sand';
+  const list=SORTEN[kat]||[];
+  const existing=[...new Set(Object.values(mats).filter(m=>m&&m.kategorie===kat).map(m=>m.material))];
+  const all=[...new Set([...list,...existing])];
+  const drop=document.getElementById('sorten-drop');
+  if(!drop)return;
+  renderSortenDrop(all, document.getElementById('mat-mat')?.value||'');
+  drop.style.display='';
+}
+
+function filterSortenList(q){
+  const kat=document.getElementById('mat-kat')?.value||'Gesteinskörnung & Sand';
+  const list=SORTEN[kat]||[];
+  const existing=[...new Set(Object.values(mats).filter(m=>m&&m.kategorie===kat).map(m=>m.material))];
+  const all=[...new Set([...list,...existing])];
+  const filtered=q?all.filter(s=>s.toLowerCase().includes(q.toLowerCase())):all;
+  const drop=document.getElementById('sorten-drop');
+  if(!drop)return;
+  renderSortenDrop(filtered,q);
+  drop.style.display=filtered.length?'':'none';
+}
+
+function renderSortenDrop(items, q){
+  const drop=document.getElementById('sorten-drop');
+  drop.innerHTML=items.map(s=>`
+    <div onclick="selectSorte('${esc(s)}')" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #F0F1F4;transition:background .1s"
+      onmouseover="this.style.background='#FCE9EC'" onmouseout="this.style.background=''">${esc(s)}</div>
+  `).join('') || '<div style="padding:8px 12px;color:#8A909B;font-size:12px">Keine Treffer</div>';
+}
+
+function selectSorte(s){
+  const inp=document.getElementById('mat-mat');
+  if(inp)inp.value=s;
+  const drop=document.getElementById('sorten-drop');
+  if(drop)drop.style.display='none';
+}
+
+function hideSortenDrop(e){
+  // Verzögert schließen damit onclick noch feuert
+  setTimeout(()=>{
+    const drop=document.getElementById('sorten-drop');
+    if(drop)drop.style.display='none';
+  },200);
+}
+
+function updateMatList(){
+  // Dropdown-Inhalt aktualisieren wenn offen
+  const drop=document.getElementById('sorten-drop');
+  if(drop&&drop.style.display!=='none') showSortenList();
+}
+function goSorte(sorte){
+  curKat='alle';
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelector('.sb-btn[onclick*="alle"]')?.classList.add('on');
+  sq=sorte.toLowerCase();
+  drawPreise();
+  setTimeout(()=>{const inp=document.getElementById('sq-inp');if(inp)inp.value=sorte;},50);
+}
+
 // ── Material CRUD ──
 function openMat(key,forLief){
   matKey=key||null;
@@ -612,6 +682,7 @@ function openMat(key,forLief){
   fillLS('mat-lief');
   if(key&&mats[key]){const v=mats[key];document.getElementById('mat-lief').value=v.lieferant||'';document.getElementById('mat-mat').value=v.material||'';document.getElementById('mat-kat').value=v.kategorie||'Gesteinskörnung & Sand';document.getElementById('mat-preis').value=v.preis||'';document.getElementById('mat-ein').value=v.einheit||'€/t';document.getElementById('mat-not').value=v.notiz||'';}
   else{['mat-mat','mat-preis','mat-not'].forEach(id=>document.getElementById(id).value='');document.getElementById('mat-kat').value='Gesteinskörnung & Sand';document.getElementById('mat-ein').value='€/t';if(forLief)document.getElementById('mat-lief').value=forLief;}
+  const _d=document.getElementById('sorten-drop');if(_d)_d.style.display='none';
   openM('bd-mat');
 }
 function saveMat(){
@@ -620,11 +691,11 @@ function saveMat(){
   const l=document.getElementById('mat-lief').value, m=matInp||matSel;
   if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
   const e={lieferant:l,material:m,kategorie:document.getElementById('mat-kat').value,preis:document.getElementById('mat-preis').value.trim(),einheit:document.getElementById('mat-ein').value,notiz:document.getElementById('mat-not').value.trim(),ts:Date.now()};
-  if(matKey){MR.child(matKey).update(e);mats[matKey]={...mats[matKey],...e};}
-  else{const k=MR.push().key;MR.child(k).set(e);mats[k]=e;}
+  if(matKey){MR&&MR.child(matKey).update(e);mats[matKey]={...mats[matKey],...e};}
+  else{const k=(MR?MR.push().key:'_'+Date.now());MR&&MR.child(k).set(e);mats[k]=e;}
   closeM('bd-mat'); draw();
 }
-function delMat(k){if(!confirm('Löschen?'))return;MR.child(k).remove();delete mats[k];draw();}
+function delMat(k){if(!confirm('Löschen?'))return;MR&&MR.child(k).remove();delete mats[k];draw();}
 
 // ── Lieferant CRUD ──
 function openLief(key){
@@ -638,11 +709,11 @@ function saveLief(){
   const name=document.getElementById('lf-name').value.trim();
   if(!name){alert('Name ist Pflichtfeld.');return;}
   const e={name,kategorie:document.getElementById('lf-kat').value,notiz:document.getElementById('lf-not').value.trim()};
-  if(liefKey){LR.child(liefKey).update(e);liefs[liefKey]={...liefs[liefKey],...e};}
-  else{const k=LR.push().key;LR.child(k).set(e);liefs[k]=e;}
+  if(liefKey){LR&&LR.child(liefKey).update(e);liefs[liefKey]={...liefs[liefKey],...e};}
+  else{const k=(LR?LR.push().key:'_'+Date.now());LR&&LR.child(k).set(e);liefs[k]=e;}
   closeM('bd-lief'); draw();
 }
-function delLief(k){if(!confirm('Löschen?'))return;LR.child(k).remove();delete liefs[k];draw();}
+function delLief(k){if(!confirm('Löschen?'))return;LR&&LR.child(k).remove();delete liefs[k];draw();}
 
 // ── Projekt CRUD ──
 function openProj(key){
@@ -734,12 +805,12 @@ function saveProj(){
   const mat=document.getElementById('pj-mat').value.trim();
   let projId;
   if(projKey){
-    PR.child(projKey).update(e);
+    PR&&PR.child(projKey).update(e);
     projs[projKey]={...projs[projKey],...e};
     projId=projKey;
   } else {
-    const k=PR.push().key;
-    PR.child(k).set({...e,preise:{}});
+    const k=(PR?PR.push().key:'_'+Date.now());
+    PR&&PR.child(k).set({...e,preise:{}});
     projs[k]={...e,preise:{}};
     projId=k;
   }
@@ -751,7 +822,7 @@ function saveProj(){
       menge:document.getElementById('pj-menge').value.trim(),
       einheit:document.getElementById('pj-ein').value,
       notiz:document.getElementById('pj-pnot').value.trim()};
-    const ref=PR.child(projId).child('preise');
+    const ref=PR&&PR.child(projId).child('preise');
     const pk=ref.push().key;
     ref.child(pk).set(pe);
     if(!projs[projId].preise) projs[projId].preise={};
@@ -759,7 +830,7 @@ function saveProj(){
   }
   closeM('bd-proj'); draw();
 }
-function delProj(k){if(!confirm('Projekt und alle Preise löschen?'))return;PR.child(k).remove();delete projs[k];if(curProj===k)curProj=null;draw();}
+function delProj(k){if(!confirm('Projekt und alle Preise löschen?'))return;PR&&PR.child(k).remove();delete projs[k];if(curProj===k)curProj=null;draw();}
 
 // ── Projektpreis CRUD ──
 function ppUpdateMat(){
@@ -839,13 +910,13 @@ function savePP(){
   const l=document.getElementById('pp-lief').value, m=document.getElementById('pp-mat').value.trim();
   if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
   const e={lieferant:l,material:m,kategorie:document.getElementById('pp-kat').value,preis:document.getElementById('pp-preis').value.trim(),menge:document.getElementById('pp-menge').value.trim(),einheit:document.getElementById('pp-ein').value,notiz:document.getElementById('pp-not').value.trim()};
-  const ref=PR.child(curProj).child('preise');
+  const ref=PR&&PR.child(curProj).child('preise');
   if(!projs[curProj].preise) projs[curProj].preise={};
   if(ppKey){ref.child(ppKey).update(e);projs[curProj].preise[ppKey]={...projs[curProj].preise[ppKey],...e};}
   else{const k=ref.push().key;ref.child(k).set(e);projs[curProj].preise[k]=e;}
   closeM('bd-pp'); draw();
 }
-function delPP(k){if(!confirm('Löschen?'))return;PR.child(curProj).child('preise').child(k).remove();delete projs[curProj].preise[k];draw();}
+function delPP(k){if(!confirm('Löschen?'))return;PR&&PR.child(curProj).child('preise').child(k).remove();delete projs[curProj].preise[k];draw();}
 
 // ── Modal ──
 function openM(id){document.getElementById(id).classList.add('on');}
@@ -856,11 +927,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 // ── Firebase Init ──
 function initFB(){
   db.ref('.info/connected').on('value',s=>sync(!!s.val()));
-  MR.once('value').then(s=>{if(!s.val()){const b={};SMAT.forEach(m=>{const k=MR.push().key;b[k]={...m};});MR.update(b);}}).catch(()=>{});
-  MR.on('value',s=>{const v=s.val();if(v&&Object.keys(v).length>0){mats=v;}draw();},()=>{});
-  LR.once('value').then(s=>{if(!s.val()){const b={};SLIEF.forEach(l=>{const k=LR.push().key;b[k]={...l};});LR.update(b);}}).catch(()=>{});
-  LR.on('value',s=>{const v=s.val();if(v&&Object.keys(v).length>0){liefs=v;}draw();},()=>{});
-  PR.on('value',s=>{projs=s.val()||{};draw();},()=>{});
+  MR&&MR.once('value').then(s=>{if(!s.val()){const b={};SMAT.forEach(m=>{const k=(MR?MR.push().key:'_'+Date.now());b[k]={...m};});MR.update(b);}}).catch(()=>{});
+  MR&&MR.on('value',s=>{const v=s.val();if(v&&Object.keys(v).length>0){mats=v;}draw();},()=>{});
+  LR&&LR.once('value').then(s=>{if(!s.val()){const b={};SLIEF.forEach(l=>{const k=(LR?LR.push().key:'_'+Date.now());b[k]={...l};});LR.update(b);}}).catch(()=>{});
+  LR&&LR.on('value',s=>{const v=s.val();if(v&&Object.keys(v).length>0){liefs=v;}draw();},()=>{});
+  PR&&PR.on('value',s=>{projs=s.val()||{};draw();},()=>{});
 }
 
 // ── Excel Import ──
@@ -961,8 +1032,8 @@ function cleanXLVal(v){
 
 function saveImportEntry(lieferant, material, kategorie, preis, einheit, notiz){
   const e = {lieferant, material, kategorie, preis, einheit, notiz, ts:Date.now()};
-  const k = MR.push().key;
-  MR.child(k).set(e).catch(()=>{});
+  const k = (MR?MR.push().key:'_'+Date.now());
+  MR&&MR.child(k).set(e).catch(()=>{});
   mats[k] = e;
 }
 
