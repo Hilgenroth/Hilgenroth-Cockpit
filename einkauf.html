@@ -80,6 +80,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#F7F8FA;color:#1B1D22;fon
 /* Table */
 .twrap{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
 .tbl{width:100%;border-collapse:collapse;}
+.tbl-wrap{overflow-x:auto;}
 .tbl th{background:var(--bg);padding:8px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;}
 .tbl td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
 .tbl tr:last-child td{border-bottom:none;}
@@ -171,9 +172,16 @@ tr:hover .ra{opacity:1;}
   <div class="md">
     <div class="mdt" id="mat-title">Neues Material</div>
     <div class="fr"><label>Lieferant *</label><select class="fs" id="mat-lief"></select></div>
-    <div class="fr"><label>Material / Sorte *</label><input class="fi" id="mat-mat" placeholder="z.B. Sand 0/2"></div>
+    <div class="fr"><label>Sorte / Material *</label>
+      <div style="display:flex;gap:6px">
+        <select class="fs" id="mat-sel" onchange="document.getElementById('mat-mat').value=this.value" style="flex:1">
+          <option value="">— aus Liste wählen —</option>
+        </select>
+        <input class="fi" id="mat-mat" placeholder="oder frei eingeben" style="flex:1">
+      </div>
+    </div>
     <div class="fr"><label>Kategorie</label>
-      <select class="fs" id="mat-kat"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select>
+      <select class="fs" id="mat-kat" onchange="updateMatList()"><option>Gesteinskörnung &amp; Sand</option><option>Asphalt</option><option>Beton</option><option>Schmierstoffe</option><option>Sonstige</option></select>
     </div>
     <div class="fr2">
       <div class="fr" style="margin:0"><label>EK-Preis</label><input class="fi" id="mat-preis" placeholder="z.B. 15,70"></div>
@@ -392,6 +400,41 @@ function drawPreise(){
     </div>
   </div>`;
 
+  // Matrix-Ansicht für Gesteinskörnung & Sand
+  if(curKat==='Gesteinskörnung & Sand' && !isSearch){
+    const matOrder = ['Sand 0/2', 'Sand 0/5', '1/3', '0/5L-Bettung', '2/5', '0/8', '2/8', '5/8', '0/11', '8/11', '0/16', '8/16', '11/16', '0/22', '5/22', '16/22', '16/32', '22/32', '0/32', '0/45', 'STS 0/45'];
+    // Alle Lieferanten die Gesteinskörnung haben
+    const gsRows = Object.entries(mats).filter(([k,v])=>v&&v.kategorie==='Gesteinskörnung & Sand');
+    const liefs = [...new Set(gsRows.map(([k,v])=>v.lieferant))].sort();
+    
+    html += `<div style="overflow-x:auto"><table class="tbl" style="min-width:900px">
+      <thead><tr>
+        <th style="min-width:160px;position:sticky;left:0;background:var(--bg);z-index:2">Lieferant</th>
+        ${matOrder.map(m=>`<th style="text-align:center;white-space:nowrap;font-size:10px;cursor:pointer;transition:.12s" onclick="goSorte('${esc(m)}')" title="Alle Preise für ${esc(m)}">${esc(m)}<br><span style="font-size:8px;color:var(--muted);font-weight:400">▼ Vergleich</span></th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${liefs.map(lief=>{
+          const liefRows = gsRows.filter(([k,v])=>v.lieferant===lief);
+          return `<tr>
+            <td style="font-weight:600;position:sticky;left:0;background:var(--white);z-index:1;cursor:pointer;color:var(--red)" onclick="goLief('${esc(lief)}')">${esc(lief)}</td>
+            ${matOrder.map(mat=>{
+              const entry = liefRows.find(([k,v])=>v.material===mat);
+              const preis = entry?entry[1].preis:'';
+              return preis
+                ? `<td style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--green)">${esc(preis)}</td>`
+                : `<td style="text-align:center;color:var(--line)">–</td>`;
+            }).join('')}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>`;
+    
+    main.innerHTML = html;
+    const inp=document.getElementById('sq-inp');
+    if(inp){inp.addEventListener('input',function(){sq=this.value.trim().toLowerCase();drawPreise();});const l=inp.value.length;inp.setSelectionRange(l,l);}
+    return;
+  }
+
   if(isSearch){
     if(!fg.length){html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><p>Kein Material gefunden für „${esc(sq)}"</p></div>`;}
     fg.forEach(([mk,grp])=>{
@@ -572,7 +615,9 @@ function openMat(key,forLief){
   openM('bd-mat');
 }
 function saveMat(){
-  const l=document.getElementById('mat-lief').value, m=document.getElementById('mat-mat').value.trim();
+  const matInp=document.getElementById('mat-mat').value.trim();
+  const matSel=document.getElementById('mat-sel').value;
+  const l=document.getElementById('mat-lief').value, m=matInp||matSel;
   if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
   const e={lieferant:l,material:m,kategorie:document.getElementById('mat-kat').value,preis:document.getElementById('mat-preis').value.trim(),einheit:document.getElementById('mat-ein').value,notiz:document.getElementById('mat-not').value.trim(),ts:Date.now()};
   if(matKey){MR.child(matKey).update(e);mats[matKey]={...mats[matKey],...e};}
