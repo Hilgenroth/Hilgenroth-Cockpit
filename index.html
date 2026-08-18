@@ -270,6 +270,7 @@ const IC = {
   urlaub:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v3M16 2v3M3 9h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M8 14l2 2 4-4"/></svg>`,
   einkauf:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`,
   sped:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg>`,
+  geraete:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`,
   miet:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>`,
   lief:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s-6-5.686-6-10a6 6 0 1 1 12 0c0 4.314-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>`,
   dispo:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 3h13v10H1zM14 8h4l3 4v3h-7"/><circle cx="5.5" cy="17.5" r="2"/><circle cx="17.5" cy="17.5" r="2"/></svg>`,
@@ -293,6 +294,7 @@ const TOOLS = {
     {id:'he-labor',    label:'Labor',              icon:'labor',   sub:true},
     {id:'he-einkauf',  label:'Einkauf',            icon:'einkauf', file:'einkauf.html'},
     {id:'he-sped',     label:'Spedition',           icon:'sped',    file:'spedition.html'},
+    {id:'he-geraete',  label:'Geräte- & Fahrzeug-Manager', icon:'geraete', file:'geraete.html'},
   ],
 };
 
@@ -435,6 +437,7 @@ const ALL_PERMS = [
   {id:'he-labor',  label:'Labor',            company:'hellefeld'},
   {id:'he-einkauf',label:'Einkauf',          company:'hellefeld'},
   {id:'he-sped',   label:'Spedition',        company:'hellefeld'},
+  {id:'he-geraete',label:'Geräte-Manager',   company:'hellefeld'},
 ];
 
 const ADMIN_PASS = 'Hilgenroth2026!'; // ← Master-Admin-Passwort
