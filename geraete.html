@@ -253,7 +253,14 @@ tr:hover .ra{opacity:1;}
       <div class="fr" style="margin:0"><label>Rechnungsnummer</label><input class="fi" id="rep-rgnr" placeholder="z.B. RG-2026-0042"></div>
       <div class="fr" style="margin:0"><label>Kosten netto (€)</label><input class="fi" id="rep-preis" placeholder="z.B. 850,00" oninput="cleanRepPreis(this)"></div>
     </div>
-    <div class="fr"><label>Werkstatt / Lieferant</label><input class="fi" id="rep-firma" placeholder="z.B. Werkstatt Müller"></div>
+    <div class="fr"><label>Werkstatt / Lieferant</label>
+      <div style="display:flex;gap:6px">
+        <select class="fs" id="rep-firma-sel" onchange="if(this.value)document.getElementById('rep-firma').value=this.value" style="flex:1">
+          <option value="">— aus gespeicherten wählen —</option>
+        </select>
+        <input class="fi" id="rep-firma" placeholder="oder neu eingeben" style="flex:1">
+      </div>
+    </div>
     <div class="fr"><label>Notiz</label><input class="fi" id="rep-notiz" placeholder="z.B. Garantie bis …"></div>
     <div class="ma">
       <button class="btn btn-g" onclick="closeM('bd-rep')">Abbrechen</button>
@@ -287,7 +294,7 @@ tr:hover .ra{opacity:1;}
 
 <script>
 // ── Firebase (Dispo-Hellefeld) ──
-let db=null, GR=null, KR=null, RR=null;
+let db=null, GR=null, KR=null, RR=null, WR=null;
 try {
   if(typeof firebase !== 'undefined'){
     firebase.initializeApp({
@@ -303,12 +310,13 @@ try {
     GR = db.ref('geraete/items');
     KR = db.ref('geraete/kategorien');
     RR = db.ref('geraete/reparaturen');
+    WR = db.ref('geraete/werkstaetten');
   }
 } catch(e){ console.warn('Firebase:', e.message); }
 
 // ── State ──
-let geraete={}, kats={}, reparaturen={};
-let curKat=null, curTab='all', curGeraetDetail=null, geraetKey=null, katKey=null, repKey=null, viewMode='grid', sq='';
+let geraete={}, kats={}, reparaturen={}, werkstaetten={};
+let curKat=null, curTab='all', curGeraetDetail=null, geraetKey=null, katKey=null, repKey=null, wsKey=null, viewMode='grid', sq='';
 
 // ── Farben ──
 const COLORS={
@@ -650,6 +658,24 @@ function drawDetail(){
 }
 
 // ── Reparatur CRUD ──
+function fillWerkSel(){
+  const sel=document.getElementById('rep-firma-sel');
+  if(!sel)return;
+  const cur=sel.value;
+  const names=[...new Set(Object.values(werkstaetten).filter(w=>w&&w.name).map(w=>w.name))].sort();
+  sel.innerHTML='<option value="">— aus gespeicherten wählen —</option>'+
+    names.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+}
+
+function saveWerkstatt(name){
+  if(!name||Object.values(werkstaetten).find(w=>w&&w.name===name))return;
+  const k=WR?WR.push().key:'w_'+Date.now();
+  const e={name,ts:Date.now()};
+  if(WR)WR.child(k).set(e);
+  werkstaetten[k]=e;
+  fillWerkSel();
+}
+
 function openRep(geraetId){
   repKey=null;
   document.getElementById('rep-title').textContent='Reparatur / Ereignis erfassen';
@@ -657,6 +683,7 @@ function openRep(geraetId){
   ['rep-beschr','rep-rgnr','rep-preis','rep-firma','rep-notiz'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('rep-art').value='Reparatur';
   document.getElementById('bd-rep').dataset.geraetId=geraetId;
+  fillWerkSel();
   openM('bd-rep');
 }
 function cleanRepPreis(inp){
@@ -676,13 +703,15 @@ function saveRep(){
     beschr,
     rgnr:document.getElementById('rep-rgnr').value.trim(),
     preis:document.getElementById('rep-preis').value.trim(),
-    firma:document.getElementById('rep-firma').value.trim(),
+    firma:(document.getElementById('rep-firma').value.trim()||document.getElementById('rep-firma-sel').value),
     notiz:document.getElementById('rep-notiz').value.trim(),
     ts:Date.now()
   };
   const rk=RR?RR.push().key:'r_'+Date.now();
   if(RR)RR.child(rk).set(e);
   reparaturen[rk]=e;
+  // Werkstatt automatisch speichern
+  if(e.firma) saveWerkstatt(e.firma);
   closeM('bd-rep');
   curGeraetDetail=geraetId;
   curTab='detail';
@@ -814,6 +843,7 @@ function initFB(){
     KR.on('value',s=>{const v=s.val();if(v){kats=v;}draw();},()=>{});
     GR.on('value',s=>{const v=s.val();if(v){geraete=v;}draw();},()=>{});
     RR.on('value',s=>{reparaturen=s.val()||{};draw();},()=>{});
+    WR.on('value',s=>{werkstaetten=s.val()||{};fillWerkSel();},()=>{});
   }catch(e){console.warn(e);}
 }
 
