@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geräte- & Fahrzeug-Manager | Hilgenroth</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F8FA;color:#1B1D22;font-size:14px;display:flex;flex-direction:column;}
+:root{
+  --red:#C8102E;--red-d:#9E0C24;--red-l:#FCE9EC;
+  --ink:#1B1D22;--slate:#4A4F58;--muted:#8A909B;
+  --line:#E6E8EC;--bg:#F7F8FA;--white:#fff;
+  --green:#16a34a;--green-l:#dcfce7;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --red-warn:#dc2626;
+}
+
+/* Nav */
+.nav{display:flex;background:var(--white);border-bottom:1px solid var(--line);padding:0 20px;flex-shrink:0;align-items:center;}
+.ntab{height:42px;padding:0 14px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px;transition:.14s;white-space:nowrap;}
+.ntab:hover{color:var(--ink);}
+.ntab.on{color:var(--red);border-bottom-color:var(--red);font-weight:600;}
+.ntab svg{width:14px;height:14px;stroke-width:1.8;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--amber);}
+.sdot.on{background:var(--green);}
+.slbl{font-size:11px;color:var(--muted);}
+
+/* Layout */
+.wrap{display:flex;flex:1;overflow:hidden;}
+.side{width:200px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);overflow-y:auto;padding:10px 0;}
+.side-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 14px 4px;}
+.cat-btn{width:100%;text-align:left;padding:7px 14px;background:none;border:none;border-left:3px solid transparent;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;color:var(--slate);display:flex;align-items:center;justify-content:space-between;transition:.12s;}
+.cat-btn:hover{background:var(--bg);color:var(--ink);}
+.cat-btn.on{background:var(--red-l);color:var(--red);border-left-color:var(--red);}
+.cat-btn .cnt{font-size:10px;font-family:'IBM Plex Mono',monospace;}
+.cat-edit{width:20px;height:20px;border:none;background:none;cursor:pointer;color:var(--muted);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:.12s;}
+.cat-btn:hover .cat-edit{opacity:1;}
+.cat-edit:hover{color:var(--red);background:var(--red-l);}
+.cat-edit svg{width:11px;height:11px;stroke-width:2;}
+.add-cat{width:100%;text-align:left;padding:7px 14px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;font-family:'IBM Plex Sans',sans-serif;transition:.12s;}
+.add-cat:hover{color:var(--red);}
+
+/* Main */
+.main{flex:1;overflow-y:auto;padding:18px 22px;}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+.pht{font-size:16px;font-weight:600;}
+.ph-r{display:flex;gap:8px;align-items:center;}
+
+/* Buttons */
+.btn{height:30px;padding:0 13px;border-radius:6px;font-size:12px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:.14s;white-space:nowrap;}
+.btn-p{background:var(--red);color:#fff;}.btn-p:hover{background:var(--red-d);}
+.btn-g{background:transparent;border:1px solid var(--line);color:var(--slate);}.btn-g:hover{border-color:var(--muted);color:var(--ink);}
+.btn-sm{height:26px;padding:0 9px;font-size:11px;border-radius:4px;}
+
+/* Suche */
+.swrap{position:relative;}
+.swrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--muted);stroke-width:2;pointer-events:none;}
+.sinp{height:30px;padding:0 10px 0 30px;border:1px solid var(--line);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:var(--ink);background:var(--white);width:200px;}
+.sinp:focus{outline:none;border-color:var(--red);}
+
+/* Karten-Grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:16px;transition:.14s;cursor:pointer;}
+.card:hover{border-color:var(--red);box-shadow:0 2px 10px rgba(200,16,46,.08);}
+.card.warn{border-left:4px solid var(--amber);}
+.card.overdue{border-left:4px solid var(--red-warn);}
+.card-head{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;}
+.card-name{font-size:14px;font-weight:700;color:var(--ink);}
+.card-nr{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+.card-kat{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--blue-l);color:var(--blue);}
+.card-body{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;}
+.card-field{font-size:11px;}
+.card-field .lbl{color:var(--muted);margin-bottom:1px;}
+.card-field .val{font-weight:500;color:var(--ink);}
+.card-field .val.warn{color:var(--amber);font-weight:600;}
+.card-field .val.ok{color:var(--green);}
+.card-field .val.over{color:var(--red-warn);font-weight:600;}
+.card-actions{display:flex;gap:4px;margin-top:12px;justify-content:flex-end;}
+.ib{width:26px;height:26px;border-radius:4px;border:1px solid var(--line);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ib svg{width:13px;height:13px;stroke-width:1.8;}
+.ib.e:hover{border-color:var(--red);color:var(--red);}
+.ib.d:hover{border-color:#ef4444;color:#ef4444;}
+
+/* Status-Badges */
+.status-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.sbadge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;}
+.sbadge svg{width:10px;height:10px;stroke-width:2.5;}
+.sbadge.ok{background:var(--green-l);color:var(--green);}
+.sbadge.warn{background:var(--amber-l);color:var(--amber);}
+.sbadge.over{background:#fee2e2;color:var(--red-warn);}
+
+/* Tabellen-Ansicht */
+.twrap{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:var(--bg);padding:8px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg);}
+.ra{display:flex;gap:3px;opacity:0;transition:.12s;}
+tr:hover .ra{opacity:1;}
+
+/* Modal */
+.bd{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:200;}
+.bd.on{display:flex;}
+.md{background:var(--white);border-radius:10px;padding:24px;width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.14);}
+.mdt{font-size:15px;font-weight:600;margin-bottom:18px;}
+.fr{margin-bottom:12px;}
+.fr label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);display:block;margin-bottom:4px;}
+.fi,.fs{width:100%;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--white);}
+.fi:focus,.fs:focus{outline:none;border-color:var(--red);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.ma{display:flex;gap:7px;justify-content:flex-end;margin-top:18px;}
+.divider{height:1px;background:var(--line);margin:16px 0;}
+.section-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;}
+
+.empty{padding:40px;text-align:center;color:var(--muted);}
+.empty svg{width:36px;height:36px;stroke:var(--muted);margin:0 auto 10px;display:block;opacity:.3;}
+.view-toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+.vt-btn{height:28px;width:30px;border:none;background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.12s;}
+.vt-btn.on{background:var(--red);color:#fff;}
+.vt-btn svg{width:14px;height:14px;stroke-width:1.8;}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="ntab on" id="nt-all" onclick="goTab('all')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Alle Geräte
+  </button>
+  <button class="ntab" id="nt-due" onclick="goTab('due')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Fällige Prüfungen
+  </button>
+  <div class="nav-right">
+    <span class="sdot" id="sdot"></span><span class="slbl" id="slbl">verbinde …</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <aside class="side">
+    <div class="side-lbl">Kategorien</div>
+    <button class="cat-btn on" id="cb-alle" onclick="setCat(null,this)">
+      <span>Alle</span><span class="cnt" id="cnt-alle"></span>
+    </button>
+    <div id="cat-list"></div>
+    <button class="add-cat" onclick="openCatModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Kategorie hinzufügen
+    </button>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Gerät Modal -->
+<div class="bd" id="bd-geraet">
+  <div class="md">
+    <div class="mdt" id="g-title">Neues Gerät / Fahrzeug</div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Bezeichnung *</label><input class="fi" id="g-name" placeholder="z.B. Bagger Liebherr"></div>
+      <div class="fr" style="margin:0"><label>Kategorie</label><select class="fs" id="g-kat" onchange="updateBstLabel()"></select></div>
+    </div>
+    <div class="fr2" style="margin-top:12px">
+      <div class="fr" style="margin:0"><label>Kennzeichen</label><input class="fi" id="g-kz" placeholder="z.B. SO-HI 123"></div>
+      <div class="fr" style="margin:0"><label>Seriennummer</label><input class="fi" id="g-sn" placeholder="z.B. SN-2024-001"></div>
+    </div>
+    <div class="fr" style="margin-top:12px"><label>Standort / Ort</label><input class="fi" id="g-ort" placeholder="z.B. Hellefeld, Bauhof"></div>
+    <div class="divider"></div>
+    <div class="section-lbl">Anschaffung & Betrieb</div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Anschaffungsdatum</label><input class="fi" type="date" id="g-datum"></div>
+      <div class="fr" style="margin:0"><label id="g-bst-lbl">Betriebsstunden / km</label><input class="fi" id="g-bst" placeholder="z.B. 4500" type="number"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-lbl">TÜV / Prüftermine</div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>HU fällig am</label><input class="fi" type="date" id="g-hu"></div>
+      <div class="fr" style="margin:0"><label>SP fällig am</label><input class="fi" type="date" id="g-sp"></div>
+    </div>
+    <div class="fr" style="margin-top:12px"><label>Weitere Prüfung (z.B. UVV)</label>
+      <div class="fr2" style="gap:6px">
+        <input class="fi" id="g-pruef-name" placeholder="Bezeichnung z.B. UVV">
+        <input class="fi" type="date" id="g-pruef-date">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="fr"><label>Notiz</label><input class="fi" id="g-notiz" placeholder="z.B. Ölwechsel fällig, Defekte …"></div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-geraet')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveGeraet()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Kategorie Modal -->
+<div class="bd" id="bd-kat">
+  <div class="md" style="width:360px">
+    <div class="mdt" id="kat-title">Kategorie</div>
+    <div class="fr"><label>Name *</label><input class="fi" id="kat-name" placeholder="z.B. Baumaschinen"></div>
+    <div class="fr"><label>Farbe</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="kat-colors">
+        <label style="cursor:pointer" title="Blau"><input type="radio" name="kat-color" value="blue" style="display:none"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:#dbeafe;border:2px solid #1d4ed8"></span></label>
+        <label style="cursor:pointer" title="Grün"><input type="radio" name="kat-color" value="green" style="display:none"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:#dcfce7;border:2px solid #16a34a"></span></label>
+        <label style="cursor:pointer" title="Amber"><input type="radio" name="kat-color" value="amber" style="display:none"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:#fef3c7;border:2px solid #d97706"></span></label>
+        <label style="cursor:pointer" title="Rot"><input type="radio" name="kat-color" value="red" style="display:none"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:#fee2e2;border:2px solid #dc2626"></span></label>
+        <label style="cursor:pointer" title="Lila"><input type="radio" name="kat-color" value="purple" style="display:none"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:#ede9fe;border:2px solid #7c3aed"></span></label>
+        <label style="cursor:pointer" title="Grau"><input type="radio" name="kat-color" value="gray" style="display:none"><span style="display:inline-block;width:22px;height:22px;border-radius:4px;background:#f1f5f9;border:2px solid #64748b"></span></label>
+      </div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-kat')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveKat()">Speichern</button>
+      <button class="btn btn-g" id="del-kat-btn" style="display:none;color:#ef4444" onclick="delKat()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Firebase (Dispo-Hellefeld) ──
+let db=null, GR=null, KR=null;
+try {
+  if(typeof firebase !== 'undefined'){
+    firebase.initializeApp({
+      apiKey:"AIzaSyAuU6mF5p5JQ5qvwLVbYUGc1v-HoQ8ZUMw",
+      authDomain:"dispo-hellefeld.firebaseapp.com",
+      databaseURL:"https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:"dispo-hellefeld",
+      storageBucket:"dispo-hellefeld.firebasestorage.app",
+      messagingSenderId:"34994251645",
+      appId:"1:34994251645:web:2f8a076d385bb245354e14"
+    });
+    db = firebase.database();
+    GR = db.ref('geraete/items');
+    KR = db.ref('geraete/kategorien');
+  }
+} catch(e){ console.warn('Firebase:', e.message); }
+
+// ── State ──
+let geraete={}, kats={};
+let curKat=null, curTab='all', geraetKey=null, katKey=null, viewMode='grid', sq='';
+
+// ── Farben ──
+const COLORS={
+  blue:{bg:'#dbeafe',col:'#1d4ed8'},
+  green:{bg:'#dcfce7',col:'#16a34a'},
+  amber:{bg:'#fef3c7',col:'#d97706'},
+  red:{bg:'#fee2e2',col:'#dc2626'},
+  purple:{bg:'#ede9fe',col:'#7c3aed'},
+  gray:{bg:'#f1f5f9',col:'#64748b'},
+};
+
+// ── Standard-Kategorien ──
+const DEFAULT_KATS=[
+  {name:'Baumaschinen',color:'amber'},
+  {name:'Fahrzeuge',color:'blue'},
+  {name:'Anhänger',color:'gray'},
+  {name:'Werkzeuge & Geräte',color:'green'},
+];
+
+// ── Helpers ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=on?'synchronisiert':'offline';}
+
+// ── Datum-Helpers ──
+function daysUntil(dateStr){
+  if(!dateStr)return null;
+  const d=new Date(dateStr), now=new Date();
+  now.setHours(0,0,0,0);
+  return Math.round((d-now)/(1000*60*60*24));
+}
+function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
+function statusClass(days){
+  if(days===null)return'';
+  if(days<0)return'over';
+  if(days<=30)return'warn';
+  return'ok';
+}
+function statusLabel(days){
+  if(days===null)return'–';
+  if(days<0)return`${Math.abs(days)} Tage überfällig`;
+  if(days===0)return'Heute fällig!';
+  if(days<=30)return`in ${days} Tagen`;
+  return fmtDate;
+}
+
+// ── Tab ──
+function goTab(t){
+  curTab=t;
+  ['all','due'].forEach(id=>{
+    const el=document.getElementById('nt-'+id);
+    if(el)el.className='ntab'+(t===id?' on':'');
+  });
+  draw();
+}
+
+// ── Kategorie ──
+function setCat(kat,btn){
+  curKat=kat;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  draw();
+}
+
+// ── Sidebar ──
+function buildSidebar(){
+  const list=document.getElementById('cat-list');
+  const total=Object.keys(geraete).length;
+  document.getElementById('cnt-alle').textContent=total;
+  list.innerHTML=Object.entries(kats).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([k,v])=>{
+    if(!v||!v.name)return'';
+    const cnt=Object.values(geraete).filter(g=>g&&g.kategorie===v.name).length;
+    const col=COLORS[v.color||'blue'];
+    return `<button class="cat-btn${curKat===v.name?' on':''}" onclick="setCat('${esc(v.name)}',this)">
+      <span style="display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${col.col};flex-shrink:0"></span>
+        ${esc(v.name)}
+      </span>
+      <span style="display:flex;align-items:center;gap:4px">
+        <span class="cnt">${cnt}</span>
+        <button class="cat-edit" onclick="event.stopPropagation();openCatModal('${k}')" title="Bearbeiten">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+        </button>
+      </span>
+    </button>`;
+  }).join('');
+}
+
+// ── Kategorie-Select im Gerät-Modal ──
+function fillKatSel(){
+  const sel=document.getElementById('g-kat');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— wählen —</option>'+
+    Object.values(kats).filter(v=>v&&v.name).sort((a,b)=>a.name.localeCompare(b.name))
+    .map(v=>`<option value="${esc(v.name)}"${v.name===cur?' selected':''}>${esc(v.name)}</option>`).join('');
+}
+
+// ── Draw ──
+function draw(){
+  buildSidebar();
+  fillKatSel();
+  if(curTab==='due') drawDue();
+  else drawAll();
+}
+
+// ── Alle Geräte ──
+function drawAll(){
+  const main=document.getElementById('main');
+  let items=Object.entries(geraete).filter(([k,v])=>v&&v.name);
+  if(curKat) items=items.filter(([k,v])=>v.kategorie===curKat);
+  if(sq) items=items.filter(([k,v])=>((v.name||'')+(v.kz||'')+(v.sn||'')+(v.ort||'')+(v.notiz||'')).toLowerCase().includes(sq));
+  items.sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+
+  let html=`<div class="ph">
+    <div class="pht">${curKat||'Alle Geräte & Fahrzeuge'}</div>
+    <div class="ph-r">
+      <div class="swrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="sinp" id="sq-inp" placeholder="Suchen …" value="${esc(sq)}">
+      </div>
+      <div class="view-toggle">
+        <button class="vt-btn${viewMode==='grid'?' on':''}" onclick="viewMode='grid';draw()" title="Kacheln">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </button>
+        <button class="vt-btn${viewMode==='list'?' on':''}" onclick="viewMode='list';draw()" title="Liste">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+      </div>
+      <span style="font-size:12px;color:var(--muted)">${items.length} Geräte</span>
+      <button class="btn btn-p" onclick="openGeraet()">+ Gerät / Fahrzeug</button>
+    </div>
+  </div>`;
+
+  if(!items.length){
+    html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg><p>Noch keine Geräte eingetragen</p></div>`;
+  } else if(viewMode==='grid'){
+    html+=`<div class="grid">`;
+    items.forEach(([k,v])=>{ html+=buildCard(k,v); });
+    html+=`</div>`;
+  } else {
+    html+=buildTable(items);
+  }
+  main.innerHTML=html;
+  const inp=document.getElementById('sq-inp');
+  if(inp){ inp.addEventListener('input',function(){sq=this.value.toLowerCase();drawAll();}); const l=inp.value.length;inp.setSelectionRange(l,l); }
+}
+
+// ── Fällige Prüfungen ──
+function drawDue(){
+  const main=document.getElementById('main');
+  const WARN_DAYS=60;
+  let items=Object.entries(geraete).filter(([k,v])=>{
+    if(!v||!v.name)return false;
+    const hu=daysUntil(v.hu), sp=daysUntil(v.sp), pp=daysUntil(v.pruefDate);
+    return (hu!==null&&hu<=WARN_DAYS)||(sp!==null&&sp<=WARN_DAYS)||(pp!==null&&pp<=WARN_DAYS);
+  });
+  items.sort((a,b)=>{
+    const minA=Math.min(...[a[1].hu,a[1].sp,a[1].pruefDate].map(d=>daysUntil(d)??999));
+    const minB=Math.min(...[b[1].hu,b[1].sp,b[1].pruefDate].map(d=>daysUntil(d)??999));
+    return minA-minB;
+  });
+  let html=`<div class="ph"><div class="pht">Fällige Prüfungen <span style="font-size:13px;color:var(--muted);font-weight:400">(nächste 60 Tage)</span></div><span style="font-size:12px;color:var(--muted)">${items.length} Geräte</span></div>`;
+  if(!items.length){
+    html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg><p>Keine fälligen Prüfungen in den nächsten 60 Tagen</p></div>`;
+  } else {
+    html+=`<div class="grid">`;
+    items.forEach(([k,v])=>{ html+=buildCard(k,v,true); });
+    html+=`</div>`;
+  }
+  main.innerHTML=html;
+}
+
+// ── Karte bauen ──
+function buildCard(k,v,fälligOnly=false){
+  const hu=daysUntil(v.hu), sp=daysUntil(v.sp), pp=daysUntil(v.pruefDate);
+  const minDays=Math.min(...[hu,sp,pp].filter(d=>d!==null));
+  const isWarn=minDays!==null&&minDays<=30&&minDays>=0;
+  const isOver=minDays!==null&&minDays<0;
+  const kat=Object.values(kats).find(c=>c&&c.name===v.kategorie);
+  const col=kat?COLORS[kat.color||'blue']:COLORS.blue;
+
+  const statusBadge=(days,label)=>{
+    if(days===null)return'';
+    const sc=statusClass(days);
+    const txt=days<0?`${Math.abs(days)}d überfällig`:days===0?'Heute!':days<=30?`${days}d`:fmtDate(days<0?'':v.hu||v.sp||'');
+    return `<span class="sbadge ${sc}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      ${label}: ${days<0?`${Math.abs(days)}d überfällig`:days===0?'Heute!':days<=30?`in ${days}d`:'OK'}
+    </span>`;
+  };
+
+  return `<div class="card${isOver?' overdue':isWarn?' warn':''}" onclick="openGeraet('${k}')">
+    <div class="card-head">
+      <div>
+        <div class="card-name">${esc(v.name)}</div>
+        ${v.kz?`<div class="card-nr">${esc(v.kz)}</div>`:''}
+        ${v.sn?`<div class="card-nr" style="color:var(--muted)">SN: ${esc(v.sn)}</div>`:''}
+      </div>
+      <span class="card-kat" style="background:${col.bg};color:${col.col}">${esc(v.kategorie||'–')}</span>
+    </div>
+    <div class="card-body">
+      ${v.ort?`<div class="card-field"><div class="lbl">Standort</div><div class="val">${esc(v.ort)}</div></div>`:''}
+      ${v.bst?`<div class="card-field"><div class="lbl">${['Fahrzeuge','Anhänger'].includes(v.kategorie)?'Kilometerstand':'Betriebsstunden'}</div><div class="val">${esc(v.bst)} ${['Fahrzeuge','Anhänger'].includes(v.kategorie)?'km':'h'}</div></div>`:''}
+      ${v.datum?`<div class="card-field"><div class="lbl">Anschaffung</div><div class="val">${fmtDate(v.datum)}</div></div>`:''}
+      ${v.hu?`<div class="card-field"><div class="lbl">HU fällig</div><div class="val ${statusClass(hu)}">${fmtDate(v.hu)}</div></div>`:''}
+      ${v.sp?`<div class="card-field"><div class="lbl">SP fällig</div><div class="val ${statusClass(sp)}">${fmtDate(v.sp)}</div></div>`:''}
+      ${v.pruefName&&v.pruefDate?`<div class="card-field"><div class="lbl">${esc(v.pruefName)}</div><div class="val ${statusClass(pp)}">${fmtDate(v.pruefDate)}</div></div>`:''}
+    </div>
+    ${(hu!==null&&hu<=60)||(sp!==null&&sp<=60)||(pp!==null&&pp<=60)?`<div class="status-row">
+      ${hu!==null&&hu<=60?statusBadge(hu,'HU'):''}
+      ${sp!==null&&sp<=60?statusBadge(sp,'SP'):''}
+      ${pp!==null&&pp<=60?statusBadge(pp,v.pruefName||'Prüfung'):''}
+    </div>`:''}
+    ${v.notiz?`<div style="font-size:11px;color:var(--muted);margin-top:8px;border-top:1px solid var(--line);padding-top:6px">${esc(v.notiz)}</div>`:''}
+    <div class="card-actions">
+      <button class="ib e" onclick="event.stopPropagation();openGeraet('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+      <button class="ib d" onclick="event.stopPropagation();delGeraet('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+    </div>
+  </div>`;
+}
+
+// ── Tabelle ──
+function buildTable(items){
+  return `<div class="twrap"><table class="tbl"><thead><tr>
+    <th>Bezeichnung</th><th>Kategorie</th><th>Kennzeichen</th><th>Standort</th><th>Betr.std./km</th><th>HU</th><th>SP</th><th>Notiz</th><th></th>
+  </tr></thead><tbody>${items.map(([k,v])=>{
+    const hu=daysUntil(v.hu),sp=daysUntil(v.sp);
+    const kat=Object.values(kats).find(c=>c&&c.name===v.kategorie);
+    const col=kat?COLORS[kat.color||'blue']:COLORS.blue;
+    return `<tr onclick="openGeraet('${k}')" style="cursor:pointer">
+      <td style="font-weight:600">${esc(v.name)}</td>
+      <td><span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:${col.bg};color:${col.col}">${esc(v.kategorie||'–')}</span></td>
+      <td class="mono">${esc(v.kz||'–')}</td>
+      <td style="color:var(--slate)">${esc(v.ort||'–')}</td>
+      <td class="mono">${v.bst?esc(v.bst)+(['Fahrzeuge','Anhänger'].includes(v.kategorie)?' km':' h'):'–'}</td>
+      <td class="${statusClass(hu)}" style="font-weight:${hu!==null&&hu<=30?'600':'400'}">${fmtDate(v.hu)}</td>
+      <td class="${statusClass(sp)}" style="font-weight:${sp!==null&&sp<=30?'600':'400'}">${fmtDate(v.sp)}</td>
+      <td style="font-size:12px;color:var(--muted)">${esc(v.notiz||'')}</td>
+      <td><div class="ra">
+        <button class="ib e" onclick="event.stopPropagation();openGeraet('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+        <button class="ib d" onclick="event.stopPropagation();delGeraet('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      </div></td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+// ── Gerät CRUD ──
+function updateBstLabel(){
+  const kat=document.getElementById('g-kat')?.value||'';
+  const lbl=document.getElementById('g-bst-lbl');
+  const inp=document.getElementById('g-bst');
+  if(!lbl||!inp)return;
+  const isKm=['Fahrzeuge','Anhänger'].includes(kat);
+  lbl.textContent=isKm?'Kilometerstand':'Betriebsstunden';
+  inp.placeholder=isKm?'z.B. 125000':'z.B. 4500';
+}
+
+function openGeraet(key){
+  geraetKey=key||null;
+  document.getElementById('g-title').textContent=key?'Gerät bearbeiten':'Neues Gerät / Fahrzeug';
+  fillKatSel();
+  updateBstLabel();
+  if(key&&geraete[key]){
+    const v=geraete[key];
+    document.getElementById('g-name').value=v.name||'';
+    document.getElementById('g-kat').value=v.kategorie||'';
+    updateBstLabel();
+    document.getElementById('g-kz').value=v.kz||'';
+    document.getElementById('g-sn').value=v.sn||'';
+    document.getElementById('g-ort').value=v.ort||'';
+    document.getElementById('g-datum').value=v.datum||'';
+    document.getElementById('g-bst').value=v.bst||'';
+    document.getElementById('g-hu').value=v.hu||'';
+    document.getElementById('g-sp').value=v.sp||'';
+    document.getElementById('g-pruef-name').value=v.pruefName||'';
+    document.getElementById('g-pruef-date').value=v.pruefDate||'';
+    document.getElementById('g-notiz').value=v.notiz||'';
+  } else {
+    ['g-name','g-kz','g-sn','g-ort','g-datum','g-bst','g-hu','g-sp','g-pruef-name','g-pruef-date','g-notiz'].forEach(id=>document.getElementById(id).value='');
+    if(curKat) document.getElementById('g-kat').value=curKat;
+  }
+  openM('bd-geraet');
+}
+function saveGeraet(){
+  const name=document.getElementById('g-name').value.trim();
+  if(!name){alert('Bezeichnung ist Pflichtfeld.');return;}
+  const e={
+    name, kategorie:document.getElementById('g-kat').value,
+    kz:document.getElementById('g-kz').value.trim(),
+    sn:document.getElementById('g-sn').value.trim(),
+    ort:document.getElementById('g-ort').value.trim(),
+    datum:document.getElementById('g-datum').value,
+    bst:document.getElementById('g-bst').value.trim(),
+    hu:document.getElementById('g-hu').value,
+    sp:document.getElementById('g-sp').value,
+    pruefName:document.getElementById('g-pruef-name').value.trim(),
+    pruefDate:document.getElementById('g-pruef-date').value,
+    notiz:document.getElementById('g-notiz').value.trim(),
+    ts:Date.now()
+  };
+  if(geraetKey){GR&&GR.child(geraetKey).update(e);geraete[geraetKey]={...geraete[geraetKey],...e};}
+  else{const k=GR?GR.push().key:'_'+Date.now();GR&&GR.child(k).set(e);geraete[k]=e;}
+  closeM('bd-geraet');draw();
+}
+function delGeraet(k){
+  if(!confirm(`"${geraete[k]?.name}" wirklich löschen?`))return;
+  GR&&GR.child(k).remove();delete geraete[k];draw();
+}
+
+// ── Kategorie CRUD ──
+function openCatModal(key){
+  katKey=key||null;
+  document.getElementById('kat-title').textContent=key?'Kategorie bearbeiten':'Neue Kategorie';
+  document.getElementById('del-kat-btn').style.display=key?'':'none';
+  if(key&&kats[key]){
+    document.getElementById('kat-name').value=kats[key].name||'';
+    const col=kats[key].color||'blue';
+    const radio=document.querySelector(`input[name="kat-color"][value="${col}"]`);
+    if(radio)radio.checked=true;
+  } else {
+    document.getElementById('kat-name').value='';
+    const first=document.querySelector('input[name="kat-color"]');
+    if(first)first.checked=true;
+  }
+  openM('bd-kat');
+}
+function saveKat(){
+  const name=document.getElementById('kat-name').value.trim();
+  if(!name){alert('Name ist Pflichtfeld.');return;}
+  const color=document.querySelector('input[name="kat-color"]:checked')?.value||'blue';
+  const e={name,color};
+  if(katKey){KR&&KR.child(katKey).update(e);kats[katKey]={...kats[katKey],...e};}
+  else{const k=KR?KR.push().key:'k_'+Date.now();KR&&KR.child(k).set(e);kats[k]=e;}
+  closeM('bd-kat');draw();
+}
+function delKat(){
+  if(!katKey)return;
+  const name=kats[katKey]?.name;
+  const cnt=Object.values(geraete).filter(g=>g&&g.kategorie===name).length;
+  if(cnt>0){alert(`Diese Kategorie enthält noch ${cnt} Gerät(e). Bitte zuerst umkategorisieren.`);return;}
+  if(!confirm(`Kategorie "${name}" löschen?`))return;
+  KR&&KR.child(katKey).remove();delete kats[katKey];
+  closeM('bd-kat');draw();
+}
+
+// ── Modal ──
+function openM(id){document.getElementById(id).classList.add('on');}
+function closeM(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.bd').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)closeM(b.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.bd.on').forEach(b=>closeM(b.id));});
+
+// ── Firebase Init ──
+function initFB(){
+  if(!db)return;
+  try{
+    db.ref('.info/connected').on('value',s=>sync(!!s.val()));
+    KR.once('value').then(s=>{
+      if(!s.val()){
+        const b={};DEFAULT_KATS.forEach(k=>{const key=KR.push().key;b[key]=k;});
+        KR.update(b);
+      }
+    }).catch(()=>{});
+    KR.on('value',s=>{const v=s.val();if(v){kats=v;}draw();},()=>{});
+    GR.on('value',s=>{const v=s.val();if(v){geraete=v;}draw();},()=>{});
+  }catch(e){console.warn(e);}
+}
+
+// ── Start ──
+DEFAULT_KATS.forEach((k,i)=>{kats['_k'+i]=k;});
+draw();
+sync(false);
+initFB();
+</script>
+</body>
+</html>
