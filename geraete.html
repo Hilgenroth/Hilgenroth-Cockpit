@@ -122,6 +122,37 @@ tr:hover .ra{opacity:1;}
 .section-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;}
 
 .empty{padding:40px;text-align:center;color:var(--muted);}
+.rep-timeline{display:flex;flex-direction:column;gap:0;}
+.rep-entry{display:flex;gap:0;position:relative;}
+.rep-line{display:flex;flex-direction:column;align-items:center;width:36px;flex-shrink:0;}
+.rep-dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--white);flex-shrink:0;margin-top:4px;z-index:1;}
+.rep-dot.Reparatur{background:var(--amber);}
+.rep-dot.Wartung{background:var(--green);}
+.rep-dot.Unfall{background:var(--red-warn);}
+.rep-dot.TÜV{background:var(--blue);}
+.rep-dot.Neukauf{background:#7c3aed;}
+.rep-dot.Sonstiges{background:var(--muted);}
+.rep-vline{width:2px;background:var(--line);flex:1;margin-top:0;}
+.rep-content{flex:1;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px;margin-left:8px;}
+.rep-head{display:flex;justify-content:space-between;align-items:start;margin-bottom:6px;}
+.rep-art{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px;}
+.rep-art.Reparatur{background:var(--amber-l);color:var(--amber);}
+.rep-art.Wartung{background:var(--green-l);color:var(--green);}
+.rep-art.Unfall{background:#fee2e2;color:var(--red-warn);}
+.rep-art.TÜV{background:var(--blue-l);color:var(--blue);}
+.rep-art.Neukauf{background:#ede9fe;color:#7c3aed;}
+.rep-art.Sonstiges{background:var(--line);color:var(--slate);}
+.rep-preis{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:var(--red-warn);}
+.rep-beschr{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.rep-meta{font-size:11px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;}
+.back-btn{display:flex;align-items:center;gap:7px;margin-bottom:16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--slate);}
+.back-btn:hover{color:var(--red);}
+.back-btn svg{width:15px;height:15px;stroke-width:2;}
+.detail-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:18px;}
+.stat-box{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 14px;}
+.stat-box .s-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;}
+.stat-box .s-val{font-size:15px;font-weight:700;color:var(--ink);}
+.stat-box .s-val.red{color:var(--red-warn);}
 .empty svg{width:36px;height:36px;stroke:var(--muted);margin:0 auto 10px;display:block;opacity:.3;}
 .view-toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
 .vt-btn{height:28px;width:30px;border:none;background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.12s;}
@@ -198,6 +229,39 @@ tr:hover .ra{opacity:1;}
   </div>
 </div>
 
+<!-- Reparatur Modal -->
+<div class="bd" id="bd-rep">
+  <div class="md" style="width:480px">
+    <div class="mdt" id="rep-title">Reparatur / Ereignis erfassen</div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Datum *</label><input class="fi" type="date" id="rep-datum"></div>
+      <div class="fr" style="margin:0"><label>Art</label>
+        <select class="fs" id="rep-art">
+          <option value="Reparatur">Reparatur</option>
+          <option value="Neukauf/Ersatz">Neukauf / Ersatz</option>
+          <option value="Wartung">Wartung</option>
+          <option value="Unfall/Schaden">Unfall / Schaden</option>
+          <option value="TÜV/Prüfung">TÜV / Prüfung</option>
+          <option value="Sonstiges">Sonstiges</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr" style="margin-top:11px"><label>Beschreibung / Schaden *</label>
+      <input class="fi" id="rep-beschr" placeholder="z.B. Hydraulikschlauch gerissen, Ölwechsel …">
+    </div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Rechnungsnummer</label><input class="fi" id="rep-rgnr" placeholder="z.B. RG-2026-0042"></div>
+      <div class="fr" style="margin:0"><label>Kosten netto (€)</label><input class="fi" id="rep-preis" placeholder="z.B. 850,00" oninput="cleanRepPreis(this)"></div>
+    </div>
+    <div class="fr"><label>Werkstatt / Lieferant</label><input class="fi" id="rep-firma" placeholder="z.B. Werkstatt Müller"></div>
+    <div class="fr"><label>Notiz</label><input class="fi" id="rep-notiz" placeholder="z.B. Garantie bis …"></div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-rep')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveRep()">Speichern</button>
+    </div>
+  </div>
+</div>
+
 <!-- Kategorie Modal -->
 <div class="bd" id="bd-kat">
   <div class="md" style="width:360px">
@@ -223,7 +287,7 @@ tr:hover .ra{opacity:1;}
 
 <script>
 // ── Firebase (Dispo-Hellefeld) ──
-let db=null, GR=null, KR=null;
+let db=null, GR=null, KR=null, RR=null;
 try {
   if(typeof firebase !== 'undefined'){
     firebase.initializeApp({
@@ -238,12 +302,13 @@ try {
     db = firebase.database();
     GR = db.ref('geraete/items');
     KR = db.ref('geraete/kategorien');
+    RR = db.ref('geraete/reparaturen');
   }
 } catch(e){ console.warn('Firebase:', e.message); }
 
 // ── State ──
-let geraete={}, kats={};
-let curKat=null, curTab='all', geraetKey=null, katKey=null, viewMode='grid', sq='';
+let geraete={}, kats={}, reparaturen={};
+let curKat=null, curTab='all', curGeraetDetail=null, geraetKey=null, katKey=null, repKey=null, viewMode='grid', sq='';
 
 // ── Farben ──
 const COLORS={
@@ -292,6 +357,7 @@ function statusLabel(days){
 // ── Tab ──
 function goTab(t){
   curTab=t;
+  curGeraetDetail=null;
   ['all','due'].forEach(id=>{
     const el=document.getElementById('nt-'+id);
     if(el)el.className='ntab'+(t===id?' on':'');
@@ -345,6 +411,7 @@ function draw(){
   buildSidebar();
   fillKatSel();
   if(curTab==='due') drawDue();
+  else if(curTab==='detail') drawDetail();
   else drawAll();
 }
 
@@ -434,7 +501,7 @@ function buildCard(k,v,fälligOnly=false){
     </span>`;
   };
 
-  return `<div class="card${isOver?' overdue':isWarn?' warn':''}" onclick="openGeraet('${k}')">
+  return `<div class="card${isOver?' overdue':isWarn?' warn':''}" onclick="showDetail('${k}')">
     <div class="card-head">
       <div>
         <div class="card-name">${esc(v.name)}</div>
@@ -472,7 +539,7 @@ function buildTable(items){
     const hu=daysUntil(v.hu),sp=daysUntil(v.sp);
     const kat=Object.values(kats).find(c=>c&&c.name===v.kategorie);
     const col=kat?COLORS[kat.color||'blue']:COLORS.blue;
-    return `<tr onclick="openGeraet('${k}')" style="cursor:pointer">
+    return `<tr onclick="showDetail('${k}')" style="cursor:pointer">
       <td style="font-weight:600">${esc(v.name)}</td>
       <td><span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:${col.bg};color:${col.col}">${esc(v.kategorie||'–')}</span></td>
       <td class="mono">${esc(v.kz||'–')}</td>
@@ -487,6 +554,145 @@ function buildTable(items){
       </div></td>
     </tr>`;
   }).join('')}</tbody></table></div>`;
+}
+
+// ── Detail-Ansicht ──
+function showDetail(k){
+  curGeraetDetail=k;
+  curTab='detail';
+  draw();
+}
+
+function drawDetail(){
+  const k=curGeraetDetail;
+  const v=geraete[k];
+  if(!v){curGeraetDetail=null;curTab='all';draw();return;}
+  const main=document.getElementById('main');
+  const reps=Object.entries(reparaturen)
+    .filter(([rk,rv])=>rv&&rv.geraetId===k)
+    .sort((a,b)=>(b[1].datum||'').localeCompare(a[1].datum||''));
+  const totalKosten=reps.reduce((s,[,rv])=>s+(parseFloat((rv.preis||'0').replace(',','.'))||0),0);
+  const kat=Object.values(kats).find(c=>c&&c.name===v.kategorie);
+  const col=kat?COLORS[kat.color||'blue']:COLORS.blue;
+  const hu=daysUntil(v.hu), sp=daysUntil(v.sp);
+  const isKm=['Fahrzeuge','Anhänger'].includes(v.kategorie);
+
+  let html=`
+    <div class="back-btn" onclick="curGeraetDetail=null;curTab='all';draw()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
+      Zurück zur Übersicht
+    </div>
+    <div class="ph">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="pht">${esc(v.name)}</span>
+          <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:5px;background:${col.bg};color:${col.col}">${esc(v.kategorie||'–')}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap">
+          ${v.kz?`<span>🚗 ${esc(v.kz)}</span>`:''}
+          ${v.sn?`<span>SN: ${esc(v.sn)}</span>`:''}
+          ${v.ort?`<span>📍 ${esc(v.ort)}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-g" onclick="openGeraet('${k}')">✏ Bearbeiten</button>
+        <button class="btn btn-p" onclick="openRep('${k}')">+ Reparatur / Ereignis</button>
+      </div>
+    </div>
+
+    <div class="detail-stats">
+      ${v.bst?`<div class="stat-box"><div class="s-lbl">${isKm?'Kilometerstand':'Betriebsstunden'}</div><div class="s-val">${esc(v.bst)} ${isKm?'km':'h'}</div></div>`:''}
+      ${v.datum?`<div class="stat-box"><div class="s-lbl">Anschaffung</div><div class="s-val" style="font-size:13px">${fmtDate(v.datum)}</div></div>`:''}
+      ${v.hu?`<div class="stat-box"><div class="s-lbl">HU fällig</div><div class="s-val ${statusClass(hu)}">${fmtDate(v.hu)}</div></div>`:''}
+      ${v.sp?`<div class="stat-box"><div class="s-lbl">SP fällig</div><div class="s-val ${statusClass(sp)}">${fmtDate(v.sp)}</div></div>`:''}
+      <div class="stat-box"><div class="s-lbl">Reparaturen</div><div class="s-val">${reps.length}x</div></div>
+      <div class="stat-box"><div class="s-lbl">Kosten gesamt</div><div class="s-val red">${totalKosten>0?totalKosten.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'–'}</div></div>
+    </div>`;
+
+  if(!reps.length){
+    html+=`<div style="background:var(--white);border:1px solid var(--line);border-radius:8px;padding:32px;text-align:center;color:var(--muted)">
+      <p style="margin-bottom:12px">Noch keine Reparaturen oder Ereignisse eingetragen</p>
+      <button class="btn btn-p" onclick="openRep('${k}')">+ Erste Reparatur erfassen</button>
+    </div>`;
+  } else {
+    html+=`<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:12px">Verlauf (${reps.length} Einträge)</div>
+    <div class="rep-timeline">`;
+    reps.forEach(([rk,rv],i)=>{
+      const artClass=rv.art?.replace('/','').replace(' ','').split('/')[0]||'Sonstiges';
+      html+=`<div class="rep-entry">
+        <div class="rep-line">
+          <div class="rep-dot ${artClass}"></div>
+          ${i<reps.length-1?'<div class="rep-vline"></div>':''}
+        </div>
+        <div class="rep-content">
+          <div class="rep-head">
+            <div>
+              <span class="rep-art ${artClass}">${esc(rv.art||'Sonstiges')}</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:8px">${fmtDate(rv.datum)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${rv.preis?`<span class="rep-preis">${esc(rv.preis)} €</span>`:''}
+              <button class="ib d" onclick="delRep('${rk}')" title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+            </div>
+          </div>
+          <div class="rep-beschr">${esc(rv.beschr||'')}</div>
+          <div class="rep-meta">
+            ${rv.rgnr?`<span>Rg-Nr: ${esc(rv.rgnr)}</span>`:''}
+            ${rv.firma?`<span>🔧 ${esc(rv.firma)}</span>`:''}
+            ${rv.notiz?`<span>${esc(rv.notiz)}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  main.innerHTML=html;
+}
+
+// ── Reparatur CRUD ──
+function openRep(geraetId){
+  repKey=null;
+  document.getElementById('rep-title').textContent='Reparatur / Ereignis erfassen';
+  document.getElementById('rep-datum').value=new Date().toISOString().slice(0,10);
+  ['rep-beschr','rep-rgnr','rep-preis','rep-firma','rep-notiz'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('rep-art').value='Reparatur';
+  document.getElementById('bd-rep').dataset.geraetId=geraetId;
+  openM('bd-rep');
+}
+function cleanRepPreis(inp){
+  let v=inp.value.replace(/[^0-9,\.]/g,'');
+  const f=v.search(/[,.]/);
+  if(f>=0)v=v.slice(0,f+1)+v.slice(f+1).replace(/[,.]/g,'');
+  inp.value=v;
+}
+function saveRep(){
+  const beschr=document.getElementById('rep-beschr').value.trim();
+  if(!beschr){alert('Beschreibung ist Pflichtfeld.');return;}
+  const geraetId=document.getElementById('bd-rep').dataset.geraetId;
+  const e={
+    geraetId,
+    datum:document.getElementById('rep-datum').value,
+    art:document.getElementById('rep-art').value,
+    beschr,
+    rgnr:document.getElementById('rep-rgnr').value.trim(),
+    preis:document.getElementById('rep-preis').value.trim(),
+    firma:document.getElementById('rep-firma').value.trim(),
+    notiz:document.getElementById('rep-notiz').value.trim(),
+    ts:Date.now()
+  };
+  const rk=RR?RR.push().key:'r_'+Date.now();
+  if(RR)RR.child(rk).set(e);
+  reparaturen[rk]=e;
+  closeM('bd-rep');
+  curGeraetDetail=geraetId;
+  curTab='detail';
+  draw();
+}
+function delRep(rk){
+  if(!confirm('Eintrag löschen?'))return;
+  if(RR)RR.child(rk).remove();
+  delete reparaturen[rk];
+  draw();
 }
 
 // ── Gerät CRUD ──
@@ -607,6 +813,7 @@ function initFB(){
     }).catch(()=>{});
     KR.on('value',s=>{const v=s.val();if(v){kats=v;}draw();},()=>{});
     GR.on('value',s=>{const v=s.val();if(v){geraete=v;}draw();},()=>{});
+    RR.on('value',s=>{reparaturen=s.val()||{};draw();},()=>{});
   }catch(e){console.warn(e);}
 }
 
