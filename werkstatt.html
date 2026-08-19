@@ -30,13 +30,20 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#F7F8FA;color:#1B1D22;fon
 .sdot.on{background:var(--green);}
 .slbl{font-size:11px;color:var(--muted);}
 .wrap{display:flex;flex:1;overflow:hidden;}
-.side{width:210px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;}
-.side-head{padding:12px 14px 6px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
-.fz-item{padding:8px 14px;cursor:pointer;border-left:3px solid transparent;transition:.12s;font-size:12px;font-weight:500;color:var(--slate);}
-.fz-item:hover{background:var(--bg);color:var(--ink);}
-.fz-item.on{background:var(--red-l);color:var(--red);border-left-color:var(--red);}
-.fz-item .sub{font-size:10px;color:var(--muted);margin-top:1px;font-family:var(--mono);}
-.fz-add{padding:8px 14px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;border:none;background:none;font-family:inherit;width:100%;}
+.side{width:200px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;}
+.side-head{padding:10px 12px 4px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.fz-item{padding:0;cursor:pointer;border:none;border-left:3px solid transparent;background:none;font-family:inherit;width:100%;text-align:left;transition:.12s;display:flex;align-items:center;gap:0;}
+.fz-item:hover .fz-inner{background:var(--bg);}
+.fz-item.on .fz-inner{background:var(--red-l);}
+.fz-item.on{border-left-color:var(--red);}
+.fz-inner{flex:1;padding:7px 10px;min-width:0;}
+.fz-name{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fz-item.on .fz-name{color:var(--red);}
+.fz-item:hover .fz-name{color:var(--red);}
+.fz-sub{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fz-cnt{flex-shrink:0;min-width:18px;height:18px;border-radius:9px;background:var(--line);color:var(--muted);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-right:10px;padding:0 4px;}
+.fz-item.on .fz-cnt{background:var(--red);color:#fff;}
+.fz-add{padding:8px 12px;font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;border:none;background:none;font-family:inherit;width:100%;margin-top:2px;}
 .fz-add:hover{color:var(--red);}
 .main{flex:1;overflow-y:auto;padding:18px 22px;}
 .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
@@ -139,7 +146,9 @@ tr:hover .ra{opacity:1;}
   <!-- Sidebar: Fahrzeuge -->
   <aside class="side">
     <div class="side-head">Fahrzeuge & Geräte</div>
-    <button class="fz-item on" id="fz-alle" onclick="setCurFZ(null,this)">Alle Fahrzeuge</button>
+    <button class="fz-item on" id="fz-alle" onclick="setCurFZ(null,this)">
+      <div class="fz-inner"><div class="fz-name">Alle Fahrzeuge</div></div>
+    </button>
     <div id="fz-list"></div>
     <button class="fz-add" onclick="openFZModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -411,9 +420,12 @@ function buildSidebar(){
   const list=document.getElementById('fz-list');
   list.innerHTML=Object.entries(fahrzeuge).filter(([k,v])=>v&&v.name).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([k,v])=>{
     const cnt=Object.values(auftraege).filter(a=>a&&a.fzId===k).length;
-    return`<button class="fz-item${curFZ===k?' on':''}" onclick="setCurFZ('${k}',this)">
-      <div>${esc(v.name)}</div>
-      <div class="sub">${v.kz?esc(v.kz)+' · ':''} ${cnt} Aufträge</div>
+    return`<button class="fz-item${curFZ===k?' on':''}" onclick="setCurFZ('${k}',this)" title="${esc(v.name)}${v.kz?' · '+v.kz:''}">
+      <div class="fz-inner">
+        <div class="fz-name">${esc(v.name)}</div>
+        ${v.kz?`<div class="fz-sub">${esc(v.kz)}</div>`:''}
+      </div>
+      <div class="fz-cnt">${cnt}</div>
     </button>`;
   }).join('');
 }
