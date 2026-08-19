@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Werkstatt | Hilgenroth</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F8FA;color:#1B1D22;font-size:14px;display:flex;flex-direction:column;}
+:root{
+  --red:#C8102E;--red-d:#9E0C24;--red-l:#FCE9EC;
+  --ink:#1B1D22;--slate:#4A4F58;--muted:#8A909B;
+  --line:#E6E8EC;--bg:#F7F8FA;--white:#fff;
+  --green:#16a34a;--green-l:#dcfce7;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --red-warn:#dc2626;--mono:'IBM Plex Mono',monospace;
+}
+.nav{display:flex;background:var(--white);border-bottom:1px solid var(--line);padding:0 20px;flex-shrink:0;align-items:center;gap:2px;}
+.ntab{height:42px;padding:0 14px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px;transition:.14s;white-space:nowrap;}
+.ntab:hover{color:var(--ink)}.ntab.on{color:var(--red);border-bottom-color:var(--red);font-weight:600;}
+.ntab svg{width:14px;height:14px;stroke-width:1.8;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--amber);transition:.3s;}
+.sdot.on{background:var(--green);}
+.slbl{font-size:11px;color:var(--muted);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+.side{width:210px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;}
+.side-head{padding:12px 14px 6px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.fz-item{padding:8px 14px;cursor:pointer;border-left:3px solid transparent;transition:.12s;font-size:12px;font-weight:500;color:var(--slate);}
+.fz-item:hover{background:var(--bg);color:var(--ink);}
+.fz-item.on{background:var(--red-l);color:var(--red);border-left-color:var(--red);}
+.fz-item .sub{font-size:10px;color:var(--muted);margin-top:1px;font-family:var(--mono);}
+.fz-add{padding:8px 14px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;border:none;background:none;font-family:inherit;width:100%;}
+.fz-add:hover{color:var(--red);}
+.main{flex:1;overflow-y:auto;padding:18px 22px;}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+.pht{font-size:16px;font-weight:600;}
+.btn{height:30px;padding:0 13px;border-radius:6px;font-size:12px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:.14s;white-space:nowrap;}
+.btn-p{background:var(--red);color:#fff;}.btn-p:hover{background:var(--red-d);}
+.btn-g{background:transparent;border:1px solid var(--line);color:var(--slate);}.btn-g:hover{border-color:var(--muted);}
+.btn-sm{height:26px;padding:0 9px;font-size:11px;}
+.swrap{position:relative;}
+.swrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:var(--muted);stroke-width:2;pointer-events:none;}
+.sinp{height:30px;padding:0 10px 0 30px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:12px;color:var(--ink);background:var(--white);width:220px;}
+.sinp:focus{outline:none;border-color:var(--red);}
+.bd{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:200;}
+.bd.on{display:flex;}
+.md{background:var(--white);border-radius:10px;padding:24px;width:540px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.14);}
+.mdt{font-size:15px;font-weight:600;margin-bottom:18px;}
+.fr{margin-bottom:12px;}
+.fr label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);display:block;margin-bottom:4px;}
+.fi,.fs{width:100%;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px;color:var(--ink);background:var(--white);}
+.fi:focus,.fs:focus{outline:none;border-color:var(--red);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.ma{display:flex;gap:7px;justify-content:flex-end;margin-top:18px;}
+.div{height:1px;background:var(--line);margin:14px 0;}
+.sec{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;}
+.tbl-wrap{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{background:var(--bg);padding:8px 12px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap;}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--bg);}
+.ra{display:flex;gap:3px;opacity:0;transition:.12s;}
+tr:hover .ra{opacity:1;}
+.ib{width:26px;height:26px;border-radius:4px;border:1px solid var(--line);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ib svg{width:13px;height:13px;stroke-width:1.8;}
+.ib.e:hover{border-color:var(--red);color:var(--red);}
+.ib.d:hover{border-color:#ef4444;color:#ef4444;}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.04em;}
+.badge-blue{background:var(--blue-l);color:var(--blue);}
+.badge-green{background:var(--green-l);color:var(--green);}
+.badge-amber{background:var(--amber-l);color:var(--amber);}
+.badge-red{background:#fee2e2;color:var(--red-warn);}
+.badge-gray{background:#f1f5f9;color:#64748b;}
+.badge-purple{background:#ede9fe;color:#7c3aed;}
+.mono{font-family:var(--mono);}
+.empty{padding:48px;text-align:center;color:var(--muted);}
+.empty svg{width:36px;height:36px;stroke:var(--muted);margin:0 auto 10px;display:block;opacity:.3;}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:16px;}
+.stat{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 14px;}
+.stat .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px;}
+.stat .val{font-size:16px;font-weight:700;}
+.stat .val.red{color:var(--red-warn);}
+.subtab-bar{display:flex;border-bottom:1px solid var(--line);margin-bottom:16px;}
+.stab{height:36px;padding:0 16px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.12s;}
+.stab.on{color:var(--red);border-bottom-color:var(--red);}
+.timeline{display:flex;flex-direction:column;gap:0;}
+.t-entry{display:flex;gap:0;}
+.t-line{display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0;}
+.t-dot{width:11px;height:11px;border-radius:50%;margin-top:5px;z-index:1;flex-shrink:0;}
+.t-vline{width:2px;background:var(--line);flex:1;}
+.t-body{flex:1;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:11px 13px;margin-bottom:10px;margin-left:6px;}
+.t-head{display:flex;justify-content:space-between;align-items:start;margin-bottom:5px;}
+.t-ttl{font-size:13px;font-weight:600;}
+.t-meta{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+.t-cost{font-family:var(--mono);font-weight:700;font-size:14px;}
+.upload-btn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:5px;border:1px dashed var(--line);background:var(--bg);color:var(--muted);font-size:11px;font-weight:500;cursor:pointer;transition:.14s;font-family:inherit;}
+.upload-btn:hover{border-color:var(--red);color:var(--red);}
+.upload-btn svg{width:12px;height:12px;stroke-width:2;}
+.pdf-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--red);text-decoration:none;padding:2px 7px;border-radius:4px;background:var(--red-l);}
+.prog-wrap{height:3px;background:var(--line);border-radius:2px;margin-top:5px;overflow:hidden;display:none;}
+.prog-bar{height:100%;background:var(--red);border-radius:2px;transition:width .2s;}
+.et-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--line);cursor:pointer;transition:.12s;}
+.et-chip:hover{border-color:var(--red);color:var(--red);}
+.lager-low{color:var(--red-warn);font-weight:600;}
+.lager-ok{color:var(--green);}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="ntab on" id="nt-auftraege" onclick="goTab('auftraege')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    Werkstattaufträge
+  </button>
+  <button class="ntab" id="nt-ersatzteile" onclick="goTab('ersatzteile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+    Ersatzteile & Lager
+  </button>
+  <button class="ntab" id="nt-lieferanten" onclick="goTab('lieferanten')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Lieferanten
+  </button>
+  <div class="nav-right">
+    <span class="sdot" id="sdot"></span>
+    <span class="slbl" id="slbl">verbinde …</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- Sidebar: Fahrzeuge -->
+  <aside class="side">
+    <div class="side-head">Fahrzeuge & Geräte</div>
+    <button class="fz-item on" id="fz-alle" onclick="setCurFZ(null,this)">Alle Fahrzeuge</button>
+    <div id="fz-list"></div>
+    <button class="fz-add" onclick="openFZModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Fahrzeug hinzufügen
+    </button>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Auftrag Modal -->
+<div class="bd" id="bd-auftrag">
+  <div class="md">
+    <div class="mdt" id="auftrag-title">Neuer Werkstattauftrag</div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Fahrzeug / Gerät *</label>
+        <select class="fs" id="au-fz"></select>
+      </div>
+      <div class="fr" style="margin:0"><label>Datum *</label>
+        <input class="fi" type="date" id="au-datum">
+      </div>
+    </div>
+    <div class="fr2" style="margin-top:12px">
+      <div class="fr" style="margin:0"><label>Art</label>
+        <select class="fs" id="au-art">
+          <option>Reparatur</option>
+          <option>Wartung</option>
+          <option>Inspektion</option>
+          <option>TÜV / SP / HU</option>
+          <option>Unfallschaden</option>
+          <option>Umrüstung</option>
+          <option>Sonstiges</option>
+        </select>
+      </div>
+      <div class="fr" style="margin:0"><label>Status</label>
+        <select class="fs" id="au-status">
+          <option>Offen</option>
+          <option>In Arbeit</option>
+          <option>Warte auf Teile</option>
+          <option>Abgeschlossen</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr" style="margin-top:12px"><label>Bezeichnung / Tätigkeit *</label>
+      <input class="fi" id="au-titel" placeholder="z.B. Ölwechsel, Bremsbeläge erneuern …">
+    </div>
+    <div class="fr"><label>Beschreibung / Schaden</label>
+      <textarea class="fi" id="au-beschr" style="height:70px;padding:8px 10px;resize:vertical" placeholder="z.B. Hydraulikschlauch undicht, Kabinenschaden durch Steinschlag …"></textarea>
+    </div>
+    <div class="div"></div>
+    <div class="sec">Kosten</div>
+    <div class="fr3">
+      <div class="fr" style="margin:0"><label>Arbeitszeit (h)</label>
+        <input class="fi" id="au-std" placeholder="z.B. 3,5" type="number" step="0.5">
+      </div>
+      <div class="fr" style="margin:0"><label>Stundensatz (€)</label>
+        <input class="fi" id="au-satz" placeholder="z.B. 85" type="number">
+      </div>
+      <div class="fr" style="margin:0"><label>Materialkosten (€)</label>
+        <input class="fi" id="au-mkosten" placeholder="z.B. 250" type="number" step="0.01">
+      </div>
+    </div>
+    <div class="fr"><label>Verwendete Ersatzteile</label>
+      <div id="au-et-sel" style="display:flex;flex-wrap:wrap;gap:5px;min-height:32px;padding:5px;border:1px solid var(--line);border-radius:6px;cursor:pointer" onclick="openETSel()"></div>
+    </div>
+    <div class="fr"><label>Mechanicer / Durchgeführt von</label>
+      <input class="fi" id="au-mech" placeholder="z.B. Busemann, intern">
+    </div>
+    <div class="fr"><label>Km-Stand / Betriebsstunden bei Auftrag</label>
+      <input class="fi" id="au-km" placeholder="z.B. 125000 km oder 4500 h">
+    </div>
+    <div class="fr"><label>Rechnung / Dokument (PDF)</label>
+      <label class="upload-btn" for="au-pdf-inp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        PDF hochladen
+      </label>
+      <input type="file" id="au-pdf-inp" accept="application/pdf" style="display:none" onchange="handleAuPDF(this)">
+      <div class="prog-wrap" id="au-prog-wrap"><div class="prog-bar" id="au-prog-bar" style="width:0"></div></div>
+      <div id="au-pdf-prev" style="margin-top:5px"></div>
+      <input type="hidden" id="au-pdf-url">
+      <input type="hidden" id="au-pdf-name">
+    </div>
+    <div class="fr"><label>Notiz</label>
+      <input class="fi" id="au-notiz" placeholder="z.B. Nächste Inspektion in 6 Monaten …">
+    </div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-auftrag')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveAuftrag()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ET-Auswahl Modal -->
+<div class="bd" id="bd-et-sel">
+  <div class="md" style="width:480px">
+    <div class="mdt">Ersatzteile auswählen</div>
+    <div class="swrap" style="margin-bottom:12px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="sinp" id="et-sel-sq" style="width:100%" placeholder="Suchen …" oninput="drawETSel()">
+    </div>
+    <div id="et-sel-list" style="max-height:300px;overflow-y:auto"></div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-et-sel')">Fertig</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ersatzteil Modal -->
+<div class="bd" id="bd-et">
+  <div class="md" style="width:500px">
+    <div class="mdt" id="et-title">Ersatzteil anlegen</div>
+    <div class="fr"><label>Bezeichnung *</label>
+      <input class="fi" id="et-name" placeholder="z.B. Hydraulikschlauch DN16, Ölfilter …">
+    </div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Artikelnummer</label>
+        <input class="fi" id="et-artnr" placeholder="z.B. ART-2024-001">
+      </div>
+      <div class="fr" style="margin:0"><label>Kategorie</label>
+        <select class="fs" id="et-kat">
+          <option>Hydraulik</option>
+          <option>Motor / Öl</option>
+          <option>Bremsen</option>
+          <option>Elektrik</option>
+          <option>Karosserie</option>
+          <option>Reifen / Ketten</option>
+          <option>Werkzeug</option>
+          <option>Sonstiges</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr"><label>Lieferant</label>
+      <select class="fs" id="et-lief"></select>
+    </div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Preis netto (€)</label>
+        <input class="fi" id="et-preis" placeholder="z.B. 45,00" type="number" step="0.01">
+      </div>
+      <div class="fr" style="margin:0"><label>Lagerbestand</label>
+        <input class="fi" id="et-lager" placeholder="Anzahl" type="number" min="0">
+      </div>
+    </div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Mindestbestand</label>
+        <input class="fi" id="et-minlager" placeholder="z.B. 2" type="number" min="0">
+      </div>
+      <div class="fr" style="margin:0"><label>Lagerort</label>
+        <input class="fi" id="et-lagerort" placeholder="z.B. Regal A3">
+      </div>
+    </div>
+    <div class="fr"><label>Notiz</label>
+      <input class="fi" id="et-notiz" placeholder="z.B. Passend für PC-700, Bestellzeit 3 Tage …">
+    </div>
+    <div class="fr"><label>Lieferschein / Bestellung (PDF)</label>
+      <label class="upload-btn" for="et-pdf-inp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        PDF hochladen
+      </label>
+      <input type="file" id="et-pdf-inp" accept="application/pdf" style="display:none" onchange="handleETpdf(this)">
+      <div class="prog-wrap" id="et-prog-wrap"><div class="prog-bar" id="et-prog-bar" style="width:0"></div></div>
+      <div id="et-pdf-prev" style="margin-top:5px"></div>
+      <input type="hidden" id="et-pdf-url">
+    </div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-et')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveET()">Speichern</button>
+      <button class="btn btn-g" id="del-et-btn" style="display:none;color:#ef4444" onclick="delET()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lieferanten Modal -->
+<div class="bd" id="bd-lief">
+  <div class="md" style="width:420px">
+    <div class="mdt" id="lief-title">Lieferant</div>
+    <div class="fr"><label>Name *</label><input class="fi" id="lief-name" placeholder="z.B. Schlüter GmbH"></div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Telefon</label><input class="fi" id="lief-tel" type="tel" placeholder="02935 …"></div>
+      <div class="fr" style="margin:0"><label>E-Mail</label><input class="fi" id="lief-mail" type="email" placeholder="info@…"></div>
+    </div>
+    <div class="fr"><label>Ansprechpartner</label><input class="fi" id="lief-ap" placeholder="z.B. Max Müller"></div>
+    <div class="fr"><label>Notiz / Schwerpunkt</label><input class="fi" id="lief-notiz" placeholder="z.B. Hydraulikteile, schnelle Lieferung"></div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-lief')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveLief()">Speichern</button>
+      <button class="btn btn-g" id="del-lief-btn" style="display:none;color:#ef4444" onclick="delLief()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fahrzeug Modal -->
+<div class="bd" id="bd-fz">
+  <div class="md" style="width:420px">
+    <div class="mdt" id="fz-title">Fahrzeug / Gerät</div>
+    <div class="fr"><label>Bezeichnung *</label><input class="fi" id="fz-name" placeholder="z.B. Bagger PC-700, LKW Scania …"></div>
+    <div class="fr2">
+      <div class="fr" style="margin:0"><label>Kennzeichen</label><input class="fi" id="fz-kz" placeholder="z.B. SO-HI 123"></div>
+      <div class="fr" style="margin:0"><label>Typ</label>
+        <select class="fs" id="fz-typ">
+          <option>Baumaschine</option><option>LKW</option><option>PKW</option>
+          <option>Anhänger</option><option>Werkzeug / Gerät</option><option>Sonstiges</option>
+        </select>
+      </div>
+    </div>
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-fz')">Abbrechen</button>
+      <button class="btn btn-p" onclick="saveFZ()">Speichern</button>
+      <button class="btn btn-g" id="del-fz-btn" style="display:none;color:#ef4444" onclick="delFZ()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Firebase ──
+let db=null, ST=null;
+let AU=null, ET=null, LI=null, FZ=null;
+try{
+  if(typeof firebase!=='undefined'){
+    firebase.initializeApp({
+      apiKey:"AIzaSyAuU6mF5p5JQ5qvwLVbYUGc1v-HoQ8ZUMw",
+      authDomain:"dispo-hellefeld.firebaseapp.com",
+      databaseURL:"https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:"dispo-hellefeld",
+      storageBucket:"dispo-hellefeld.appspot.com",
+      messagingSenderId:"34994251645",
+      appId:"1:34994251645:web:2f8a076d385bb245354e14"
+    });
+    db=firebase.database();
+    ST=firebase.storage();
+    AU=db.ref('werkstatt/auftraege');
+    ET=db.ref('werkstatt/ersatzteile');
+    LI=db.ref('werkstatt/lieferanten');
+    FZ=db.ref('werkstatt/fahrzeuge');
+  }
+}catch(e){console.warn('Firebase:',e.message);}
+
+// ── State ──
+let auftraege={}, ersatzteile={}, lieferanten={}, fahrzeuge={};
+let curTab='auftraege', curFZ=null, subTab='verlauf';
+let auKey=null, etKey=null, liefKey=null, fzKey=null;
+let selETs={}, sq='', etSq='';
+
+// ── Helpers ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(d){if(!d)return'–';const p=String(d).split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:d;}
+function fmtEur(v){const n=parseFloat(String(v||0).replace(',','.'));return isNaN(n)?'–':n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+function totalAuftrag(v){
+  const std=parseFloat(v.std||0)*parseFloat(v.satz||0);
+  const mat=parseFloat(v.mkosten||0);
+  const et=Object.keys(v.usedETs||{}).reduce((s,k)=>{const e=ersatzteile[k];return s+(e?parseFloat(e.preis||0):0);},0);
+  return std+mat+et;
+}
+function artBadge(art){
+  const map={Reparatur:'badge-amber',Wartung:'badge-green',Inspektion:'badge-blue','TÜV / SP / HU':'badge-purple',Unfallschaden:'badge-red',Umrüstung:'badge-gray',Sonstiges:'badge-gray'};
+  return`<span class="badge ${map[art]||'badge-gray'}">${esc(art)}</span>`;
+}
+function statusBadge(s){
+  const map={Offen:'badge-blue','In Arbeit':'badge-amber','Warte auf Teile':'badge-red',Abgeschlossen:'badge-green'};
+  return`<span class="badge ${map[s]||'badge-gray'}">${esc(s)}</span>`;
+}
+function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=on?'synchronisiert':'offline';}
+
+// ── Tab / FZ ──
+function goTab(t){curTab=t;['auftraege','ersatzteile','lieferanten'].forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.className='ntab'+(t===id?' on':'');});draw();}
+function setCurFZ(id,btn){curFZ=id;document.querySelectorAll('.fz-item').forEach(b=>b.classList.remove('on'));btn.classList.add('on');draw();}
+
+// ── Sidebar ──
+function buildSidebar(){
+  const list=document.getElementById('fz-list');
+  list.innerHTML=Object.entries(fahrzeuge).filter(([k,v])=>v&&v.name).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([k,v])=>{
+    const cnt=Object.values(auftraege).filter(a=>a&&a.fzId===k).length;
+    return`<button class="fz-item${curFZ===k?' on':''}" onclick="setCurFZ('${k}',this)">
+      <div>${esc(v.name)}</div>
+      <div class="sub">${v.kz?esc(v.kz)+' · ':''} ${cnt} Aufträge</div>
+    </button>`;
+  }).join('');
+}
+
+// ── Draw Router ──
+function draw(){buildSidebar();if(curTab==='auftraege')drawAuftraege();else if(curTab==='ersatzteile')drawErsatzteile();else drawLieferanten();}
+
+// ── Aufträge ──
+function drawAuftraege(){
+  const main=document.getElementById('main');
+  let items=Object.entries(auftraege).filter(([k,v])=>v&&v.titel);
+  if(curFZ) items=items.filter(([k,v])=>v.fzId===curFZ);
+  if(sq) items=items.filter(([k,v])=>((v.titel||'')+(v.beschr||'')+(v.mech||'')).toLowerCase().includes(sq));
+  items.sort((a,b)=>(b[1].datum||'').localeCompare(a[1].datum||''));
+
+  const fzName=curFZ&&fahrzeuge[curFZ]?fahrzeuge[curFZ].name:'Alle Fahrzeuge';
+  const total=items.reduce((s,[,v])=>s+totalAuftrag(v),0);
+  const offen=items.filter(([,v])=>v.status!=='Abgeschlossen').length;
+
+  let html=`<div class="ph">
+    <div class="pht">${esc(fzName)}</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="swrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="sinp" id="sq-inp" placeholder="Suchen …" value="${esc(sq)}" oninput="sq=this.value.toLowerCase();drawAuftraege()">
+      </div>
+      <button class="btn btn-p" onclick="openAuftrag()">+ Auftrag</button>
+    </div>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><div class="lbl">Aufträge gesamt</div><div class="val">${items.length}</div></div>
+    <div class="stat"><div class="lbl">Offen / In Arbeit</div><div class="val">${offen}</div></div>
+    <div class="stat"><div class="lbl">Kosten gesamt</div><div class="val red">${fmtEur(total)}</div></div>
+  </div>`;
+
+  if(!items.length){
+    html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><p>Noch keine Aufträge</p></div>`;
+  } else {
+    html+=`<div class="timeline">`;
+    items.forEach(([k,v],i)=>{
+      const fz=fahrzeuge[v.fzId];
+      const kosten=totalAuftrag(v);
+      const isNeg=kosten<0;
+      const etList=Object.keys(v.usedETs||{}).map(ek=>ersatzteile[ek]?.name||'?').filter(Boolean);
+      html+=`<div class="t-entry">
+        <div class="t-line">
+          <div class="t-dot" style="background:${v.status==='Abgeschlossen'?'var(--green)':v.status==='In Arbeit'?'var(--amber)':v.status==='Warte auf Teile'?'var(--red-warn)':'var(--blue)'}"></div>
+          ${i<items.length-1?'<div class="t-vline"></div>':''}
+        </div>
+        <div class="t-body">
+          <div class="t-head">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              ${artBadge(v.art)}
+              ${statusBadge(v.status)}
+              <span style="font-size:11px;color:var(--muted)">${fmtDate(v.datum)}</span>
+              ${!curFZ&&fz?`<span style="font-size:11px;color:var(--blue);font-weight:500">🚗 ${esc(fz.name)}</span>`:''}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              ${kosten?`<span class="t-cost" style="color:${isNeg?'var(--green)':'var(--red-warn)'}">${fmtEur(kosten)}</span>`:''}
+              <div class="ra">
+                <button class="ib e" onclick="openAuftrag('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="ib d" onclick="delAuftrag('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+              </div>
+            </div>
+          </div>
+          <div class="t-ttl">${esc(v.titel)}</div>
+          <div class="t-meta">
+            ${v.beschr?`<span>${esc(v.beschr)}</span>`:''}
+            ${v.mech?`<span>👤 ${esc(v.mech)}</span>`:''}
+            ${v.km?`<span>🔢 ${esc(v.km)}</span>`:''}
+            ${v.std?`<span>⏱ ${esc(v.std)} h × ${fmtEur(v.satz)}</span>`:''}
+            ${v.mkosten?`<span>🔧 Material: ${fmtEur(v.mkosten)}</span>`:''}
+            ${etList.length?`<span>📦 ${etList.join(', ')}</span>`:''}
+            ${v.notiz?`<span>📝 ${esc(v.notiz)}</span>`:''}
+            ${v.pdfUrl?`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 ${esc(v.pdfName||'PDF')}</a>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  main.innerHTML=html;
+  const inp=document.getElementById('sq-inp');
+  if(inp){const l=inp.value.length;inp.setSelectionRange(l,l);}
+}
+
+// ── Ersatzteile ──
+function drawErsatzteile(){
+  const main=document.getElementById('main');
+  let items=Object.entries(ersatzteile).filter(([k,v])=>v&&v.name);
+  if(etSq) items=items.filter(([k,v])=>((v.name||'')+(v.artnr||'')+(v.kat||'')+(v.notiz||'')).toLowerCase().includes(etSq));
+  items.sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+  const niedrig=items.filter(([k,v])=>v.minlager&&parseInt(v.lager||0)<=parseInt(v.minlager)).length;
+  let html=`<div class="ph">
+    <div class="pht">Ersatzteile & Lager</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="swrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="sinp" id="et-sq-inp" placeholder="Suchen …" value="${esc(etSq)}" oninput="etSq=this.value.toLowerCase();drawErsatzteile()">
+      </div>
+      <button class="btn btn-p" onclick="openET()">+ Ersatzteil</button>
+    </div>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><div class="lbl">Artikel gesamt</div><div class="val">${items.length}</div></div>
+    <div class="stat"><div class="lbl">Lagerbestand niedrig</div><div class="val${niedrig?' red':''}">${niedrig}</div></div>
+  </div>`;
+  if(!items.length){
+    html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><p>Noch keine Ersatzteile angelegt</p></div>`;
+  } else {
+    html+=`<div class="tbl-wrap"><table class="tbl"><thead><tr>
+      <th>Bezeichnung</th><th>Art.-Nr.</th><th>Kategorie</th><th>Lieferant</th><th>Preis</th><th>Bestand</th><th>Lagerort</th><th>Dok.</th><th></th>
+    </tr></thead><tbody>`;
+    items.forEach(([k,v])=>{
+      const lief=lieferanten[v.liefId];
+      const low=v.minlager&&parseInt(v.lager||0)<=parseInt(v.minlager);
+      html+=`<tr>
+        <td style="font-weight:600">${esc(v.name)}${v.notiz?`<div style="font-size:10px;color:var(--muted)">${esc(v.notiz)}</div>`:''}</td>
+        <td class="mono" style="color:var(--muted)">${esc(v.artnr||'–')}</td>
+        <td><span class="badge badge-gray">${esc(v.kat||'–')}</span></td>
+        <td style="font-size:12px">${lief?esc(lief.name):'–'}</td>
+        <td class="mono">${v.preis?fmtEur(v.preis):'–'}</td>
+        <td class="${low?'lager-low':'lager-ok'} mono">${v.lager||0}${v.minlager?` / ${v.minlager}`:''}</td>
+        <td style="font-size:11px;color:var(--muted)">${esc(v.lagerort||'–')}</td>
+        <td>${v.pdfUrl?`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄</a>`:'–'}</td>
+        <td><div class="ra">
+          <button class="ib e" onclick="openET('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+          <button class="ib d" onclick="delETconf('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+        </div></td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  }
+  main.innerHTML=html;
+  const inp=document.getElementById('et-sq-inp');
+  if(inp){const l=inp.value.length;inp.setSelectionRange(l,l);}
+}
+
+// ── Lieferanten ──
+function drawLieferanten(){
+  const main=document.getElementById('main');
+  const items=Object.entries(lieferanten).filter(([k,v])=>v&&v.name).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+  let html=`<div class="ph"><div class="pht">Lieferanten</div><button class="btn btn-p" onclick="openLief()">+ Lieferant</button></div>`;
+  if(!items.length){
+    html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Noch keine Lieferanten</p></div>`;
+  } else {
+    html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">`;
+    items.forEach(([k,v])=>{
+      const etCnt=Object.values(ersatzteile).filter(e=>e&&e.liefId===k).length;
+      html+=`<div style="background:var(--white);border:1px solid var(--line);border-radius:10px;padding:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">${esc(v.name)}</div>
+        ${v.ap?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${esc(v.ap)}</div>`:''}
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+          ${v.tel?`<a href="tel:${esc(v.tel)}" style="font-size:12px;color:var(--slate);text-decoration:none">📞 ${esc(v.tel)}</a>`:''}
+          ${v.mail?`<a href="mailto:${esc(v.mail)}" style="font-size:12px;color:var(--red);text-decoration:none">✉ ${esc(v.mail)}</a>`:''}
+        </div>
+        ${v.notiz?`<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px;margin-bottom:8px">${esc(v.notiz)}</div>`:''}
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">📦 ${etCnt} Ersatzteile</div>
+        <div style="display:flex;gap:5px;justify-content:flex-end">
+          <button class="btn btn-g btn-sm" onclick="openLief('${k}')">Bearbeiten</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  main.innerHTML=html;
+}
+
+// ── Auftrag CRUD ──
+function fillFZSel(sel,val){
+  if(!sel)return;
+  sel.innerHTML='<option value="">— Fahrzeug wählen —</option>'+
+    Object.entries(fahrzeuge).filter(([k,v])=>v&&v.name).sort((a,b)=>a[1].name.localeCompare(b[1].name))
+    .map(([k,v])=>`<option value="${k}"${k===val?' selected':''}>${esc(v.name)}${v.kz?' ('+v.kz+')':''}</option>`).join('');
+}
+function openAuftrag(key){
+  auKey=key||null;
+  selETs={};
+  document.getElementById('auftrag-title').textContent=key?'Auftrag bearbeiten':'Neuer Werkstattauftrag';
+  fillFZSel(document.getElementById('au-fz'), key?auftraege[key]?.fzId:(curFZ||''));
+  document.getElementById('au-datum').value=new Date().toISOString().slice(0,10);
+  ['au-titel','au-beschr','au-mech','au-km','au-notiz'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['au-std','au-satz','au-mkosten'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('au-art').value='Reparatur';
+  document.getElementById('au-status').value='Offen';
+  document.getElementById('au-pdf-url').value='';
+  document.getElementById('au-pdf-name').value='';
+  document.getElementById('au-pdf-prev').innerHTML='';
+  if(key&&auftraege[key]){
+    const v=auftraege[key];
+    document.getElementById('au-fz').value=v.fzId||'';
+    document.getElementById('au-datum').value=v.datum||'';
+    document.getElementById('au-art').value=v.art||'Reparatur';
+    document.getElementById('au-status').value=v.status||'Offen';
+    document.getElementById('au-titel').value=v.titel||'';
+    document.getElementById('au-beschr').value=v.beschr||'';
+    document.getElementById('au-std').value=v.std||'';
+    document.getElementById('au-satz').value=v.satz||'';
+    document.getElementById('au-mkosten').value=v.mkosten||'';
+    document.getElementById('au-mech').value=v.mech||'';
+    document.getElementById('au-km').value=v.km||'';
+    document.getElementById('au-notiz').value=v.notiz||'';
+    document.getElementById('au-pdf-url').value=v.pdfUrl||'';
+    document.getElementById('au-pdf-name').value=v.pdfName||'';
+    if(v.pdfUrl) document.getElementById('au-pdf-prev').innerHTML=`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 ${esc(v.pdfName||'PDF')}</a>`;
+    selETs=Object.assign({},v.usedETs||{});
+  }
+  renderSelETs();
+  openM('bd-auftrag');
+}
+function renderSelETs(){
+  const div=document.getElementById('au-et-sel');
+  if(!div)return;
+  const keys=Object.keys(selETs);
+  div.innerHTML=keys.length
+    ?keys.map(k=>{const e=ersatzteile[k];return e?`<span class="et-chip">${esc(e.name)}<span onclick="delete selETs['${k}'];renderSelETs()" style="margin-left:4px;color:var(--muted)">×</span></span>`:''}).join('')
+    :'<span style="font-size:12px;color:var(--muted);padding:4px">Klicken zum Auswählen …</span>';
+}
+function openETSel(){drawETSel();openM('bd-et-sel');}
+function drawETSel(){
+  const q=document.getElementById('et-sel-sq')?.value?.toLowerCase()||'';
+  const list=document.getElementById('et-sel-list');
+  if(!list)return;
+  let items=Object.entries(ersatzteile).filter(([k,v])=>v&&v.name);
+  if(q)items=items.filter(([k,v])=>((v.name||'')+(v.artnr||'')).toLowerCase().includes(q));
+  list.innerHTML=items.map(([k,v])=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:6px;cursor:pointer;transition:.12s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <input type="checkbox" ${selETs[k]?'checked':''} onchange="if(this.checked)selETs['${k}']=1;else delete selETs['${k}'];renderSelETs()">
+      <div>
+        <div style="font-size:13px;font-weight:500">${esc(v.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${v.artnr?esc(v.artnr)+' · ':''} ${fmtEur(v.preis)}</div>
+      </div>
+    </label>`).join('');
+}
+function saveAuftrag(){
+  const titel=document.getElementById('au-titel').value.trim();
+  const fzId=document.getElementById('au-fz').value;
+  if(!titel){alert('Bezeichnung ist Pflichtfeld.');return;}
+  if(!fzId){alert('Bitte Fahrzeug auswählen.');return;}
+  const e={
+    fzId, datum:document.getElementById('au-datum').value,
+    art:document.getElementById('au-art').value, status:document.getElementById('au-status').value,
+    titel, beschr:document.getElementById('au-beschr').value.trim(),
+    std:document.getElementById('au-std').value, satz:document.getElementById('au-satz').value,
+    mkosten:document.getElementById('au-mkosten').value,
+    mech:document.getElementById('au-mech').value.trim(), km:document.getElementById('au-km').value.trim(),
+    notiz:document.getElementById('au-notiz').value.trim(),
+    pdfUrl:document.getElementById('au-pdf-url').value, pdfName:document.getElementById('au-pdf-name').value,
+    usedETs:Object.assign({},selETs), ts:Date.now()
+  };
+  if(auKey){AU&&AU.child(auKey).update(e);auftraege[auKey]={...auftraege[auKey],...e};}
+  else{const k=AU?AU.push().key:'a_'+Date.now();AU&&AU.child(k).set(e);auftraege[k]=e;}
+  closeM('bd-auftrag');draw();
+}
+function delAuftrag(k){
+  if(!confirm('Auftrag löschen?'))return;
+  AU&&AU.child(k).remove();delete auftraege[k];draw();
+}
+
+// ── Ersatzteil CRUD ──
+function fillLiefSel(sel,val){
+  if(!sel)return;
+  sel.innerHTML='<option value="">— Lieferant wählen —</option>'+
+    Object.entries(lieferanten).filter(([k,v])=>v&&v.name).sort((a,b)=>a[1].name.localeCompare(b[1].name))
+    .map(([k,v])=>`<option value="${k}"${k===val?' selected':''}>${esc(v.name)}</option>`).join('');
+}
+function openET(key){
+  etKey=key||null;
+  document.getElementById('et-title').textContent=key?'Ersatzteil bearbeiten':'Ersatzteil anlegen';
+  document.getElementById('del-et-btn').style.display=key?'':'none';
+  fillLiefSel(document.getElementById('et-lief'),key?ersatzteile[key]?.liefId:'');
+  ['et-name','et-artnr','et-notiz','et-lagerort'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['et-preis','et-lager','et-minlager'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('et-kat').value='Hydraulik';
+  document.getElementById('et-pdf-url').value='';
+  document.getElementById('et-pdf-prev').innerHTML='';
+  if(key&&ersatzteile[key]){
+    const v=ersatzteile[key];
+    document.getElementById('et-name').value=v.name||'';
+    document.getElementById('et-artnr').value=v.artnr||'';
+    document.getElementById('et-kat').value=v.kat||'Hydraulik';
+    document.getElementById('et-lief').value=v.liefId||'';
+    document.getElementById('et-preis').value=v.preis||'';
+    document.getElementById('et-lager').value=v.lager||'';
+    document.getElementById('et-minlager').value=v.minlager||'';
+    document.getElementById('et-lagerort').value=v.lagerort||'';
+    document.getElementById('et-notiz').value=v.notiz||'';
+    document.getElementById('et-pdf-url').value=v.pdfUrl||'';
+    if(v.pdfUrl) document.getElementById('et-pdf-prev').innerHTML=`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 Beleg</a>`;
+  }
+  openM('bd-et');
+}
+function saveET(){
+  const name=document.getElementById('et-name').value.trim();
+  if(!name){alert('Bezeichnung ist Pflichtfeld.');return;}
+  const e={name,artnr:document.getElementById('et-artnr').value.trim(),kat:document.getElementById('et-kat').value,
+    liefId:document.getElementById('et-lief').value,preis:document.getElementById('et-preis').value,
+    lager:document.getElementById('et-lager').value,minlager:document.getElementById('et-minlager').value,
+    lagerort:document.getElementById('et-lagerort').value.trim(),notiz:document.getElementById('et-notiz').value.trim(),
+    pdfUrl:document.getElementById('et-pdf-url').value,ts:Date.now()};
+  if(etKey){ET&&ET.child(etKey).update(e);ersatzteile[etKey]={...ersatzteile[etKey],...e};}
+  else{const k=ET?ET.push().key:'e_'+Date.now();ET&&ET.child(k).set(e);ersatzteile[k]=e;}
+  closeM('bd-et');draw();
+}
+function delETconf(k){if(!confirm('Ersatzteil löschen?'))return;ET&&ET.child(k).remove();delete ersatzteile[k];draw();}
+function delET(){delETconf(etKey);closeM('bd-et');}
+
+// ── Lieferant CRUD ──
+function openLief(key){
+  liefKey=key||null;
+  document.getElementById('lief-title').textContent=key?'Lieferant bearbeiten':'Lieferant hinzufügen';
+  document.getElementById('del-lief-btn').style.display=key?'':'none';
+  ['lief-name','lief-tel','lief-mail','lief-ap','lief-notiz'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  if(key&&lieferanten[key]){
+    const v=lieferanten[key];
+    document.getElementById('lief-name').value=v.name||'';
+    document.getElementById('lief-tel').value=v.tel||'';
+    document.getElementById('lief-mail').value=v.mail||'';
+    document.getElementById('lief-ap').value=v.ap||'';
+    document.getElementById('lief-notiz').value=v.notiz||'';
+  }
+  openM('bd-lief');
+}
+function saveLief(){
+  const name=document.getElementById('lief-name').value.trim();
+  if(!name){alert('Name ist Pflichtfeld.');return;}
+  const e={name,tel:document.getElementById('lief-tel').value.trim(),mail:document.getElementById('lief-mail').value.trim(),ap:document.getElementById('lief-ap').value.trim(),notiz:document.getElementById('lief-notiz').value.trim(),ts:Date.now()};
+  if(liefKey){LI&&LI.child(liefKey).update(e);lieferanten[liefKey]={...lieferanten[liefKey],...e};}
+  else{const k=LI?LI.push().key:'l_'+Date.now();LI&&LI.child(k).set(e);lieferanten[k]=e;}
+  closeM('bd-lief');draw();
+}
+function delLief(){
+  if(!liefKey)return;
+  if(!confirm('Lieferant löschen?'))return;
+  LI&&LI.child(liefKey).remove();delete lieferanten[liefKey];closeM('bd-lief');draw();
+}
+
+// ── Fahrzeug CRUD ──
+function openFZModal(key){
+  fzKey=key||null;
+  document.getElementById('fz-title').textContent=key?'Fahrzeug bearbeiten':'Fahrzeug hinzufügen';
+  document.getElementById('del-fz-btn').style.display=key?'':'none';
+  ['fz-name','fz-kz'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  if(key&&fahrzeuge[key]){
+    document.getElementById('fz-name').value=fahrzeuge[key].name||'';
+    document.getElementById('fz-kz').value=fahrzeuge[key].kz||'';
+    document.getElementById('fz-typ').value=fahrzeuge[key].typ||'Baumaschine';
+  }
+  openM('bd-fz');
+}
+function saveFZ(){
+  const name=document.getElementById('fz-name').value.trim();
+  if(!name){alert('Bezeichnung ist Pflichtfeld.');return;}
+  const e={name,kz:document.getElementById('fz-kz').value.trim(),typ:document.getElementById('fz-typ').value,ts:Date.now()};
+  if(fzKey){FZ&&FZ.child(fzKey).update(e);fahrzeuge[fzKey]={...fahrzeuge[fzKey],...e};}
+  else{const k=FZ?FZ.push().key:'f_'+Date.now();FZ&&FZ.child(k).set(e);fahrzeuge[k]=e;}
+  closeM('bd-fz');draw();
+}
+function delFZ(){
+  if(!fzKey)return;
+  const cnt=Object.values(auftraege).filter(a=>a&&a.fzId===fzKey).length;
+  if(cnt>0){alert(`Dieses Fahrzeug hat noch ${cnt} Auftrag/Aufträge. Bitte zuerst löschen.`);return;}
+  if(!confirm('Fahrzeug löschen?'))return;
+  FZ&&FZ.child(fzKey).remove();delete fahrzeuge[fzKey];curFZ=null;closeM('bd-fz');draw();
+}
+
+// ── PDF Upload ──
+function uploadPDF(file,path,prog,bar,onDone){
+  if(!ST){alert('Firebase Storage nicht verfügbar.');return;}
+  if(!file||file.type!=='application/pdf'){alert('Nur PDF-Dateien.');return;}
+  if(file.size>15*1024*1024){alert('Max. 15 MB.');return;}
+  const ref=ST.ref(path+'/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_'));
+  const task=ref.put(file);
+  const pw=document.getElementById(prog), pb=document.getElementById(bar);
+  if(pw)pw.style.display='';
+  task.on('state_changed',
+    s=>{const p=Math.round(s.bytesTransferred/s.totalBytes*100);if(pb)pb.style.width=p+'%';},
+    err=>{alert('Fehler: '+err.message);if(pw)pw.style.display='none';},
+    ()=>{ref.getDownloadURL().then(url=>{if(pw)pw.style.display='none';onDone(url,file.name);});}
+  );
+}
+function handleAuPDF(inp){
+  const f=inp.files[0];if(!f)return;
+  uploadPDF(f,'werkstatt/auftraege','au-prog-wrap','au-prog-bar',(url,name)=>{
+    document.getElementById('au-pdf-url').value=url;
+    document.getElementById('au-pdf-name').value=name;
+    document.getElementById('au-pdf-prev').innerHTML=`<a class="pdf-link" href="${url}" target="_blank">📄 ${name}</a>`;
+  });
+}
+function handleETpdf(inp){
+  const f=inp.files[0];if(!f)return;
+  uploadPDF(f,'werkstatt/ersatzteile','et-prog-wrap','et-prog-bar',(url,name)=>{
+    document.getElementById('et-pdf-url').value=url;
+    document.getElementById('et-pdf-prev').innerHTML=`<a class="pdf-link" href="${url}" target="_blank">📄 ${name}</a>`;
+  });
+}
+
+// ── Modal ──
+function openM(id){document.getElementById(id).classList.add('on');}
+function closeM(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.bd').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)closeM(b.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.bd.on').forEach(b=>closeM(b.id));});
+
+// ── Firebase Init ──
+function initFB(){
+  if(!db)return;
+  try{
+    db.ref('.info/connected').on('value',s=>sync(!!s.val()));
+    FZ.on('value',s=>{
+      fahrzeuge=s.val()||{};
+      draw();
+      // Einmalig Geräte-Sync beim ersten Laden
+      if(!sessionStorage.getItem('ws_synced')){
+        sessionStorage.setItem('ws_synced','1');
+        setTimeout(syncGeraete,1000);
+      }
+    },()=>{});
+    AU.on('value',s=>{auftraege=s.val()||{};draw();},()=>{});
+    ET.on('value',s=>{ersatzteile=s.val()||{};draw();},()=>{});
+    LI.on('value',s=>{lieferanten=s.val()||{};draw();},()=>{});
+  }catch(e){console.warn(e);}
+}
+
+// ── Geräte-Sync ──
+function syncGeraete(){
+  if(!db)return;
+  // 1. Fahrzeuge aus geraete/items
+  db.ref('geraete/items').once('value').then(snap=>{
+    const items=snap.val()||{};
+    Object.entries(items).forEach(([gk,gv])=>{
+      if(!gv||!gv.name)return;
+      const exists=Object.values(fahrzeuge).find(f=>f&&f.name===gv.name&&(f.kz||'')===(gv.kz||''));
+      if(exists)return;
+      const typMap={'Fahrzeuge':'LKW','Anhänger':'Anhänger','Baumaschinen':'Baumaschine','Werkzeuge & Geräte':'Werkzeug / Gerät'};
+      const typ=typMap[gv.kategorie]||'Sonstiges';
+      const e={name:gv.name,kz:gv.kz||'',typ,ts:Date.now(),vonGeraete:gk};
+      const k=FZ?FZ.push().key:'f_'+Date.now()+Math.random();
+      FZ&&FZ.child(k).set(e);
+      fahrzeuge[k]=e;
+    });
+    draw();
+  }).catch(()=>{});
+
+  // 2. Lieferanten aus geraete/werkstaetten + einkauf/lieferanten
+  const quellen=[
+    {ref:db.ref('geraete/werkstaetten'), mapFn:v=>({name:v.name,tel:v.tel||'',mail:v.mail||'',ap:v.ap||'',notiz:v.kat?('Kategorie: '+v.kat+(v.notiz?', '+v.notiz:'')):v.notiz||''})},
+    {ref:db.ref('einkauf/lieferanten'),  mapFn:v=>({name:v.name,tel:v.tel||v.apTel||'',mail:v.apMail||'',ap:v.apName||'',notiz:v.kategorie?('Einkauf: '+v.kategorie):''})},
+  ];
+  quellen.forEach(({ref,mapFn})=>{
+    ref.once('value').then(snap=>{
+      const items=snap.val()||{};
+      Object.values(items).forEach(v=>{
+        if(!v||!v.name)return;
+        const exists=Object.values(lieferanten).find(l=>l&&l.name===v.name);
+        if(exists)return;
+        const e={...mapFn(v),ts:Date.now()};
+        const k=LI?LI.push().key:'l_'+Date.now()+Math.random();
+        LI&&LI.child(k).set(e);
+        lieferanten[k]=e;
+      });
+      draw();
+    }).catch(()=>{});
+  });
+}
+
+// ── Start ──
+draw();sync(false);initFB();
+</script>
+</body>
+</html>
