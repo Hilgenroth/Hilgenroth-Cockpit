@@ -380,6 +380,15 @@ textarea.field-textarea:focus { border-color: var(--red); }
 .pk-table select { cursor: pointer; }
 .pk-table .pk-calc { font-weight: 600; color: #444; }
 .pk-table .pk-calc input { color: #444; font-weight: 600; }
+.pk-table tr.pk-result-row { background: #FFF6F6; }
+.pk-table tr.pk-result-row:nth-child(even) { background: #FFF0F0; }
+.pk-table tr.pk-result-row .pk-row-label { background: inherit; color: var(--ink); font-weight: 800; }
+.pk-table .pk-result span { font-size: 17px; font-weight: 800; color: var(--red); }
+@media print {
+  .pk-table tr.pk-result-row { background: #fff !important; }
+  .pk-table tr.pk-result-row:nth-child(even) { background: #fafafa !important; }
+  .pk-table .pk-result span { font-size: 14px !important; }
+}
 .pk-group-header td {
   background: var(--ink); color: #fff; font-family: var(--mono); font-size: 10px;
   font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; padding: 6px 12px;
@@ -678,13 +687,15 @@ function buildPkBody() {
     if (feld.group) {
       html += `<tr class="pk-group-header"><td colspan="${pkSpalten.length + 1}">${feld.group}</td></tr>`;
     }
-    html += `<tr><td class="pk-row-label">${feld.label}</td>`;
+    const rowClass = feld.id === 'druckfestigkeit' ? ' class="pk-result-row"' : '';
+    html += `<tr${rowClass}><td class="pk-row-label">${feld.label}</td>`;
     pkSpalten.forEach(colId => {
       const cellId = feld.id + '_' + colId;
       if (feld.type === 'select') {
         html += `<td><select id="${cellId}" onchange="onSorteChange('${colId}')"><option value="">— wählen —</option>${sortenOptions()}</select></td>`;
       } else if (feld.type === 'calc') {
-        html += `<td class="pk-calc"><span id="${cellId}">—</span></td>`;
+        const calcClass = feld.id === 'druckfestigkeit' ? 'pk-calc pk-result' : 'pk-calc';
+        html += `<td class="${calcClass}"><span id="${cellId}">—</span></td>`;
       } else if (feld.type === 'date') {
         html += `<td><input type="date" id="${cellId}" onchange="berechnePK('${colId}')" /></td>`;
       } else if (feld.type === 'number') {
