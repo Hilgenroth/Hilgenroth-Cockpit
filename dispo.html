@@ -188,11 +188,23 @@ td strong{color:var(--ink);font-weight:700}
 .tour-row{padding:20px 28px;border-bottom:1px solid var(--line);transition:background .1s}
 .tour-row:last-child{border-bottom:none}
 .tour-row:hover{background:var(--surf)}
-.tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 160px 1.2fr 120px;gap:14px;align-items:start}
+.tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 160px 1.2fr 1fr 110px;gap:14px;align-items:start}
 .tg-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
 .t-name{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.2}
 .t-sub{font-size:12px;color:var(--ink3);margin-top:4px;font-weight:600}
 .t-bst{font-size:15px;color:var(--ink2);font-weight:700;line-height:1.4}
+.bst-actions{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.bst-toggle{background:none;border:none;cursor:pointer;font-size:11px;font-weight:700;color:var(--ink3);padding:2px 0;display:inline-flex;align-items:center;gap:4px;margin-top:6px;transition:color .15s}
+.bst-toggle:hover{color:var(--ink)}
+.bst-drawer{display:none;flex-direction:column;gap:5px;margin-top:6px}
+.bst-drawer.open{display:flex}
+.bst-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;text-decoration:none;cursor:pointer;border:none;font-family:inherit}
+.bst-pill-blue{background:var(--blu-s);color:var(--blu)}
+.bst-pill-grn{background:var(--grn-s);color:var(--grn)}
+.bst-pill-asp{background:var(--surf);color:var(--ink3);border:1px solid var(--line)}
+.w3w-input-row{display:flex;gap:4px;margin-top:4px}
+.w3w-input-row input{flex:1;padding:5px 8px;border:1px solid var(--line);border-radius:var(--rs);font-size:11px;font-family:inherit;background:var(--surf)}
+.w3w-input-row button{padding:4px 8px;background:var(--grn);color:#fff;border:none;border-radius:var(--rs);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
 .t-time{background:var(--ink);color:white;padding:10px 16px;border-radius:var(--rs);font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap}
 .t-time.nt{background:var(--surf);color:var(--muted);border:1px dashed var(--line2);font-weight:600;font-size:12px}
 .t-bem{font-size:12px;color:var(--ink2);margin-top:12px;padding:10px 14px;background:var(--amb-s);border-left:3px solid var(--amb);border-radius:4px;font-weight:500}
@@ -2275,7 +2287,10 @@ document.getElementById('formS').addEventListener('submit',e=>{
   const gueltTouren=stTouren.filter(t=>t.sorte);
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
   const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
-  const sorte=(f.sSorte&&f.sSorte.value&&f.sSorte.value!=='__neu__'?f.sSorte.value:'') || (gueltTouren.length>0?gueltTouren[0].sorte:'');
+  const sorte=(()=>{
+    const sel=f.sSorte&&f.sSorte.value&&f.sSorte.value!=='__neu__'?f.sSorte.value:'';
+    return sel||(gueltTouren.length>0?gueltTouren[0].sorte:'');
+  })();
   const order={
     schachtmeister:f.schachtmeister.value,
     baustellennummer:f.baustellennummer.value.trim(),
@@ -2481,26 +2496,58 @@ function renderOv(){
   document.getElementById('ovCntF').textContent=fl.length;
 
   document.getElementById('ovBodyS').innerHTML=sl.length===0?'<div class="ov-empty"><div class="ico">🚧</div><h3>Keine Sundern-Touren</h3></div>':sl.map(o=>{
-    // Fahrzeugtypen: untereinander statt nebeneinander
+    const smData=schachtmeister.find(s=>s.name===o.schachtmeister);
+    const smTel=smData&&smData.phone?smData.phone:'';
+    const origin='Osterfeld+1,+59846+Sundern-Hellefeld';
+    const bstIdx=baustellen.findIndex(b=>b.nr===o.baustellennummer||(b.name&&o.baustelle&&b.name.toLowerCase()===o.baustelle.toLowerCase()));
+    const bst=bstIdx>=0?baustellen[bstIdx]:null;
+    const mapsHrefBst=bst&&bst.lat&&bst.lon
+      ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${bst.lat},${bst.lon}&travelmode=driving`
+      : bst&&bst.addr
+        ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${encodeURIComponent(bst.addr)}&travelmode=driving`
+        : o.baustelle
+          ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${encodeURIComponent(o.baustelle)}&travelmode=driving`
+          : '';
+    const w3w=bst&&bst.w3w?bst.w3w:'';
+    const bstNrSlug=o.baustellennummer?o.baustellennummer.toString().replace(/[^a-z0-9]/gi,'-').toLowerCase():'allgemein';
+    const chatKanal='hilgenroth-bst-'+bstNrSlug;
     const fzgTxt=Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length
       ? o.fahrzeugDetails.map(z=>'<div style="font-weight:700;line-height:1.6">'+esc(z.anz)+'× '+esc(z.typ)+'</div>').join('')
       : (o.vehicleTypes||[]).map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('');
-    // Touren: mit "t" hinter Menge; Einzelauftrag nur Sorte·Menge
     const tourenHtml=Array.isArray(o.touren)&&o.touren.length>1
       ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
       : '';
     return `<div class="tour-row"><div class="tour-grid">
-    <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
-    <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
+    <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${smTel?`<a href="tel:${esc(smTel)}" class="bst-pill bst-pill-grn" style="margin-top:5px">📞 ${esc(smTel)}</a>`:''} ${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
+    <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>
+      <button class="bst-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.textContent=this.nextElementSibling.classList.contains('open')?'▴ zuklappen':'▾ Aktionen'">▾ Aktionen</button>
+      <div class="bst-drawer">
+        ${mapsHrefBst?`<a href="${mapsHrefBst}" target="_blank" rel="noopener" class="bst-pill bst-pill-blue">🗺 Route starten</a>`:''}
+        ${w3w?`<a href="https://w3w.co/${encodeURIComponent(w3w.replace(/^\/\/\//,''))}" target="_blank" rel="noopener" class="bst-pill bst-pill-asp">📍 ///${esc(w3w.replace(/^\/\/\//,''))}</a>`
+          :`<div class="w3w-input-row"><input id="w3w_${o.id}" placeholder="///wort.wort.wort" value=""><button onclick="saveW3W(${bstIdx},'w3w_${o.id}')">📍 Speichern</button></div>`}
+        <a href="https://ntfy.sh/${encodeURIComponent(chatKanal)}" target="_blank" rel="noopener" class="bst-pill bst-pill-asp" title="Kanal: ${esc(chatKanal)}">💬 Baustellen-Chat</a>
+        <button onclick="copyNtfyKanal('${esc(chatKanal)}')" class="bst-pill bst-pill-asp" style="border:none;cursor:pointer">📋 Kanal kopieren</button>
+      </div>
+    </div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxt||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
     <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
     <div><div class="tg-label">Touren</div>${tourenHtml}</div>
-    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('sundern',o.id)}</div></div>
-  </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
+    <div>${o.bemerkung?`<div class="tg-label" style="color:var(--amb)">⚠ Hinweis</div><div style="font-size:13px;font-weight:700;color:var(--ink2);background:var(--amb-s);border-left:3px solid var(--amb);border-radius:4px;padding:8px 10px;line-height:1.4;white-space:pre-wrap">${esc(o.bemerkung)}</div>`:''}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('sundern',o.id)}</div></div>
+  </div></div>`;
   }).join('');
 
   document.getElementById('ovBodyF').innerHTML=fl.length===0?'<div class="ov-empty"><div class="ico">📋</div><h3>Keine Fremdfirmen-Touren</h3></div>':fl.map(o=>{
+    const origin='Osterfeld+1,+59846+Sundern-Hellefeld';
+    const bstF=baustellen.find(b=>b.nr===o.baustellennummer||(b.name&&o.baustelle&&b.name.toLowerCase()===o.baustelle.toLowerCase()));
+    const mapsHrefF=bstF&&bstF.lat&&bstF.lon
+      ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${bstF.lat},${bstF.lon}&travelmode=driving`
+      : bstF&&bstF.addr
+        ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${encodeURIComponent(bstF.addr)}&travelmode=driving`
+        : o.baustelle
+          ? `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${encodeURIComponent(o.baustelle)}&travelmode=driving`
+          : '';
     const fzgTxtF=Array.isArray(o.vehicleTypes)&&o.vehicleTypes.length
       ? o.vehicleTypes.map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('')
       : '';
@@ -2509,13 +2556,14 @@ function renderOv(){
       : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div></div>
-    <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
+    <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>${mapsHrefF?`<a href="${mapsHrefF}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:700;color:var(--blu);text-decoration:none;background:var(--blu-s);padding:3px 8px;border-radius:100px">🗺 Route starten</a>`:''}</div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
     <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
     <div><div class="tg-label">Touren</div>${tourenHtmlF}</div>
-    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('fremd',o.id)}</div></div>
-  </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
+    <div>${o.bemerkung?`<div class="tg-label" style="color:var(--amb)">⚠ Hinweis</div><div style="font-size:13px;font-weight:700;color:var(--ink2);background:var(--amb-s);border-left:3px solid var(--amb);border-radius:4px;padding:8px 10px;line-height:1.4;white-space:pre-wrap">${esc(o.bemerkung)}</div>`:''}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('fremd',o.id)}</div></div>
+  </div></div>`;
   }).join('');
 }function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 
@@ -3849,6 +3897,23 @@ window.exportSortenXlsx=function(){
   XLSX.utils.book_append_sheet(wb,ws,'Sorten');
   XLSX.writeFile(wb,'Auftragssorten.xlsx');
   showToast('Excel exportiert','success');
+};
+
+// ===== W3W & BAUSTELLEN-CHAT =====
+window.saveW3W=function(bstIdx,inputId){
+  if(bstIdx<0){showToast('Baustelle nicht zugeordnet — bitte Baustellennummer prüfen','amber');return;}
+  const val=document.getElementById(inputId)?.value.trim();
+  if(!val){showToast('Bitte What3words-Adresse eingeben','amber');return;}
+  baustellen[bstIdx]={...baustellen[bstIdx],w3w:val.replace(/^\/\/\//,'')};
+  bstRef.set(baustellen).then(()=>{
+    showToast('What3words gespeichert — Ansicht wird aktualisiert','success');
+    renderOv();
+  }).catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
+window.copyNtfyKanal=function(kanal){
+  navigator.clipboard?.writeText(kanal)
+    .then(()=>showToast('Kanal „'+kanal+'" kopiert — in ntfy-App als Kanal eintragen','success'))
+    .catch(()=>showToast('Kanal: '+kanal,'amber'));
 };
 
 function showToast(msg,v){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(v?' '+v:'');setTimeout(()=>t.classList.remove('show'),2200)}
