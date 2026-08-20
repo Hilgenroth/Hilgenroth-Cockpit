@@ -2487,14 +2487,14 @@ function renderOv(){
       : (o.vehicleTypes||[]).map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('');
     // Touren: mit "t" hinter Menge; Einzelauftrag nur Sorte·Menge
     const tourenHtml=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+(t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
-      : '<div style="font-weight:700">'+[esc(o.sorte),o.menge?esc(o.menge):null].filter(Boolean).join(' · ')+'</div>';
+      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
+      : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxt||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte&&Array.isArray(o.touren)&&o.touren.length<=1?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
     <div><div class="tg-label">Touren</div>${tourenHtml}</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('sundern',o.id)}</div></div>
   </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
@@ -2505,14 +2505,14 @@ function renderOv(){
       ? o.vehicleTypes.map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('')
       : '';
     const tourenHtmlF=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+(t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
-      : '<div style="font-weight:700">'+[esc(o.sorte),o.menge?esc(o.menge):null].filter(Boolean).join(' · ')+'</div>';
+      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
+      : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div></div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte&&Array.isArray(o.touren)&&o.touren.length<=1?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
     <div><div class="tg-label">Touren</div>${tourenHtmlF}</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('fremd',o.id)}</div></div>
   </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
