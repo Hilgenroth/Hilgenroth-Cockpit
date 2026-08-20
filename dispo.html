@@ -842,6 +842,7 @@ td strong{color:var(--ink);font-weight:700}
     <div class="conn" id="conn"><span class="conn-dot"></span><span id="connTxt">Verbinde…</span></div>
     <button class="bih" onclick="openSMModal()" title="Schachtmeister verwalten" style="margin-right:2px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
     <button class="bih" onclick="openFFModal()" title="Fremdfirmen verwalten (Zugänge zum Fremdfirmen-Terminal)" style="margin-right:2px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7l9-4 9 4M5 21V11l7-3 7 3v10M9 21V14M15 21V14"/></svg></button>
+    <button class="bih" onclick="openAuftragsSortenModal()" title="Auftragssorten verwalten" style="margin-right:2px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></button>
     <button class="bih" onclick="openBstModal()" title="Baustellen verwalten" style="margin-right:2px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></button>
     <button class="bih" onclick="openFleet()" title="Fahrzeuge & Fahrer verwalten">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
@@ -869,7 +870,12 @@ td strong{color:var(--ink);font-weight:700}
       <div class="fg"><label>Material <span class="req">*</span></label>
         <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
       </div>
-      <div class="fg"><label>Sorte <span class="req">*</span></label><input type="text" name="sorte" placeholder="z.B. AC 8 TS"></div>
+      <div class="fg"><label>Sorte <span class="req">*</span></label>
+        <select name="sorte" id="selSorteF" onchange="if(this.value==='__neu__')addAuftragsSortePrompt(document.querySelector('#formF [name=material]:checked')?.value)">
+          <option value="">— Sorte wählen —</option>
+          <option value="__neu__">+ Neue Sorte hinzufügen…</option>
+        </select>
+      </div>
       <div class="r2">
         <div class="fg"><label>Menge <span class="req">*</span></label><input type="text" name="menge" placeholder="z.B. 10 t"></div>
         <div class="fg"><label>Abholung <span class="req">*</span></label><input type="date" name="abholung"></div>
@@ -1008,7 +1014,12 @@ td strong{color:var(--ink);font-weight:700}
       <div class="fg"><label>Material <span class="req">*</span></label>
         <div class="rg"><label><input type="radio" name="material" value="Asphalt" required> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
       </div>
-      <div class="fg"><label>Sorte</label><input type="text" name="sSorte" id="stSorteInput" placeholder="z.B. AC 8 TS"></div>
+      <div class="fg"><label>Sorte</label>
+        <select name="sSorte" id="selSorteS" onchange="if(this.value==='__neu__')addAuftragsSortePrompt(document.querySelector('#formS [name=material]:checked')?.value)">
+          <option value="">— Sorte wählen —</option>
+          <option value="__neu__">+ Neue Sorte hinzufügen…</option>
+        </select>
+      </div>
       <div class="r2">
         <div class="fg"><label>Menge</label>
           <div style="position:relative">
@@ -1573,6 +1584,39 @@ td strong{color:var(--ink);font-weight:700}
   </div>
 </div>
 
+<div class="mb" id="auftragssortenModal" onclick="if(event.target===this)closeAuftragsSortenModal()">
+  <div class="modal xl">
+    <h2>Auftragssorten verwalten</h2>
+    <p>Sorten für Auftragsformulare – getrennt nach Materialtyp. Beim Ausfüllen eines Auftrags erscheinen diese als Dropdown-Auswahl.</p>
+    <div class="r2" style="margin-bottom:16px">
+      <div>
+        <div class="pt" style="margin-bottom:8px">🟤 Asphalt-Sorten</div>
+        <div id="asphaltSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:260px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="newAsphaltSorte" placeholder="z.B. AC 8 TS" style="flex:1">
+          <button class="btn-s" onclick="addAuftragsSorte('asphalt')">+</button>
+        </div>
+      </div>
+      <div>
+        <div class="pt" style="margin-bottom:8px">🟢 Straßenbaustoffe-Sorten</div>
+        <div id="strasseSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:260px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="newStrasseSorte" placeholder="z.B. RC 0/56" style="flex:1">
+          <button class="btn-s" onclick="addAuftragsSorte('strasse')">+</button>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--line);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px">
+      <div class="pt" style="margin-bottom:8px">📥 Excel-Import (Spalte A = Sorte, Spalte B = Typ: asphalt/strasse)</div>
+      <input type="file" id="sortenXlsxInput" accept=".xlsx,.xls" onchange="importSortenXlsx(this)">
+    </div>
+    <div class="modal-a">
+      <button class="btn-s" onclick="exportSortenXlsx()">⬇ Excel exportieren</button>
+      <button type="button" class="btn-p" onclick="closeAuftragsSortenModal()">Fertig</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIEFERUNG HINZUFÜGEN MODAL -->
 <div class="mb" id="liefModal" onclick="if(event.target===this)closeLiefModal()">
   <div class="modal">
@@ -1774,6 +1818,8 @@ const fremdfirmenChatRef=db.ref('fremdfirmenChat');
 let fremdfirmenChat={};
 let _chatPrevSnapshot=null;
 let fremdfirmen=[];
+const auftragssortenRef=db.ref('auftragssorten');
+let auftragssorten={asphalt:[],strasse:[]};
 const bstRef=db.ref('baustellen');
 const connRef=db.ref('.info/connected');
 const bestRef=db.ref('bestellungen');
@@ -1792,6 +1838,16 @@ connRef.on('value',s=>{
 
 // Alle Datenbank-Listener erst NACH erfolgreicher Anmeldung starten
 authReady.then(()=>{
+  auftragssortenRef.on('value',s=>{
+    const v=s.val();
+    auftragssorten={
+      asphalt:Array.isArray(v&&v.asphalt)?v.asphalt:[],
+      strasse:Array.isArray(v&&v.strasse)?v.strasse:[]
+    };
+    rebuildSorteDropdowns();
+    renderAuftragsSortenModal();
+  });
+
   bstRef.on('value',s=>{
     const v=s.val();
     if(v&&Array.isArray(v)&&v.length){baustellen=v;}
@@ -2201,7 +2257,7 @@ document.getElementById('formF').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
   if(!f.firmenname.value.trim()){showToast('Firmenname eingeben','amber');return;}
   if(!f.baustelle.value.trim()){showToast('Baustelle eingeben','amber');return;}
-  if(!f.sorte.value.trim()){showToast('Sorte eingeben','amber');return;}
+  if(!f.sorte.value||f.sorte.value==='__neu__'){showToast('Bitte Sorte wählen','amber');return;}
   if(!f.menge.value.trim()){showToast('Menge eingeben','amber');return;}
   if(!f.abholung.value){showToast('Abholung-Datum eingeben','amber');return;}
   const matR=f.querySelector('[name="material"]:checked');
@@ -2219,7 +2275,7 @@ document.getElementById('formS').addEventListener('submit',e=>{
   const gueltTouren=stTouren.filter(t=>t.sorte);
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
   const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
-  const sorte=(f.sSorte?f.sSorte.value.trim():'') || (gueltTouren.length>0?gueltTouren[0].sorte:'');
+  const sorte=(f.sSorte&&f.sSorte.value&&f.sSorte.value!=='__neu__'?f.sSorte.value:'') || (gueltTouren.length>0?gueltTouren[0].sorte:'');
   const order={
     schachtmeister:f.schachtmeister.value,
     baustellennummer:f.baustellennummer.value.trim(),
@@ -2270,14 +2326,19 @@ window.startEdit=function(type,id){
     stRenderFzg();
     stTouren=Array.isArray(order.touren)&&order.touren.length?[...order.touren]:[{sorte:order.sorte||'',menge:''}];
     stRenderTouren();
-    const sF=document.getElementById('stSorteInput');
+    const sF=document.getElementById('selSorteS');
     const mF=document.getElementById('stMengeInput');
-    if(sF)sF.value=order.sorte||'';
+    if(sF){ setTimeout(()=>{sF.value=order.sorte||'';},200); }
     if(mF)mF.value=order.menge?parseFloat(order.menge)||'':'';
     const mR=document.querySelector(`#formS [name="material"][value="${order.material}"]`);
     if(mR)mR.checked=true;
+    // Sorte nach Dropdown-Rebuild setzen
+    setTimeout(()=>{const sel=document.getElementById('selSorteS');if(sel)sel.value=order.sorte||'';},250);
   }
-  if(prefix==='F'){tags.FT=Array.isArray(order.vehicleTypes)?[...order.vehicleTypes]:[];renderTags('FT')}
+  if(prefix==='F'){
+    tags.FT=Array.isArray(order.vehicleTypes)?[...order.vehicleTypes]:[];renderTags('FT');
+    setTimeout(()=>{const sel=document.getElementById('selSorteF');if(sel)sel.value=order.sorte||'';},250);
+  }
   renderTags(prefix+'V');renderTags(prefix+'D');
   document.querySelectorAll('tbody tr').forEach(r=>r.classList.remove('er'));
   const row=document.querySelector(`tr[data-id="${id}"]`);if(row)row.classList.add('er');
@@ -2433,7 +2494,7 @@ function renderOv(){
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxt||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte&&Array.isArray(o.touren)&&o.touren.length<=1?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
     <div><div class="tg-label">Touren</div>${tourenHtml}</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('sundern',o.id)}</div></div>
   </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
@@ -2451,7 +2512,7 @@ function renderOv(){
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte&&Array.isArray(o.touren)&&o.touren.length<=1?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
     <div><div class="tg-label">Touren</div>${tourenHtmlF}</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('fremd',o.id)}</div></div>
   </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
@@ -3670,6 +3731,124 @@ window.chatOaAnsehen=function(){
   const tab=document.querySelector('[data-tab="ffchat"]');
   if(tab)tab.click();
   chatOaDismiss();
+};
+
+// ===== AUFTRAGS-SORTEN =====
+function sorteListe(typ){
+  return typ==='Asphalt'?auftragssorten.asphalt:auftragssorten.strasse;
+}
+function sorteKey(typ){
+  return typ==='Asphalt'?'asphalt':'strasse';
+}
+function rebuildSorteDropdowns(){
+  ['F','S'].forEach(suffix=>{
+    const matEl=document.querySelector(`#form${suffix} [name="material"]:checked`);
+    const mat=matEl?matEl.value:'Asphalt';
+    const selId=suffix==='F'?'selSorteF':'selSorteS';
+    const sel=document.getElementById(selId); if(!sel)return;
+    const cur=sel.value;
+    const liste=sorteListe(mat);
+    sel.innerHTML='<option value="">— Sorte wählen —</option>'
+      +liste.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join('')
+      +'<option value="__neu__">+ Neue Sorte hinzufügen…</option>';
+    if(cur&&cur!=='__neu__')sel.value=cur;
+  });
+}
+// Bei Material-Wechsel Dropdown aktualisieren
+document.querySelectorAll('#formF [name="material"],#formS [name="material"]').forEach(r=>{
+  r.addEventListener('change',()=>rebuildSorteDropdowns());
+});
+
+window.addAuftragsSortePrompt=function(mat){
+  const name=prompt('Neue Sorte für '+((mat||'Asphalt'))+' eingeben:');
+  if(!name||!name.trim())return;
+  const key=sorteKey(mat||'Asphalt');
+  const neu=[...auftragssorten[key],name.trim()].sort((a,b)=>a.localeCompare(b,'de'));
+  const upd={...auftragssorten,[key]:neu};
+  auftragssortenRef.set(upd).then(()=>{
+    // Dropdown-Wert direkt setzen nach dem Reload
+    setTimeout(()=>{
+      document.querySelectorAll('#selSorteF,#selSorteS').forEach(s=>{if(s)s.value=name.trim();});
+    },300);
+  }).catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
+
+function renderAuftragsSortenModal(){
+  ['asphalt','strasse'].forEach(key=>{
+    const listEl=document.getElementById(key==='asphalt'?'asphaltSortenList':'strasseSortenList');
+    if(!listEl)return;
+    const arr=auftragssorten[key]||[];
+    listEl.innerHTML=!arr.length
+      ? '<div style="color:var(--muted);font-size:12px;padding:6px">Noch keine Sorten</div>'
+      : arr.map((s,i)=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px solid var(--line)">'
+        +'<span style="font-size:13px;font-weight:600">'+esc(s)+'</span>'
+        +'<button onclick="removeAuftragsSorte(\''+key+'\','+i+')" style="background:none;border:none;color:var(--brand);font-size:14px;cursor:pointer;width:24px;height:24px;border-radius:4px">×</button>'
+        +'</div>').join('');
+  });
+}
+window.openAuftragsSortenModal=function(){ renderAuftragsSortenModal(); document.getElementById('auftragssortenModal').classList.add('show'); };
+window.closeAuftragsSortenModal=function(){ document.getElementById('auftragssortenModal').classList.remove('show'); };
+window.addAuftragsSorte=function(key){
+  const inpId=key==='asphalt'?'newAsphaltSorte':'newStrasseSorte';
+  const val=document.getElementById(inpId).value.trim();
+  if(!val){showToast('Bitte Sorte eingeben','amber');return;}
+  if((auftragssorten[key]||[]).includes(val)){showToast('Sorte bereits vorhanden','amber');return;}
+  const neu=[...(auftragssorten[key]||[]),val].sort((a,b)=>a.localeCompare(b,'de'));
+  auftragssortenRef.update({[key]:neu}).then(()=>{
+    document.getElementById(inpId).value='';
+    showToast('Sorte hinzugefügt','success');
+  }).catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
+['newAsphaltSorte','newStrasseSorte'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();addAuftragsSorte(id.includes('Asphalt')?'asphalt':'strasse');} });
+});
+window.removeAuftragsSorte=function(key,i){
+  const arr=[...auftragssorten[key]]; arr.splice(i,1);
+  auftragssortenRef.update({[key]:arr}).then(()=>showToast('Entfernt','success')).catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
+window.importSortenXlsx=function(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const asphalt=[...(auftragssorten.asphalt||[])];
+      const strasse=[...(auftragssorten.strasse||[])];
+      let na=0,ns=0;
+      rows.forEach(row=>{
+        const sorte=String(row[0]||'').trim();
+        const typ=String(row[1]||'').trim().toLowerCase();
+        if(!sorte)return;
+        if(typ==='strasse'||typ==='straße'||typ==='strassenbaustoffe'){
+          if(!strasse.includes(sorte)){strasse.push(sorte);ns++;}
+        } else {
+          if(!asphalt.includes(sorte)){asphalt.push(sorte);na++;}
+        }
+      });
+      asphalt.sort((a,b)=>a.localeCompare(b,'de'));
+      strasse.sort((a,b)=>a.localeCompare(b,'de'));
+      auftragssortenRef.set({asphalt,strasse}).then(()=>{
+        showToast(`Import: ${na} Asphalt, ${ns} Straßenbaustoffe`,'success');
+        input.value='';
+      }).catch(e=>showToast('Fehler: '+e.message,'amber'));
+    }catch(err){showToast('Fehler beim Lesen: '+err.message,'amber');}
+  };
+  reader.readAsBinaryString(file);
+};
+window.exportSortenXlsx=function(){
+  const rows=[];
+  (auftragssorten.asphalt||[]).forEach(s=>rows.push({Sorte:s,Typ:'asphalt'}));
+  (auftragssorten.strasse||[]).forEach(s=>rows.push({Sorte:s,Typ:'strasse'}));
+  if(!rows.length){showToast('Keine Sorten vorhanden','amber');return;}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:30},{wch:16}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Sorten');
+  XLSX.writeFile(wb,'Auftragssorten.xlsx');
+  showToast('Excel exportiert','success');
 };
 
 function showToast(msg,v){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(v?' '+v:'');setTimeout(()=>t.classList.remove('show'),2200)}
