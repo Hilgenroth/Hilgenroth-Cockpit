@@ -188,7 +188,7 @@ td strong{color:var(--ink);font-weight:700}
 .tour-row{padding:20px 28px;border-bottom:1px solid var(--line);transition:background .1s}
 .tour-row:last-child{border-bottom:none}
 .tour-row:hover{background:var(--surf)}
-.tour-grid{display:grid;grid-template-columns:220px 1fr 1fr 1fr 130px;gap:20px;align-items:start}
+.tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 160px 1.2fr 120px;gap:14px;align-items:start}
 .tg-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
 .t-name{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.2}
 .t-sub{font-size:12px;color:var(--ink3);margin-top:4px;font-weight:600}
@@ -455,6 +455,12 @@ td strong{color:var(--ink);font-weight:700}
 .chat-h small{display:block;font-size:11px;color:var(--ink3);font-weight:600;margin-top:2px}
 .chat-text{font-size:13px;color:var(--ink2);line-height:1.5;white-space:pre-wrap;margin-bottom:10px}
 .msg-bubble{max-width:80%;padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.4;white-space:pre-wrap}
+.st-fzg-zeile{display:flex;align-items:center;gap:8px;background:var(--surf);border:1px solid var(--line);border-radius:var(--rs);padding:7px 10px;margin-bottom:6px;font-size:13px;font-weight:700}
+.st-fzg-zeile span{flex:1}
+.st-fzg-zeile button{background:none;border:none;color:var(--brand);font-size:16px;font-weight:700;cursor:pointer;width:24px;height:24px;border-radius:4px;padding:0}
+.st-tour-row{display:grid;grid-template-columns:1fr 100px auto 24px;gap:6px;align-items:center;margin-bottom:6px}
+.st-tour-row input{padding:8px 10px;border:1px solid var(--line);border-radius:var(--rs);font-size:13px;font-family:inherit;background:var(--surf);color:var(--ink)}
+.st-tour-row button{background:none;border:none;color:var(--brand);font-size:16px;font-weight:700;cursor:pointer;width:24px;height:24px;border-radius:4px;padding:0}
 .msg-bubble.von-dispo{align-self:flex-end;margin-left:auto;background:var(--ink);color:#fff;border-bottom-right-radius:3px}
 .msg-bubble.von-firma{background:var(--surf);border:1px solid var(--line);color:var(--ink2);border-bottom-left-radius:3px}
 .msg-time{font-size:9px;opacity:.6;margin-top:3px;display:block}
@@ -857,16 +863,16 @@ td strong{color:var(--ink);font-weight:700}
   <div class="panel" id="panelF">
     <div class="pt"><span class="nl">Neuer Fremdfirmen-Auftrag</span><span class="eb">Bearbeiten-Modus</span></div>
     <form id="formF">
-      <div class="fg"><label>Firmenname <span class="req">*</span></label><input type="text" name="firmenname" placeholder="z.B. Ossenberg" required></div>
+      <div class="fg"><label>Firmenname <span class="req">*</span></label><input type="text" name="firmenname" placeholder="z.B. Ossenberg"></div>
       <div class="fg"><label>Auftragsnummer</label><input type="text" name="auftragsnummerF" placeholder="z.B. 5515"></div>
-      <div class="fg"><label>Baustelle <span class="req">*</span></label><input type="text" name="baustelle" placeholder="z.B. Balve" required></div>
+      <div class="fg"><label>Baustelle <span class="req">*</span></label><input type="text" name="baustelle" placeholder="z.B. Balve"></div>
       <div class="fg"><label>Material <span class="req">*</span></label>
-        <div class="rg"><label><input type="radio" name="material" value="Asphalt" required> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
+        <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
       </div>
-      <div class="fg"><label>Sorte <span class="req">*</span></label><input type="text" name="sorte" placeholder="z.B. AC 8 TS" required></div>
+      <div class="fg"><label>Sorte <span class="req">*</span></label><input type="text" name="sorte" placeholder="z.B. AC 8 TS"></div>
       <div class="r2">
-        <div class="fg"><label>Menge <span class="req">*</span></label><input type="text" name="menge" placeholder="z.B. 10 t" required></div>
-        <div class="fg"><label>Abholung <span class="req">*</span></label><input type="date" name="abholung" required></div>
+        <div class="fg"><label>Menge <span class="req">*</span></label><input type="text" name="menge" placeholder="z.B. 10 t"></div>
+        <div class="fg"><label>Abholung <span class="req">*</span></label><input type="date" name="abholung"></div>
       </div>
       <div class="fg"><label>Uhrzeit</label><input type="text" name="uhrzeit" placeholder="z.B. 6:00 Uhr"></div>
       <div class="r2">
@@ -964,22 +970,32 @@ td strong{color:var(--ink);font-weight:700}
         </select>
       </div>
       <div class="r2">
-        <div class="fg"><label>Fahrzeug-Typ <span style="font-weight:400;color:var(--ink3);font-size:11px;">(mehrere möglich)</span></label>
-          <div class="ms"><div class="ms-tags" id="msTagsST"></div>
-          <select class="ms-sel" id="selST" onchange="addTag('ST',this.value);this.value=''">
-            <option value="">+ Fahrzeug-Typ hinzufügen…</option>
-            <option>3A-Zug</option>
-            <option>3A</option>
-            <option>Sattel</option>
-            <option>Trecker</option>
-            <option>Kipper</option>
-            <option>Tieflader</option>
-            <option>Betonmischer</option>
-            <option>Sonstiges</option>
-          </select></div>
+        <div class="fg"><label>Fahrzeug-Typ <span style="font-weight:400;color:var(--ink3);font-size:11px;">mit Anzahl – z.B. 5× Sattel</span></label>
+          <div id="stFzgList" style="margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px">
+            <select id="selST" style="flex:1">
+              <option value="">— Typ wählen —</option>
+              <option>3A-Zug</option>
+              <option>3A</option>
+              <option>4A</option>
+              <option>Sattel</option>
+              <option>Trecker</option>
+              <option>Kipper</option>
+              <option>Tieflader</option>
+              <option>Betonmischer</option>
+              <option>Sonstiges</option>
+            </select>
+            <input type="number" id="stAnzSel" min="1" max="99" value="1" style="width:70px;padding:10px;border:1px solid var(--line);border-radius:var(--rs);font-size:14px;font-family:inherit;background:var(--surf)">
+            <button type="button" class="btn-s" onclick="stAddFzg()">+</button>
+          </div>
+          <input type="hidden" name="vehicleTypesJson" id="stFzgJson">
         </div>
         
-        <div class="fg"><label>Anzahl</label><input type="number" name="anzahl" placeholder="z.B. 1" min="0"></div>
+        <div class="fg"><label>Touren <span style="font-weight:400;color:var(--ink3);font-size:11px;">bis zu 4 – Material/Sorte/Menge</span></label>
+          <div id="stTourenList"></div>
+          <button type="button" class="btn-s" id="stAddTourBtn" onclick="stAddTour()" style="margin-top:4px">+ Tour hinzufügen</button>
+          <input type="hidden" name="tourenJson" id="stTourenJson">
+        </div>
       </div>
       <div class="fg">
         <label>Fahrzeuge <span style="font-weight:400;color:var(--ink3);font-size:11px;">(mehrere möglich)</span></label>
@@ -992,9 +1008,14 @@ td strong{color:var(--ink);font-weight:700}
       <div class="fg"><label>Material <span class="req">*</span></label>
         <div class="rg"><label><input type="radio" name="material" value="Asphalt" required> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
       </div>
-      <div class="fg"><label>Sorte</label><input type="text" name="sorte" placeholder="z.B. AC 8 TS"></div>
+      <div class="fg"><label>Sorte</label><input type="text" name="sSorte" id="stSorteInput" placeholder="z.B. AC 8 TS"></div>
       <div class="r2">
-        <div class="fg"><label>Menge</label><input type="text" name="menge" placeholder="z.B. 10 t"></div>
+        <div class="fg"><label>Menge</label>
+          <div style="position:relative">
+            <input type="number" name="sMenge" id="stMengeInput" inputmode="decimal" min="0" step="0.5" placeholder="z.B. 10" style="padding-right:30px">
+            <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--ink3);font-size:12px;pointer-events:none">t</span>
+          </div>
+        </div>
         <div class="fg"><label>Uhrzeit</label><input type="text" name="uhrzeit" placeholder="z.B. 6 Uhr"></div>
       </div>
       <div class="fg"><label>Bemerkung</label><textarea name="bemerkung" placeholder="Optionale Hinweise..."></textarea></div>
@@ -1015,7 +1036,7 @@ td strong{color:var(--ink);font-weight:700}
     </div>
     <div class="tw">
       <table id="tblS" style="display:none">
-        <thead><tr><th>Schachtmeister</th><th>Bst.-Nr.</th><th>Auftr.-Nr.</th><th>Baustelle</th><th>Fzg-Typ(en)</th><th>Anz.</th><th>Fahrzeuge</th><th>Fahrer</th><th>Material</th><th>Sorte</th><th>Menge</th><th>Datum</th><th>Uhrzeit</th><th>Bemerkung</th><th></th></tr></thead>
+        <thead><tr><th>Schachtmeister</th><th>Bst.-Nr.</th><th>Auftr.-Nr.</th><th>Baustelle</th><th>Fahrzeuge</th><th>Eigene Fzg.</th><th>Fahrer</th><th>Material</th><th>Sorte</th><th>Menge</th><th>Touren</th><th>Datum</th><th>Uhrzeit</th><th>Bemerkung</th><th></th></tr></thead>
         <tbody id="bodyS"></tbody>
       </table>
       <div id="emptyS" class="empty"><div class="ico">🚧</div><h3>Noch keine Aufträge</h3><p>Erstelle den ersten Eintrag über das Formular</p></div>
@@ -2120,21 +2141,108 @@ function renderTags(key){
   const isV=key.endsWith('V');
   el.innerHTML=tags[key].map(t=>`<span class="ms-tag ${isV?'vehicle':'driver'}">${esc(t)} <button type="button" onclick="removeTag('${key}',${JSON.stringify(t).replace(/"/g,'&quot;')})">✕</button></span>`).join('');
 }
-function clearTags(prefix){['V','D'].forEach(s=>{tags[prefix+s]=[];renderTags(prefix+s)});if(prefix==='S'){tags.ST=[];renderTags('ST')}if(prefix==='F'){tags.FT=[];renderTags('FT')}}
+function clearTags(prefix){['V','D'].forEach(s=>{tags[prefix+s]=[];renderTags(prefix+s)});if(prefix==='F'){tags.FT=[];renderTags('FT')}}
+
+// ===== SUNDERN: FAHRZEUG-TYP MIT ANZAHL =====
+let stFzgZeilen=[];
+function stRenderFzg(){
+  const list=document.getElementById('stFzgList');
+  if(!list)return;
+  list.innerHTML=stFzgZeilen.map((z,i)=>
+    '<div class="st-fzg-zeile"><span>'+esc(z.anz)+'× '+esc(z.typ)+'</span>'
+    +'<button type="button" onclick="stRemFzg('+i+')">×</button></div>'
+  ).join('');
+  const h=document.getElementById('stFzgJson');
+  if(h)h.value=JSON.stringify(stFzgZeilen);
+}
+window.stAddFzg=function(){
+  const typ=document.getElementById('selST').value;
+  const anz=parseInt(document.getElementById('stAnzSel').value)||1;
+  if(!typ)return;
+  const v=stFzgZeilen.findIndex(z=>z.typ===typ);
+  if(v>=0){stFzgZeilen[v].anz=anz;}else{stFzgZeilen.push({typ,anz});}
+  document.getElementById('selST').value='';
+  document.getElementById('stAnzSel').value='1';
+  stRenderFzg();
+};
+window.stRemFzg=function(i){ stFzgZeilen.splice(i,1); stRenderFzg(); };
+function stResetFzg(){ stFzgZeilen=[]; stRenderFzg(); }
+
+// ===== SUNDERN: TOUREN (bis zu 4) =====
+let stTouren=[{sorte:'',menge:''}];
+function stRenderTouren(){
+  const list=document.getElementById('stTourenList');
+  const btn=document.getElementById('stAddTourBtn');
+  if(!list)return;
+  list.innerHTML=stTouren.map((t,i)=>
+    '<div class="st-tour-row">'
+    +'<input type="text" placeholder="Sorte, z.B. AC 8 TS" value="'+esc(t.sorte)+'" oninput="stTouren['+i+'].sorte=this.value">'
+    +'<div style="position:relative">'
+    +'<input type="number" inputmode="decimal" min="0" step="0.5" placeholder="Menge" value="'+esc(t.menge)+'" oninput="stTouren['+i+'].menge=this.value" style="padding-right:20px">'
+    +'<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ink3);pointer-events:none">t</span>'
+    +'</div>'
+    +(i>0?'<button type="button" onclick="stRemTour('+i+')">×</button>':'<span></span>')
+    +'</div>'
+  ).join('');
+  if(btn)btn.style.display=stTouren.length>=4?'none':'inline-block';
+  const h=document.getElementById('stTourenJson');
+  if(h)h.value=JSON.stringify(stTouren.filter(t=>t.sorte));
+}
+window.stAddTour=function(){ if(stTouren.length>=4)return; stTouren.push({sorte:'',menge:''}); stRenderTouren(); };
+window.stRemTour=function(i){ stTouren.splice(i,1); stRenderTouren(); };
+function stResetTouren(){ stTouren=[{sorte:'',menge:''}]; stRenderTouren(); }
+// Initial rendern
+// Direkt aufrufen – DOMContentLoaded hätte nie gefeuert, da das Script am Ende des Body steht
+stRenderFzg();
+stRenderTouren();
 
 // ===== FORMS =====
 document.getElementById('formF').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
-  const order={firmenname:f.firmenname.value.trim(),auftragsnummerF:f.auftragsnummerF.value.trim(),baustelle:f.baustelle.value.trim(),material:f.material.value,sorte:f.sorte.value.trim(),menge:f.menge.value.trim(),abholung:f.abholung.value,uhrzeit:f.uhrzeit.value.trim(),bemerkung:f.bemerkung.value.trim(),vehicleTypes:[...tags.FT],anzahl:f.anzahlF?f.anzahlF.value.trim():'',vehicles:[...tags.FV],drivers:[...tags.FD],createdAt:firebase.database.ServerValue.TIMESTAMP};
+  if(!f.firmenname.value.trim()){showToast('Firmenname eingeben','amber');return;}
+  if(!f.baustelle.value.trim()){showToast('Baustelle eingeben','amber');return;}
+  if(!f.sorte.value.trim()){showToast('Sorte eingeben','amber');return;}
+  if(!f.menge.value.trim()){showToast('Menge eingeben','amber');return;}
+  if(!f.abholung.value){showToast('Abholung-Datum eingeben','amber');return;}
+  const matR=f.querySelector('[name="material"]:checked');
+  if(!matR){showToast('Material wählen','amber');return;}
+  const order={firmenname:f.firmenname.value.trim(),auftragsnummerF:f.auftragsnummerF.value.trim(),baustelle:f.baustelle.value.trim(),material:matR.value,sorte:f.sorte.value.trim(),menge:f.menge.value.trim(),abholung:f.abholung.value,uhrzeit:f.uhrzeit.value.trim(),bemerkung:f.bemerkung.value.trim(),vehicleTypes:[...tags.FT],anzahl:f.anzahlF?f.anzahlF.value.trim():'',vehicles:[...tags.FV],drivers:[...tags.FD],createdAt:firebase.database.ServerValue.TIMESTAMP};
   if(editingId.fremd!==null){fremdRef.child(editingId.fremd).update(order).then(()=>{cancelEdit('fremd');showToast('Auftrag aktualisiert','amber')}).catch(err=>showToast('Fehler: '+err.message,'amber'));return}
   fremdRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.abholung.value=todayISO;clearTags('F');showToast('Fremdfirmen-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
 });
 
 document.getElementById('formS').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
-  const order={schachtmeister:f.schachtmeister.value,baustellennummer:f.baustellennummer.value.trim(),auftragsnummer:f.auftragsnummer.value.trim(),baustelle:f.baustelle.value.trim(),vehicleTypes:[...tags.ST],anzahl:f.anzahl.value.trim(),vehicles:[...tags.SV],drivers:[...tags.SD],material:f.material.value,sorte:f.sorte.value.trim(),menge:f.menge.value.trim(),datum:f.datum.value,uhrzeit:f.uhrzeit.value.trim(),bemerkung:f.bemerkung.value.trim(),createdAt:firebase.database.ServerValue.TIMESTAMP};
-  if(editingId.sundern!==null){sundernRef.child(editingId.sundern).update(order).then(()=>{cancelEdit('sundern');showToast('Auftrag aktualisiert','amber')}).catch(err=>showToast('Fehler: '+err.message,'amber'));return}
-  sundernRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.datum.value=todayISO;clearTags('S');showToast('Sundern-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
+  const matRS=f.querySelector('[name="material"]:checked');
+  if(!matRS){showToast('Material wählen','amber');return;}
+  const fzgLabel=stFzgZeilen.length>0?stFzgZeilen.map(z=>z.anz+'× '+z.typ).join(', '):'';
+  const gueltTouren=stTouren.filter(t=>t.sorte);
+  const mengeWert=f.sMenge?f.sMenge.value.trim():'';
+  const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
+  const sorte=(f.sSorte?f.sSorte.value.trim():'') || (gueltTouren.length>0?gueltTouren[0].sorte:'');
+  const order={
+    schachtmeister:f.schachtmeister.value,
+    baustellennummer:f.baustellennummer.value.trim(),
+    auftragsnummer:f.auftragsnummer.value.trim(),
+    baustelle:f.baustelle.value.trim(),
+    vehicleTypes:stFzgZeilen.length>0?[fzgLabel]:[],
+    fahrzeugDetails:[...stFzgZeilen],
+    anzahl:stFzgZeilen.reduce((s,z)=>s+z.anz,0)||'',
+    vehicles:[...tags.SV],
+    drivers:[...tags.SD],
+    material:matRS.value,
+    sorte:sorte,
+    menge:menge,
+    touren:gueltTouren.length>1?gueltTouren:null,
+    datum:f.datum.value,
+    uhrzeit:f.uhrzeit.value.trim(),
+    bemerkung:f.bemerkung.value.trim(),
+    createdAt:firebase.database.ServerValue.TIMESTAMP
+  };
+  if(editingId.sundern!==null){
+    sundernRef.child(editingId.sundern).update(order).then(()=>{cancelEdit('sundern');showToast('Auftrag aktualisiert','amber')}).catch(err=>showToast('Fehler: '+err.message,'amber'));return;
+  }
+  sundernRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.datum.value=todayISO;clearTags('S');stResetFzg();stResetTouren();showToast('Sundern-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
 });
 
 // ===== EDIT =====
@@ -2146,7 +2254,8 @@ window.startEdit=function(type,id){
   const btn=document.getElementById(type==='fremd'?'submitF':'submitS');
   panel.classList.add('editing');btn.textContent='Änderungen speichern';
   Object.keys(order).forEach(k=>{
-    if(['id','vehicles','drivers','createdAt'].includes(k))return;
+    // sorte/menge für Sundern haben eigene IDs (sSorte/sMenge), hier überspringen
+    if(['id','vehicles','drivers','createdAt','fahrzeugDetails','touren','sorte','menge','vehicleTypes','anzahl'].includes(k))return;
     const field=form.querySelector(`[name="${k}"]`);if(!field)return;
     if(field.type==='radio'||form.querySelectorAll(`[name="${k}"]`).length>1){const r=form.querySelector(`[name="${k}"][value="${order[k]}"]`);if(r)r.checked=true}
     else field.value=order[k]||'';
@@ -2154,7 +2263,21 @@ window.startEdit=function(type,id){
   const prefix=type==='fremd'?'F':'S';
   tags[prefix+'V']=Array.isArray(order.vehicles)?[...order.vehicles]:[];
   tags[prefix+'D']=Array.isArray(order.drivers)?[...order.drivers]:[];
-  if(prefix==='S'){tags.ST=Array.isArray(order.vehicleTypes)?[...order.vehicleTypes]:[];renderTags('ST')}if(prefix==='F'){tags.FT=Array.isArray(order.vehicleTypes)?[...order.vehicleTypes]:[];renderTags('FT')}
+  if(prefix==='S'){
+    stFzgZeilen=Array.isArray(order.fahrzeugDetails)
+      ? order.fahrzeugDetails.map(z=>({typ:z.typ,anz:parseInt(z.anz)||1}))
+      : [];
+    stRenderFzg();
+    stTouren=Array.isArray(order.touren)&&order.touren.length?[...order.touren]:[{sorte:order.sorte||'',menge:''}];
+    stRenderTouren();
+    const sF=document.getElementById('stSorteInput');
+    const mF=document.getElementById('stMengeInput');
+    if(sF)sF.value=order.sorte||'';
+    if(mF)mF.value=order.menge?parseFloat(order.menge)||'':'';
+    const mR=document.querySelector(`#formS [name="material"][value="${order.material}"]`);
+    if(mR)mR.checked=true;
+  }
+  if(prefix==='F'){tags.FT=Array.isArray(order.vehicleTypes)?[...order.vehicleTypes]:[];renderTags('FT')}
   renderTags(prefix+'V');renderTags(prefix+'D');
   document.querySelectorAll('tbody tr').forEach(r=>r.classList.remove('er'));
   const row=document.querySelector(`tr[data-id="${id}"]`);if(row)row.classList.add('er');
@@ -2180,6 +2303,7 @@ window.cancelEdit=function(type){
   panel.classList.remove('editing');btn.textContent='Auftrag hinzufügen';form.reset();
   const df=form.querySelector('[name="abholung"],[name="datum"]');if(df)df.value=todayISO;
   const prefix=type==='fremd'?'F':'S';clearTags(prefix);
+  if(type==='sundern'){stResetFzg();stResetTouren();}
   document.querySelectorAll('tbody tr').forEach(r=>r.classList.remove('er'));
 };
 
@@ -2263,7 +2387,15 @@ function renderS(){
   const t=document.getElementById('tblS'),e=document.getElementById('emptyS');
   if(!list.length){t.style.display='none';e.style.display='block';return}
   t.style.display='table';e.style.display='none';
-  document.getElementById('bodyS').innerHTML=list.map(o=>`<tr data-id="${o.id}"${editingId.sundern===o.id?' class="er"':''}><td><strong>${esc(o.schachtmeister)}</strong></td><td>${esc(o.baustellennummer)}</td><td>${esc(o.auftragsnummer)}</td><td>${esc(o.baustelle)}</td><td>${pills(o.vehicleTypes)}</td><td>${esc(o.anzahl)}</td><td>${pills(o.vehicles)}</td><td>${pills(o.drivers)}</td><td><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></td><td>${esc(o.sorte)}</td><td>${esc(o.menge)}</td><td>${fmtDate(o.datum)}</td><td>${esc(o.uhrzeit)}</td><td>${esc(o.bemerkung)}</td><td>${ra('sundern',o.id)}</td></tr>`).join('');
+  document.getElementById('bodyS').innerHTML=list.map(o=>{
+    const fzgLabel=Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length
+      ? o.fahrzeugDetails.map(z=>esc(z.anz)+'× '+esc(z.typ)).join(', ')
+      : (o.vehicleTypes?pills(o.vehicleTypes):'—');
+    const tourLabel=Array.isArray(o.touren)&&o.touren.length>1
+      ? o.touren.map((t,i)=>'<span class="pill">Tour '+(i+1)+': '+esc(t.sorte)+(t.menge?' · '+esc(t.menge):'')+'</span>').join('')
+      : esc(o.sorte||'');
+    return `<tr data-id="${o.id}"${editingId.sundern===o.id?' class="er"':''}><td><strong>${esc(o.schachtmeister)}</strong></td><td>${esc(o.baustellennummer)}</td><td>${esc(o.auftragsnummer)}</td><td>${esc(o.baustelle)}</td><td>${fzgLabel}</td><td>${pills(o.vehicles)}</td><td>${pills(o.drivers)}</td><td><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></td><td>${esc(o.sorte)}</td><td>${esc(o.menge)}</td><td>${tourLabel}</td><td>${fmtDate(o.datum)}</td><td>${esc(o.uhrzeit)}</td><td>${esc(o.bemerkung)}</td><td>${ra('sundern',o.id)}</td></tr>`;
+  }).join('');
 }
 
 // ===== OVERVIEW =====
@@ -2287,24 +2419,44 @@ function renderOv(){
   document.getElementById('ovCntS').textContent=sl.length;
   document.getElementById('ovCntF').textContent=fl.length;
 
-  document.getElementById('ovBodyS').innerHTML=sl.length===0?'<div class="ov-empty"><div class="ico">🚧</div><h3>Keine Sundern-Touren</h3></div>':sl.map(o=>`<div class="tour-row"><div class="tour-grid">
+  document.getElementById('ovBodyS').innerHTML=sl.length===0?'<div class="ov-empty"><div class="ico">🚧</div><h3>Keine Sundern-Touren</h3></div>':sl.map(o=>{
+    // Fahrzeugtypen: untereinander statt nebeneinander
+    const fzgTxt=Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length
+      ? o.fahrzeugDetails.map(z=>'<div style="font-weight:700;line-height:1.6">'+esc(z.anz)+'× '+esc(z.typ)+'</div>').join('')
+      : (o.vehicleTypes||[]).map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('');
+    // Touren: mit "t" hinter Menge; Einzelauftrag nur Sorte·Menge
+    const tourenHtml=Array.isArray(o.touren)&&o.touren.length>1
+      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+(t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
+      : '<div style="font-weight:700">'+[esc(o.sorte),o.menge?esc(o.menge):null].filter(Boolean).join(' · ')+'</div>';
+    return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
-    <div><div class="tg-label">Fahrzeuge & Fahrer</div>${(o.vehicleTypes&&o.vehicleTypes.length)?`<div style="font-weight:700;margin-bottom:4px">${o.vehicleTypes.map(esc).join(', ')}${o.anzahl?' x'+esc(o.anzahl):''}</div>`:''} ${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span><div style="margin-top:6px;font-weight:600">${[o.sorte,o.menge].filter(Boolean).join(' · ')}</div></div>
+    <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxt||'<div style="color:var(--muted)">—</div>'}</div>
+    <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Touren</div>${tourenHtml}</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('sundern',o.id)}</div></div>
-  </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`).join('');
+  </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
+  }).join('');
 
-  document.getElementById('ovBodyF').innerHTML=fl.length===0?'<div class="ov-empty"><div class="ico">📋</div><h3>Keine Fremdfirmen-Touren</h3></div>':fl.map(o=>`<div class="tour-row"><div class="tour-grid">
+  document.getElementById('ovBodyF').innerHTML=fl.length===0?'<div class="ov-empty"><div class="ico">📋</div><h3>Keine Fremdfirmen-Touren</h3></div>':fl.map(o=>{
+    const fzgTxtF=Array.isArray(o.vehicleTypes)&&o.vehicleTypes.length
+      ? o.vehicleTypes.map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('')
+      : '';
+    const tourenHtmlF=Array.isArray(o.touren)&&o.touren.length>1
+      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+(t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
+      : '<div style="font-weight:700">'+[esc(o.sorte),o.menge?esc(o.menge):null].filter(Boolean).join(' · ')+'</div>';
+    return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div></div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div></div>
-    <div><div class="tg-label">Fahrzeuge & Fahrer</div>${(o.vehicleTypes&&o.vehicleTypes.length)?`<div style="font-weight:700;margin-bottom:4px">${o.vehicleTypes.map(esc).join(', ')}${o.anzahl?' x'+esc(o.anzahl):''}</div>`:''} ${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span><div style="margin-top:6px;font-weight:600">${[o.sorte,o.menge].filter(Boolean).join(' · ')}</div></div>
+    <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
+    <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Touren</div>${tourenHtmlF}</div>
     <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('fremd',o.id)}</div></div>
-  </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`).join('');
-}
-
-function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  </div>${o.bemerkung?`<div class="t-bem">${esc(o.bemerkung)}</div>`:''}</div>`;
+  }).join('');
+}function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 
 // ===== NTFY-PUSH (kostenloser Drittanbieter-Dienst, ntfy.sh) =====
 function ntfySlug(name){
