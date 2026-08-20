@@ -2289,7 +2289,7 @@ document.getElementById('formS').addEventListener('submit',e=>{
   const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
   const sorte=(()=>{
     const sel=f.sSorte&&f.sSorte.value&&f.sSorte.value!=='__neu__'?f.sSorte.value:'';
-    return sel||(gueltTouren.length>0?gueltTouren[0].sorte:'');
+    return sel;
   })();
   const order={
     schachtmeister:f.schachtmeister.value,
