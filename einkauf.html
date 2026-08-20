@@ -435,7 +435,13 @@ function drawPreise(){
     const matOrder = ['Sand 0/2', 'Sand 0/5', '1/3', '0/5L-Bettung', '2/5', '0/8', '2/8', '5/8', '0/11', '8/11', '0/16', '8/16', '11/16', '0/22', '5/22', '16/22', '16/32', '22/32', '0/32', '0/45', 'STS 0/45'];
     // Alle Lieferanten die Gesteinskörnung haben
     const gsRows = Object.entries(mats).filter(([k,v])=>v&&v.kategorie==='Gesteinskörnung & Sand');
-    const liefs = [...new Set(gsRows.map(([k,v])=>v.lieferant))].sort();
+    // Lieferanten: normalisiert zusammenfassen (verhindert Doppeleinträge bei leicht unterschiedl. Namen)
+    const liefMap = {}; // normName → erster realer Name
+    gsRows.forEach(([k,v])=>{
+      const nm = normName(v.lieferant);
+      if(!liefMap[nm]) liefMap[nm] = v.lieferant;
+    });
+    const liefs = Object.values(liefMap).sort();
     
     html += `<div style="overflow-x:auto"><table class="tbl" style="min-width:900px">
       <thead><tr>
@@ -444,7 +450,7 @@ function drawPreise(){
       </tr></thead>
       <tbody>
         ${liefs.map(lief=>{
-          const liefRows = gsRows.filter(([k,v])=>matchLief(lief,v.lieferant));
+          const liefRows = gsRows.filter(([k,v])=>normName(v.lieferant)===normName(lief));
           return `<tr>
             <td style="font-weight:600;position:sticky;left:0;background:var(--white);z-index:1;cursor:pointer;color:var(--red)" onclick="goLief('${esc(lief)}')">${esc(lief)}</td>
             ${matOrder.map(mat=>{
