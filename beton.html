@@ -737,7 +737,7 @@ function berechnePK(colId) {
   const F = num(g('bruchlast'));
   const ac = (a && b) ? a * b : null; // mm²
   const fcCube = (F !== null && ac) ? 0.92 * (F * 1000 / ac) : null;
-  g('druckfestigkeit').textContent = fmt(fcCube, 2);
+  g('druckfestigkeit').textContent = fmt(fcCube, 1);
 }
 
 function pkWerteSammeln() {
