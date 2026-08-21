@@ -248,7 +248,7 @@ tr:hover .ra{opacity:1;}
     <div class="mdt">Ersatzteile auswählen</div>
     <div class="swrap" style="margin-bottom:12px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="sinp" id="et-sel-sq" style="width:100%" placeholder="Suchen …" oninput="drawETSel()">
+      <input class="sinp" id="et-sel-sq" style="width:100%" placeholder="Suchen …">
     </div>
     <div id="et-sel-list" style="max-height:300px;overflow-y:auto"></div>
     <div class="ma">
@@ -458,7 +458,7 @@ function drawAuftraege(){
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div class="swrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="sinp" id="sq-inp" placeholder="Suchen …" value="${esc(sq)}" oninput="sq=this.value.toLowerCase();drawAuftraege()">
+        <input class="sinp" id="sq-inp" placeholder="Suchen …" value="${esc(sq)}">
       </div>
       <button class="btn btn-p" onclick="openAuftrag()">+ Auftrag</button>
     </div>
@@ -536,7 +536,7 @@ function drawErsatzteile(){
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div class="swrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="sinp" id="et-sq-inp" placeholder="Suchen …" value="${esc(etSq)}" oninput="etSq=this.value.toLowerCase();etFzFilter='';drawErsatzteile()">
+        <input class="sinp" id="et-sq-inp" placeholder="Suchen …" value="${esc(etSq)}">
       </div>
       <select class="fs" id="et-fz-filter" style="height:30px;font-size:12px;width:auto;min-width:160px" onchange="etFzFilter=this.value;drawErsatzteile()">
         <option value="">Alle Fahrzeuge</option>
@@ -998,6 +998,30 @@ function importET(file){
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// ── Input Event-Delegation (verhindert Fokus-Verlust) ──
+document.addEventListener('input', function(e){
+  const id = e.target?.id;
+  if(id === 'sq-inp'){ sq = e.target.value.toLowerCase(); drawAuftraege(); }
+  else if(id === 'et-sq-inp'){ etSq = e.target.value.toLowerCase(); drawErsatzteile(); }
+  else if(id === 'et-sel-sq'){ drawETSel(); }
+});
+
+// draw() mit Fokus-Wiederherstellung
+const _draw = draw;
+function draw(){
+  const ae = document.activeElement;
+  const savedId = ae?.id || null;
+  const savedPos = ae?.selectionStart ?? null;
+  _draw();
+  if(savedId){
+    const el = document.getElementById(savedId);
+    if(el){
+      el.focus();
+      if(savedPos !== null){ try{ el.setSelectionRange(savedPos, savedPos); }catch(e){} }
+    }
+  }
 }
 
 // ── Start ──
