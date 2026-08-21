@@ -143,6 +143,22 @@ tr:hover .ra{opacity:1;}
   </div>
 </div>
 
+<div style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+<!-- Statische Toolbar (kein re-render) -->
+<div id="toolbar" style="background:var(--white);border-bottom:1px solid var(--line);padding:8px 22px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap">
+  <div class="swrap" id="sq-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="sinp" id="sq-inp" placeholder="Suchen …">
+  </div>
+  <div class="swrap" id="et-sq-wrap" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input class="sinp" id="et-sq-inp" placeholder="Suchen …">
+  </div>
+  <select class="fs" id="et-fz-filter-tb" style="height:30px;font-size:12px;width:auto;min-width:160px;display:none">
+    <option value="">Alle Fahrzeuge</option>
+  </select>
+  <div id="toolbar-btns" style="display:flex;gap:8px;margin-left:auto"></div>
+</div>
 <div class="wrap">
   <!-- Sidebar: Fahrzeuge -->
   <aside class="side">
@@ -159,6 +175,7 @@ tr:hover .ra{opacity:1;}
 
   <main class="main" id="main"></main>
 </div>
+</div><!-- end toolbar+wrap -->
 
 <!-- Auftrag Modal -->
 <div class="bd" id="bd-auftrag">
@@ -458,7 +475,7 @@ function drawAuftraege(){
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div class="swrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="sinp" id="sq-inp" placeholder="Suchen …" value="${esc(sq)}">
+        <input class="sinp" id="sq-inp-dummy" placeholder="Suchen …" value="${esc(sq)}" style="display:none">
       </div>
       <button class="btn btn-p" onclick="openAuftrag()">+ Auftrag</button>
     </div>
@@ -516,8 +533,7 @@ function drawAuftraege(){
     html+=`</div>`;
   }
   main.innerHTML=html;
-  const inp=document.getElementById('sq-inp');
-  if(inp){const l=inp.value.length;inp.setSelectionRange(l,l);}
+
 }
 
 // ── Ersatzteile ──
@@ -583,17 +599,18 @@ function drawErsatzteile(){
     html+=`</tbody></table></div>`;
   }
   main.innerHTML=html;
-  const inp=document.getElementById('et-sq-inp');
-  if(inp){const l=inp.value.length;inp.setSelectionRange(l,l);}
-  const fzf=document.getElementById('et-fz-filter');
-  if(fzf)fzf.value=etFzFilter;
+
 }
 
 // ── Lieferanten ──
 function drawLieferanten(){
   const main=document.getElementById('main');
   const items=Object.entries(lieferanten).filter(([k,v])=>v&&v.name).sort((a,b)=>a[1].name.localeCompare(b[1].name));
-  let html=`<div class="ph"><div class="pht">Lieferanten</div><button class="btn btn-p" onclick="openLief()">+ Lieferant</button></div>`;
+  document.getElementById('sq-wrap').style.display='none';
+  document.getElementById('et-sq-wrap').style.display='none';
+  document.getElementById('et-fz-filter-tb').style.display='none';
+  document.getElementById('toolbar-btns').innerHTML=`<button class="btn btn-p" onclick="openLief()">+ Lieferant</button>`;
+  let html=`<div class="ph"><div class="pht">Lieferanten</div></div>`;
   if(!items.length){
     html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Noch keine Lieferanten</p></div>`;
   } else {
@@ -1000,12 +1017,12 @@ function importET(file){
   reader.readAsArrayBuffer(file);
 }
 
-// ── Input Event-Delegation (verhindert Fokus-Verlust bei draw()) ──
+// ── Input Event-Delegation für statische Toolbar-Felder ──
 document.addEventListener('input', function(e){
   const id = e.target?.id;
-  if(id === 'sq-inp'){ sq = e.target.value.toLowerCase(); drawAuftraege(); e.target.focus(); }
-  else if(id === 'et-sq-inp'){ etSq = e.target.value.toLowerCase(); drawErsatzteile(); e.target.focus(); }
-  else if(id === 'et-sel-sq'){ drawETSel(); e.target.focus(); }
+  if(id === 'sq-inp'){ sq = e.target.value.toLowerCase(); drawAuftraege(); }
+  else if(id === 'et-sq-inp'){ etSq = e.target.value.toLowerCase(); drawErsatzteile(); }
+  else if(id === 'et-sel-sq'){ drawETSel(); }
 });
 
 // ── Start ──
