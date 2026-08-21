@@ -8,7 +8,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;}
@@ -182,9 +181,6 @@ tr:hover .ra{opacity:1;}
   </button>
   <button class="ntab" id="nt-ws" onclick="goTab('ws')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Werkstätten & Lieferanten
-  </button>
-  <button class="ntab" id="nt-imp" onclick="goTab('imp')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import
   </button>
   <div class="nav-right">
     <span class="sdot" id="sdot"></span><span class="slbl" id="slbl">verbinde …</span>
@@ -483,7 +479,7 @@ function statusLabel(days){
 function goTab(t){
   curTab=t;
   curGeraetDetail=null;
-  ['all','due','ws','imp'].forEach(id=>{
+  ['all','due','ws'].forEach(id=>{
     const el=document.getElementById('nt-'+id);
     if(el)el.className='ntab'+(t===id?' on':'');
   });
@@ -538,7 +534,6 @@ function draw(){
   if(curTab==='due') drawDue();
   else if(curTab==='detail') drawDetail();
   else if(curTab==='ws') drawWerkstaetten();
-  else if(curTab==='imp') drawImport();
   else drawAll();
 }
 
@@ -1242,243 +1237,6 @@ function delKat(){
   closeM('bd-kat');draw();
 }
 
-
-// ══════════════ IMPORT (Excel) ══════════════
-let impRows=null, impStats=null;
-
-const ART_MAP={
-  'reparatur':'Reparatur','wartung':'Wartung','inspektion':'Wartung',
-  'tüv':'TÜV/Prüfung','tuev':'TÜV/Prüfung','tüv/prüfung':'TÜV/Prüfung','prüfung':'TÜV/Prüfung','hu':'TÜV/Prüfung',
-  'unfall':'Unfall/Schaden','schaden':'Unfall/Schaden','unfall/schaden':'Unfall/Schaden',
-  'rechnungskorrektur':'Rechnungskorrektur','gutschrift':'Rechnungskorrektur','storno':'Rechnungskorrektur',
-  'neukauf':'Neukauf/Ersatz','neukauf/ersatz':'Neukauf/Ersatz','sonstiges':'Sonstiges'
-};
-function mapArt(a){
-  const k=String(a||'').trim().toLowerCase();
-  return ART_MAP[k]|| (k?'Sonstiges':'Reparatur');
-}
-function normKz(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');}
-function impDate(v){
-  if(v instanceof Date && !isNaN(v)) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  const s=String(v||'').trim();
-  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[0];
-  m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
-  if(m){let y=m[3].length===2?'20'+m[3]:m[3];return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
-  const n=parseFloat(s);
-  if(!isNaN(n)&&n>20000&&n<80000){const d=new Date(Date.UTC(1899,11,30)+n*864e5);return d.toISOString().slice(0,10);}
-  return '';
-}
-function impPreis(v){
-  if(typeof v==='number') return (Math.round(v*100)/100).toFixed(2).replace('.',',');
-  let s=String(v||'').replace(/[€\s]/g,'');
-  if(!s) return '';
-  if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
-  const n=parseFloat(s);
-  return isNaN(n)?'':(Math.round(n*100)/100).toFixed(2).replace('.',',');
-}
-function col(row,names){
-  for(const n of names){
-    const hit=Object.keys(row).find(k=>k.trim().toLowerCase().replace(/\s+/g,' ')===n);
-    if(hit!==undefined) return row[hit];
-  }
-  // Teiltreffer
-  for(const n of names){
-    const hit=Object.keys(row).find(k=>k.trim().toLowerCase().includes(n));
-    if(hit!==undefined) return row[hit];
-  }
-  return '';
-}
-
-function drawImport(){
-  const main=document.getElementById('main');
-  main.innerHTML=`
-    <div class="ph"><div class="pht">Import aus Excel</div>
-      <span style="font-size:12px;color:var(--muted)">Reparaturen, Geräte und Werkstätten aus einer XLSX-Datei übernehmen</span></div>
-    <div style="background:var(--white);border:1px solid var(--line);border-radius:10px;padding:18px;max-width:900px">
-      <div class="section-lbl">Datei wählen</div>
-      <input type="file" id="imp-file" accept=".xlsx,.xls" class="fi" style="height:auto;padding:8px" onchange="impLoad(this)">
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6">
-        Erwartet wird ein Blatt <b>Reparaturen</b> mit den Spalten Kennzeichen, Gerät, Kategorie, Datum, Art,
-        Beschreibung, Werkstatt, Kosten, Rechnungs-Nr., Beleg-Nr. Ein Blatt <b>Werkstätten</b> wird, falls vorhanden,
-        ebenfalls übernommen. Bereits importierte Zeilen werden anhand der Beleg-Nr. erkannt und übersprungen.
-      </div>
-      <div id="imp-result" style="margin-top:16px"></div>
-    </div>`;
-  if(impStats) renderImpPreview();
-}
-
-function impLoad(inp){
-  const f=inp.files&&inp.files[0]; if(!f)return;
-  const rd=new FileReader();
-  rd.onload=e=>{
-    try{
-      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
-      const shR=wb.Sheets['Reparaturen']||wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(shR,{defval:''});
-      const shW=wb.Sheets['Werkstätten']||wb.Sheets['Werkstaetten'];
-      const wrows=shW?XLSX.utils.sheet_to_json(shW,{defval:''}):[];
-      impPrepare(rows,wrows);
-    }catch(err){
-      document.getElementById('imp-result').innerHTML=`<div style="color:var(--red-warn);font-size:13px">Datei konnte nicht gelesen werden: ${esc(err.message)}</div>`;
-    }
-  };
-  rd.readAsArrayBuffer(f);
-}
-
-function impPrepare(rows,wrows){
-  const belegVorhanden=new Set(Object.values(reparaturen).filter(r=>r&&r.beleg).map(r=>String(r.beleg)));
-  const kzIndex={}; const nameIndex={};
-  Object.entries(geraete).forEach(([k,v])=>{
-    if(!v)return;
-    if(v.kz) kzIndex[normKz(v.kz)]=k;
-    if(v.name) nameIndex[String(v.name).toLowerCase().trim()]=k;
-  });
-  const neueGeraete={}, neueKats=new Set(), neueWerk=new Set();
-  const eintraege=[]; let skip=0, fehler=0;
-
-  rows.forEach(r=>{
-    const kz=String(col(r,['kennzeichen'])||'').trim();
-    const bez=String(col(r,['gerät','geraet'])||'').trim();
-    const beschr=String(col(r,['beschreibung'])||'').trim();
-    if(!beschr&&!kz){return;}
-    const beleg=String(col(r,['beleg-nr.','beleg-nr','beleg'])||'').trim();
-    if(beleg&&belegVorhanden.has(beleg)){skip++;return;}
-    const kat=String(col(r,['kategorie'])||'').trim();
-    const datum=impDate(col(r,['datum']));
-    const art=mapArt(col(r,['art']));
-    const firma=String(col(r,['werkstatt'])||'').trim();
-    const preis=impPreis(col(r,['kosten (netto)','kosten']));
-    const rgnr=String(col(r,['rechnungs-nr.','rechnungs-nr','rechnungsnr'])||'').trim();
-    const kred=String(col(r,['kreditor-nr.','kreditor-nr','kreditor'])||'').trim();
-
-    let gid=kz?kzIndex[normKz(kz)]:null, gidQ='exakt';
-    if(!gid&&bez){gid=nameIndex[bez.toLowerCase()];if(gid)gidQ='Name';}
-    if(!gid&&kz){
-      // Toleranter Vergleich: HSK-RH 750 <-> RH-750 <-> RH750
-      const n=normKz(kz);
-      const hit=Object.keys(kzIndex).find(k=>k.length>=5&&(n.endsWith(k)||k.endsWith(n)));
-      if(hit){gid=kzIndex[hit];gidQ='ähnlich';}
-    }
-    if(!gid&&kz){
-      // Gerätename enthält das Kennzeichen
-      const n=normKz(kz);
-      const hit=Object.entries(geraete).find(([k,v])=>v&&v.name&&normKz(v.name).includes(n)&&n.length>=5);
-      if(hit){gid=hit[0];gidQ='Name enthält Kz';}
-    }
-    if(!gid){
-      gidQ='NEU';
-      const nk=kz?('NEU_'+normKz(kz)):('NEU_'+bez.toLowerCase());
-      if(!neueGeraete[nk]) neueGeraete[nk]={name:bez||kz,kz,kategorie:kat};
-      gid=nk;
-      if(kat) neueKats.add(kat);
-    }
-    if(firma) neueWerk.add(firma);
-    eintraege.push({gid,gidQ,kz,geraetLabel:bez||kz,datum,art,beschr,rgnr,preis,firma,beleg,kred});
-  });
-
-  // Kategorien, die es schon gibt, rausfiltern
-  const katVorhanden=new Set(Object.values(kats).filter(k=>k&&k.name).map(k=>k.name.toLowerCase()));
-  const katNeu=[...neueKats].filter(k=>!katVorhanden.has(k.toLowerCase()));
-  const werkVorhanden=new Set(Object.values(werkstaetten).filter(w=>w&&w.name).map(w=>w.name.toLowerCase()));
-  const werkNeu=[...neueWerk].filter(w=>!werkVorhanden.has(w.toLowerCase()));
-
-  impRows={eintraege,neueGeraete,katNeu,werkNeu,wrows};
-  impStats={anz:eintraege.length,skip,fehler,ger:Object.keys(neueGeraete).length,kat:katNeu.length,werk:werkNeu.length};
-  renderImpPreview();
-}
-
-function renderImpPreview(){
-  const {eintraege,neueGeraete,katNeu,werkNeu}=impRows;
-  const summe=eintraege.reduce((a,e)=>a+(parseFloat(String(e.preis).replace(',','.'))||0),0);
-  const zmap={};
-  eintraege.forEach(e=>{
-    const key=e.kz||e.geraetLabel;
-    if(!zmap[key]) zmap[key]={kz:e.kz,q:e.gidQ,n:0,
-      ziel:(e.gidQ==='NEU'?(neueGeraete[e.gid]?.name||e.geraetLabel):(geraete[e.gid]?.name||'?'))};
-    zmap[key].n++;
-  });
-  const zuord=Object.values(zmap).sort((a,b)=>b.n-a.n);
-  document.getElementById('imp-result').innerHTML=`
-    <div class="divider"></div>
-    <div class="section-lbl">Vorschau</div>
-    <table class="tbl" style="margin-bottom:14px">
-      <tr><td>Reparatur-Einträge zum Import</td><td style="text-align:right;font-weight:700">${eintraege.length}</td></tr>
-      <tr><td>Summe Kosten</td><td style="text-align:right;font-weight:700;font-family:'IBM Plex Mono',monospace">${summe.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} €</td></tr>
-      <tr><td>Übersprungen (Beleg-Nr. bereits vorhanden)</td><td style="text-align:right">${impStats.skip}</td></tr>
-      <tr><td>Geräte werden neu angelegt</td><td style="text-align:right">${katNeu.length?'':''}${Object.keys(neueGeraete).length}</td></tr>
-      <tr><td>Kategorien werden neu angelegt</td><td style="text-align:right">${katNeu.length}</td></tr>
-      <tr><td>Werkstätten werden neu angelegt</td><td style="text-align:right">${werkNeu.length}</td></tr>
-    </table>
-    ${katNeu.length?`<div style="font-size:11px;color:var(--slate);margin-bottom:14px"><b>Neue Kategorien:</b> ${katNeu.map(esc).join(', ')}</div>`:''}
-    <div class="section-lbl">Zuordnung prüfen</div>
-    <div style="max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:14px">
-    <table class="tbl"><thead><tr><th>Kennzeichen aus Datei</th><th>Ziel-Gerät</th><th>Treffer</th><th style="text-align:right">Einträge</th></tr></thead><tbody>
-    ${zuord.map(z=>`<tr>
-      <td style="font-family:'IBM Plex Mono',monospace">${esc(z.kz||'–')}</td>
-      <td>${esc(z.ziel)}</td>
-      <td><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:${z.q==='NEU'?'var(--purple-l,#f3e8ff)':(z.q==='exakt'?'var(--green-l)':'var(--amber-l)')};color:${z.q==='NEU'?'#7e22ce':(z.q==='exakt'?'var(--green)':'var(--amber)')}">${z.q==='NEU'?'wird neu angelegt':z.q}</span></td>
-      <td style="text-align:right">${z.n}</td></tr>`).join('')}
-    </tbody></table></div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn btn-p" onclick="impRun()">Importieren</button>
-      <button class="btn btn-g" onclick="impRows=null;impStats=null;drawImport()">Abbrechen</button>
-      <span id="imp-prog" style="font-size:12px;color:var(--muted)"></span>
-    </div>`;
-}
-
-function impRun(){
-  if(!impRows||!impRows.eintraege.length){alert('Nichts zu importieren.');return;}
-  const {eintraege,neueGeraete,katNeu,werkNeu}=impRows;
-  const prog=document.getElementById('imp-prog');
-  const upG={},upK={},upW={},upR={};
-  const idMap={};
-
-  // Kategorien
-  katNeu.forEach((n,i)=>{
-    const k=KR?KR.push().key:('k_'+Date.now()+'_'+i);
-    const e={name:n,color:['blue','green','amber','purple','red'][i%5]};
-    upK[k]=e; kats[k]=e;
-  });
-  // Geräte
-  Object.entries(neueGeraete).forEach(([tmp,g],i)=>{
-    const k=GR?GR.push().key:('g_'+Date.now()+'_'+i);
-    const e={name:g.name,kategorie:g.kategorie||'',kz:g.kz||'',sn:'',ort:'',datum:'',bst:'',hu:'',sp:'',pruefName:'',pruefDate:'',notiz:'Angelegt per Excel-Import',ts:Date.now()};
-    upG[k]=e; geraete[k]=e; idMap[tmp]=k;
-  });
-  // Werkstätten
-  werkNeu.forEach((n,i)=>{
-    const k=WR?WR.push().key:('w_'+Date.now()+'_'+i);
-    const e={name:n,kat:'',ts:Date.now()};
-    upW[k]=e; werkstaetten[k]=e;
-  });
-  // Reparaturen
-  eintraege.forEach((r,i)=>{
-    const gid=idMap[r.gid]||r.gid;
-    const k=RR?RR.push().key:('r_'+Date.now()+'_'+i);
-    const e={geraetId:gid,datum:r.datum,art:r.art,beschr:r.beschr,rgnr:r.rgnr,preis:r.preis,
-             firma:r.firma,notiz:r.kred?('Import Konto 6294 · Kreditor '+r.kred):'Import Konto 6294',
-             beleg:r.beleg,pdfUrl:'',pdfName:'',ts:Date.now()};
-    upR[k]=e; reparaturen[k]=e;
-  });
-
-  const jobs=[];
-  if(KR&&katNeu.length) jobs.push(KR.update(upK));
-  if(GR&&Object.keys(upG).length) jobs.push(GR.update(upG));
-  if(WR&&werkNeu.length) jobs.push(WR.update(upW));
-  if(RR&&Object.keys(upR).length) jobs.push(RR.update(upR));
-  if(prog) prog.textContent='Übertrage …';
-
-  Promise.all(jobs).then(()=>{
-    const n=Object.keys(upR).length;
-    impRows=null; impStats=null;
-    curTab='all'; goTab('all');
-    alert(`Import abgeschlossen.\n\n${n} Reparatur-Einträge, ${Object.keys(upG).length} Geräte, ${werkNeu.length} Werkstätten übernommen.`);
-  }).catch(err=>{
-    if(prog) prog.textContent='';
-    alert('Fehler beim Übertragen: '+err.message);
-  });
-}
-
 // ── Modal ──
 function openM(id){document.getElementById(id).classList.add('on');}
 function closeM(id){document.getElementById(id).classList.remove('on');}
@@ -1509,6 +1267,22 @@ DEFAULT_KATS.forEach((k,i)=>{kats['_k'+i]=k;});
 draw();
 sync(false);
 initFB();
+
+// ── Fokus-Fix: Suchfeld verliert Fokus nicht beim draw() ──
+(function(){
+  const _origDraw = typeof draw === 'function' ? draw : null;
+  if(!_origDraw) return;
+  window.draw = function(){
+    const ae = document.activeElement;
+    const sid = ae?.id || null;
+    const sp = ae?.selectionStart ?? null;
+    _origDraw();
+    if(sid){
+      const el = document.getElementById(sid);
+      if(el){ el.focus(); if(sp!==null){try{el.setSelectionRange(sp,sp);}catch(e){}} }
+    }
+  };
+})();
 </script>
 </body>
 </html>
