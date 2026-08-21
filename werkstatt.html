@@ -397,7 +397,7 @@ try{
       authDomain:"dispo-hellefeld.firebaseapp.com",
       databaseURL:"https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
       projectId:"dispo-hellefeld",
-      storageBucket:"dispo-hellefeld.appspot.com",
+      storageBucket:"dispo-hellefeld.firebasestorage.app",
       messagingSenderId:"34994251645",
       appId:"1:34994251645:web:2f8a076d385bb245354e14"
     });
@@ -461,6 +461,15 @@ function draw(){buildSidebar();if(curTab==='auftraege')drawAuftraege();else if(c
 // ── Aufträge ──
 function drawAuftraege(){
   const main=document.getElementById('main');
+  // Toolbar
+  const sqW=document.getElementById('sq-wrap');
+  const etW=document.getElementById('et-sq-wrap');
+  const fzF=document.getElementById('et-fz-filter-tb');
+  const tb=document.getElementById('toolbar-btns');
+  if(sqW)sqW.style.display='';
+  if(etW)etW.style.display='none';
+  if(fzF)fzF.style.display='none';
+  if(tb)tb.innerHTML='<button class="btn btn-p" onclick="openAuftrag()">+ Auftrag</button>';
   let items=Object.entries(auftraege).filter(([k,v])=>v&&v.titel);
   if(curFZ) items=items.filter(([k,v])=>v.fzId===curFZ);
   if(sq) items=items.filter(([k,v])=>((v.titel||'')+(v.beschr||'')+(v.mech||'')).toLowerCase().includes(sq));
@@ -470,16 +479,7 @@ function drawAuftraege(){
   const total=items.reduce((s,[,v])=>s+totalAuftrag(v),0);
   const offen=items.filter(([,v])=>v.status!=='Abgeschlossen').length;
 
-  let html=`<div class="ph">
-    <div class="pht">${esc(fzName)}</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div class="swrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input class="sinp" id="sq-inp-dummy" placeholder="Suchen …" value="${esc(sq)}" style="display:none">
-      </div>
-      <button class="btn btn-p" onclick="openAuftrag()">+ Auftrag</button>
-    </div>
-  </div>
+  let html=`<div class="ph"><div class="pht">${esc(fzName)}</div></div>
   <div class="stat-row">
     <div class="stat"><div class="lbl">Aufträge gesamt</div><div class="val">${items.length}</div></div>
     <div class="stat"><div class="lbl">Offen / In Arbeit</div><div class="val">${offen}</div></div>
