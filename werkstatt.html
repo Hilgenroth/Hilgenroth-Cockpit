@@ -1000,29 +1000,13 @@ function importET(file){
   reader.readAsArrayBuffer(file);
 }
 
-// ── Input Event-Delegation (verhindert Fokus-Verlust) ──
+// ── Input Event-Delegation (verhindert Fokus-Verlust bei draw()) ──
 document.addEventListener('input', function(e){
   const id = e.target?.id;
-  if(id === 'sq-inp'){ sq = e.target.value.toLowerCase(); drawAuftraege(); }
-  else if(id === 'et-sq-inp'){ etSq = e.target.value.toLowerCase(); drawErsatzteile(); }
-  else if(id === 'et-sel-sq'){ drawETSel(); }
+  if(id === 'sq-inp'){ sq = e.target.value.toLowerCase(); drawAuftraege(); e.target.focus(); }
+  else if(id === 'et-sq-inp'){ etSq = e.target.value.toLowerCase(); drawErsatzteile(); e.target.focus(); }
+  else if(id === 'et-sel-sq'){ drawETSel(); e.target.focus(); }
 });
-
-// draw() mit Fokus-Wiederherstellung
-const _draw = draw;
-function draw(){
-  const ae = document.activeElement;
-  const savedId = ae?.id || null;
-  const savedPos = ae?.selectionStart ?? null;
-  _draw();
-  if(savedId){
-    const el = document.getElementById(savedId);
-    if(el){
-      el.focus();
-      if(savedPos !== null){ try{ el.setSelectionRange(savedPos, savedPos); }catch(e){} }
-    }
-  }
-}
 
 // ── Start ──
 draw();sync(false);initFB();
