@@ -765,6 +765,22 @@ SEED_SPEDS.forEach((n,i)=>{speds['_s'+i]={name:n,notiz:''};});
 draw();
 sync(false);
 initFB();
+
+// ── Fokus-Fix: Suchfeld verliert Fokus nicht beim draw() ──
+(function(){
+  const _origDraw = typeof draw === 'function' ? draw : null;
+  if(!_origDraw) return;
+  window.draw = function(){
+    const ae = document.activeElement;
+    const sid = ae?.id || null;
+    const sp = ae?.selectionStart ?? null;
+    _origDraw();
+    if(sid){
+      const el = document.getElementById(sid);
+      if(el){ el.focus(); if(sp!==null){try{el.setSelectionRange(sp,sp);}catch(e){}} }
+    }
+  };
+})();
 </script>
 </body>
 </html>
