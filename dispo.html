@@ -188,7 +188,7 @@ td strong{color:var(--ink);font-weight:700}
 .tour-row{padding:20px 28px;border-bottom:1px solid var(--line);transition:background .1s}
 .tour-row:last-child{border-bottom:none}
 .tour-row:hover{background:var(--surf)}
-.tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 160px 1.2fr 1fr 110px;gap:14px;align-items:start}
+.tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 100px 110px 80px 1fr 1fr 110px;gap:12px;align-items:start}
 .tg-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
 .t-name{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.2}
 .t-sub{font-size:12px;color:var(--ink3);margin-top:4px;font-weight:600}
@@ -2544,7 +2544,9 @@ function renderOv(){
     </div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxt||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
+    <div><div class="tg-label">Menge</div><div style="font-weight:700">${o.menge?esc(o.menge):''}</div></div>
     <div><div class="tg-label">Touren</div>${tourenHtml}</div>
     <div>${o.bemerkung?`<div class="tg-label" style="color:var(--amb)">⚠ Hinweis</div><div style="font-size:13px;font-weight:700;color:var(--ink2);background:var(--amb-s);border-left:3px solid var(--amb);border-radius:4px;padding:8px 10px;line-height:1.4;white-space:pre-wrap">${esc(o.bemerkung)}</div>`:''}</div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('sundern',o.id)}</div></div>
@@ -2572,7 +2574,9 @@ function renderOv(){
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>${mapsHrefF?`<a href="${mapsHrefF}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:700;color:var(--blu);text-decoration:none;background:var(--blu-s);padding:3px 8px;border-radius:100px">🗺 Route starten</a>`:''}</div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span>${o.sorte?'<div style="font-weight:700;margin-top:4px">'+esc(o.sorte)+'</div>':''}</div>
+    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
+    <div><div class="tg-label">Menge</div><div style="font-weight:700">${o.menge?esc(o.menge):''}</div></div>
     <div><div class="tg-label">Touren</div>${tourenHtmlF}</div>
     <div>${o.bemerkung?`<div class="tg-label" style="color:var(--amb)">⚠ Hinweis</div><div style="font-size:13px;font-weight:700;color:var(--ink2);background:var(--amb-s);border-left:3px solid var(--amb);border-radius:4px;padding:8px 10px;line-height:1.4;white-space:pre-wrap">${esc(o.bemerkung)}</div>`:''}</div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('fremd',o.id)}</div></div>
@@ -3841,12 +3845,26 @@ function renderAuftragsSortenModal(){
     const arr=auftragssorten[key]||[];
     listEl.innerHTML=!arr.length
       ? '<div style="color:var(--muted);font-size:12px;padding:6px">Noch keine Sorten</div>'
-      : arr.map((s,i)=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px;border-bottom:1px solid var(--line)">'
-        +'<span style="font-size:13px;font-weight:600">'+esc(s)+'</span>'
-        +'<button onclick="removeAuftragsSorte(\''+key+'\','+i+')" style="background:none;border:none;color:var(--brand);font-size:14px;cursor:pointer;width:24px;height:24px;border-radius:4px">×</button>'
-        +'</div>').join('');
+      : arr.map((s,i)=>
+          '<div style="display:flex;align-items:center;gap:6px;padding:5px 4px;border-bottom:1px solid var(--line)">'
+          +'<input id="sorte_'+key+'_'+i+'" value="'+esc(s)+'" style="flex:1;padding:4px 8px;border:1px solid var(--line);border-radius:var(--rs);font-size:12px;font-family:inherit;background:var(--surf)">'
+          +'<button onclick="saveAuftragsSorte(\''+key+'\','+i+')" title="Speichern" style="background:var(--grn);color:#fff;border:none;border-radius:var(--rs);padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">✓</button>'
+          +'<button onclick="removeAuftragsSorte(\''+key+'\','+i+')" title="Löschen" style="background:none;border:none;color:var(--brand);font-size:16px;cursor:pointer;width:24px;height:24px;border-radius:4px">×</button>'
+          +'</div>'
+        ).join('');
   });
 }
+window.saveAuftragsSorte=function(key,i){
+  const inp=document.getElementById('sorte_'+key+'_'+i);
+  if(!inp)return;
+  const val=inp.value.trim();
+  if(!val){showToast('Bitte Sorte eingeben','amber');return;}
+  const arr=[...auftragssorten[key]];
+  arr[i]=val;
+  arr.sort((a,b)=>a.localeCompare(b,'de'));
+  auftragssortenRef.update({[key]:arr}).then(()=>showToast('Sorte gespeichert','success'))
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
 window.openAuftragsSortenModal=function(){ renderAuftragsSortenModal(); document.getElementById('auftragssortenModal').classList.add('show'); };
 window.closeAuftragsSortenModal=function(){ document.getElementById('auftragssortenModal').classList.remove('show'); };
 window.addAuftragsSorte=function(key){
