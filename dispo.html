@@ -34,13 +34,13 @@ body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif
   background:radial-gradient(1200px 600px at 80% -10%,rgba(209,26,44,.04),transparent 60%),
     radial-gradient(900px 500px at -10% 20%,rgba(42,45,49,.03),transparent 60%),var(--bg);
   color:var(--ink);line-height:1.5;min-height:100vh;padding:20px;letter-spacing:-.005em}
-header{max-width:100%;margin:0 auto 16px;display:flex;align-items:center;gap:0;flex-wrap:wrap;background:var(--bg-e);padding:12px 20px;border-radius:var(--rl);box-shadow:var(--sh-sm);border:1px solid var(--line)}
+header{max-width:100%;margin:0 auto 16px;display:flex;flex-direction:column;align-items:stretch;gap:10px;background:var(--bg-e);padding:12px 20px;border-radius:var(--rl);box-shadow:var(--sh-sm);border:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:18px}
 .logo{height:56px;width:auto;display:block}
 .brand-div{width:1px;height:40px;background:var(--line2)}
 .brand-text h1{font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
 .brand-text .sub{font-size:11px;color:var(--ink3);margin-top:3px;text-transform:uppercase;letter-spacing:.12em;font-weight:600}
-.hdr-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
+.hdr-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .date-d{text-align:right}
 .date-d strong{display:block;font-weight:700;font-size:14px;letter-spacing:-.01em}
 .date-d small{color:var(--ink3);font-size:12px}
@@ -4056,6 +4056,16 @@ window.copyNtfyKanal=function(kanal){
 
 // ===== TAB-VERWALTUNG (Admin, PIN 1999) =====
 const TAB_ADMIN_PIN='1999';
+// Benutzername aus URL-Parameter (?user=Name) oder sessionStorage, sonst 'default'
+const _tabUser=(()=>{
+  try{
+    const p=new URLSearchParams(window.location.search).get('user');
+    if(p)return p.trim().toLowerCase();
+    const s=sessionStorage.getItem('cockpit_user')||sessionStorage.getItem('user')||localStorage.getItem('cockpit_user')||'';
+    return s.trim().toLowerCase()||'default';
+  }catch(e){return 'default';}
+})();
+const _tabKey='tabSettings_'+_tabUser;
 const ALL_TABS=[
   {id:'fremd',     label:'Fremdfirmen'},
   {id:'sundern',   label:'Sundern'},
@@ -4069,11 +4079,10 @@ const ALL_TABS=[
   {id:'ffchat',    label:'Chat'},
 ];
 let _tabAdminUnlocked=false;
-
 function getTabSettings(){
-  try{const v=localStorage.getItem('tabSettings');return v?JSON.parse(v):{};} catch(e){return {};}
+  try{const v=localStorage.getItem(_tabKey);return v?JSON.parse(v):{};} catch(e){return {};}
 }
-function saveTabSettings(s){ try{localStorage.setItem('tabSettings',JSON.stringify(s));}catch(e){} }
+function saveTabSettings(s){ try{localStorage.setItem(_tabKey,JSON.stringify(s));}catch(e){} }
 
 function applyTabSettings(){
   const s=getTabSettings();
