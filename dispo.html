@@ -868,6 +868,10 @@ td strong{color:var(--ink);font-weight:700}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Gesamt-Export
     </button>
+    <button class="btn-s" onclick="openTagesExportModal()" title="Tagesübersicht als Excel exportieren">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Tagesübersicht
+    </button>
     <div class="date-d"><strong id="todayWd">-</strong><small id="todayDt">-</small></div>
   </div>
 </header>
@@ -1483,6 +1487,21 @@ td strong{color:var(--ink);font-weight:700}
     <div class="modal-a">
       <button class="btn-s" onclick="closeFzgModal()">Abbrechen</button>
       <button class="btn-p" onclick="saveFzg()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="mb" id="tagesExportModal" onclick="if(event.target===this)document.getElementById('tagesExportModal').classList.remove('show')">
+  <div class="modal" style="max-width:360px">
+    <h2>📅 Tagesübersicht exportieren</h2>
+    <p style="margin-bottom:14px">Datum wählen — alle Aufträge dieses Tages werden als Excel exportiert.</p>
+    <div class="fg">
+      <label>Datum</label>
+      <input type="date" id="tagesExportDatum">
+    </div>
+    <div class="modal-a">
+      <button class="btn-s" onclick="document.getElementById('tagesExportModal').classList.remove('show')">Abbrechen</button>
+      <button class="btn-p" onclick="doExportTagesuebersicht()">⬇ Exportieren</button>
     </div>
   </div>
 </div>
@@ -2633,6 +2652,88 @@ window.exportBoth=function(){
   if(data.sundern.length)sheets['Sundern']=data.sundern.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
   dlXlsx(sheets,'Hilgenroth_Dispo');showToast('Gesamt-Export erstellt','success');
 };
+window.openTagesExportModal=function(){
+  document.getElementById('tagesExportDatum').value=todayISO;
+  document.getElementById('tagesExportModal').classList.add('show');
+};
+window.doExportTagesuebersicht=function(){
+  const datum=document.getElementById('tagesExportDatum').value;
+  if(!datum){showToast('Bitte Datum wählen','amber');return;}
+  document.getElementById('tagesExportModal').classList.remove('show');
+  exportTagesuebersicht(datum);
+};
+window.exportTagesuebersicht=function(exportDatum){
+  const heute=exportDatum||todayISO;
+  const datumLabel=new Date(heute).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  // Sundern: nur heutiger Tag
+  const sl=data.sundern.filter(o=>o.datum===heute)
+    .sort((a,b)=>(a.uhrzeit||'').localeCompare(b.uhrzeit||''));
+
+  const sundernRows=sl.map(o=>{
+    const fzg=Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length
+      ? o.fahrzeugDetails.map(z=>z.anz+'× '+z.typ).join(', ')
+      : (o.vehicleTypes||[]).join(', ');
+    const smData=schachtmeister.find(s=>s.name===o.schachtmeister);
+    const tourenStr=Array.isArray(o.touren)&&o.touren.length>1
+      ? o.touren.map((t,i)=>'Tour '+(i+1)+': '+t.sorte+(t.menge?' ('+t.menge+' t)':'')).join(' | ')
+      : '';
+    return {
+      'Uhrzeit':o.uhrzeit||'',
+      'Schachtmeister':o.schachtmeister||'',
+      'Telefon':(smData&&smData.phone)||'',
+      'Bst.-Nr.':o.baustellennummer||'',
+      'Auftr.-Nr.':o.auftragsnummer||'',
+      'Baustelle':o.baustelle||'',
+      'Fahrzeugtyp':fzg,
+      'Fahrzeuge':(o.vehicles||[]).join(', '),
+      'Fahrer':(o.drivers||[]).join(', '),
+      'Material':o.material||'',
+      'Sorte':o.sorte||'',
+      'Menge':o.menge||'',
+      'Touren':tourenStr,
+      'Bemerkung':o.bemerkung||''
+    };
+  });
+
+  // Fremdfirmen: nur heutiger Tag
+  const fl=data.fremd.filter(o=>o.abholung===heute)
+    .sort((a,b)=>(a.uhrzeit||'').localeCompare(b.uhrzeit||''));
+
+  const fremdRows=fl.map(o=>{
+    const fzg=(o.vehicleTypes||[]).join(', ');
+    const tourenStr=Array.isArray(o.touren)&&o.touren.length>1
+      ? o.touren.map((t,i)=>'Tour '+(i+1)+': '+t.sorte+(t.menge?' ('+t.menge+' t)':'')).join(' | ')
+      : '';
+    return {
+      'Uhrzeit':o.uhrzeit||'',
+      'Firma':o.firmenname||'',
+      'Auftr.-Nr.':o.auftragsnummerF||'',
+      'Baustelle':o.baustelle||'',
+      'Fahrzeugtyp':fzg,
+      'Fahrzeuge':(o.vehicles||[]).join(', '),
+      'Fahrer':(o.drivers||[]).join(', '),
+      'Material':o.material||'',
+      'Sorte':o.sorte||'',
+      'Menge':o.menge||'',
+      'Touren':tourenStr,
+      'Bemerkung':o.bemerkung||''
+    };
+  });
+
+  if(!sundernRows.length&&!fremdRows.length){
+    showToast('Keine Aufträge für heute','amber');return;
+  }
+
+  const sheets={};
+  if(sundernRows.length)sheets['Sundern '+datumLabel]=sundernRows;
+  if(fremdRows.length)sheets['Fremdfirmen '+datumLabel]=fremdRows;
+
+  const dateiname='Tagesuebersicht_'+heute.replace(/-/g,'');
+  dlXlsx(sheets,dateiname);
+  showToast('Tagesübersicht '+datumLabel+' exportiert','success');
+};
+
 function dlXlsx(sheets,base){
   const wb=XLSX.utils.book_new();
   Object.entries(sheets).forEach(([n,rows])=>{const ws=XLSX.utils.json_to_sheet(rows);const cw=Object.keys(rows[0]||{}).map(k=>({wch:Math.max(k.length+2,14)}));ws['!cols']=cw;XLSX.utils.book_append_sheet(wb,ws,n)});
