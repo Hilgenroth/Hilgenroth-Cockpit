@@ -148,11 +148,17 @@ tr:hover .ra{opacity:1;}
 <div id="toolbar" style="background:var(--white);border-bottom:1px solid var(--line);padding:8px 22px;display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap">
   <div class="swrap" id="sq-wrap">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input class="sinp" id="sq-inp" placeholder="Suchen …">
+    <input class="sinp" id="sq-inp" placeholder="Suchen …"
+      onmousedown="event.stopPropagation()"
+      onfocus="this._hasFocus=true"
+      onblur="this._hasFocus=false">
   </div>
   <div class="swrap" id="et-sq-wrap" style="display:none">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input class="sinp" id="et-sq-inp" placeholder="Suchen …">
+    <input class="sinp" id="et-sq-inp" placeholder="Suchen …"
+      onmousedown="event.stopPropagation()"
+      onfocus="this._hasFocus=true"
+      onblur="this._hasFocus=false">
   </div>
   <select class="fs" id="et-fz-filter-tb" style="height:30px;font-size:12px;width:auto;min-width:160px;display:none">
     <option value="">Alle Fahrzeuge</option>
@@ -437,8 +443,19 @@ function statusBadge(s){
 function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=on?'synchronisiert':'offline';}
 
 // ── Tab / FZ ──
-function goTab(t){curTab=t;['auftraege','ersatzteile','lieferanten'].forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.className='ntab'+(t===id?' on':'');});draw();}
-function setCurFZ(id,btn){curFZ=id;document.querySelectorAll('.fz-item').forEach(b=>b.classList.remove('on'));btn.classList.add('on');draw();}
+function goTab(t){
+  curTab=t;
+  ['auftraege','ersatzteile','lieferanten'].forEach(id=>{const el=document.getElementById('nt-'+id);if(el)el.className='ntab'+(t===id?' on':'');});
+  const m=document.getElementById('main');if(m)m.innerHTML=''; // Reset bei Tab-Wechsel
+  draw();
+}
+function setCurFZ(id,btn){
+  curFZ=id;
+  document.querySelectorAll('.fz-item').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const m=document.getElementById('main');if(m)m.innerHTML=''; // Reset bei FZ-Wechsel
+  draw();
+}
 
 // ── Sidebar ──
 function buildSidebar(){
@@ -448,7 +465,7 @@ function buildSidebar(){
     return`<button class="fz-item${curFZ===k?' on':''}" onclick="setCurFZ('${k}',this)" title="${esc(v.name)}${v.kz?' · '+v.kz:''}">
       <div class="fz-inner">
         <div class="fz-name">${esc(v.name)}</div>
-        ${v.kz?`<div class="fz-sub">${esc(v.kz)}</div>`:''}
+        ${(v.kz||v.typ)?`<div class="fz-sub">${esc(v.kz||v.typ||'')}</div>`:''}
       </div>
       <div class="fz-cnt">${cnt}</div>
     </button>`;
@@ -479,17 +496,37 @@ function drawAuftraege(){
   const total=items.reduce((s,[,v])=>s+totalAuftrag(v),0);
   const offen=items.filter(([,v])=>v.status!=='Abgeschlossen').length;
 
-  let html=`<div class="ph"><div class="pht">${esc(fzName)}</div></div>
-  <div class="stat-row">
-    <div class="stat"><div class="lbl">Aufträge gesamt</div><div class="val">${items.length}</div></div>
-    <div class="stat"><div class="lbl">Offen / In Arbeit</div><div class="val">${offen}</div></div>
-    <div class="stat"><div class="lbl">Kosten gesamt</div><div class="val red">${fmtEur(total)}</div></div>
-  </div>`;
+  // Header nur neu setzen wenn Fahrzeug gewechselt (nicht bei Suche)
+  if(!main.querySelector('#au-header')){
+    main.innerHTML=`<div id="au-header">
+      <div class="ph"><div class="pht" id="au-fzname">${esc(fzName)}</div></div>
+      <div class="stat-row">
+        <div class="stat"><div class="lbl">Aufträge gesamt</div><div class="val" id="au-cnt">0</div></div>
+        <div class="stat"><div class="lbl">Offen / In Arbeit</div><div class="val" id="au-offen">0</div></div>
+        <div class="stat"><div class="lbl">Kosten gesamt</div><div class="val red" id="au-total">–</div></div>
+      </div>
+    </div>
+    <div id="au-content"></div>`;
+  }
+  // Stats updaten
+  const fzEl=document.getElementById('au-fzname');
+  const cntEl=document.getElementById('au-cnt');
+  const offEl=document.getElementById('au-offen');
+  const totEl=document.getElementById('au-total');
+  if(fzEl)fzEl.textContent=fzName;
+  if(cntEl)cntEl.textContent=items.length;
+  if(offEl)offEl.textContent=offen;
+  if(totEl)totEl.textContent=fmtEur(total);
 
+  // Nur Content neu rendern
+  const content=document.getElementById('au-content');
+  if(!content)return;
+
+  let html='';
   if(!items.length){
-    html+=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><p>Noch keine Aufträge</p></div>`;
+    html=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><p>Noch keine Aufträge</p></div>`;
   } else {
-    html+=`<div class="timeline">`;
+    html=`<div class="timeline">`;
     items.forEach(([k,v],i)=>{
       const fz=fahrzeuge[v.fzId];
       const kosten=totalAuftrag(v);
@@ -557,7 +594,7 @@ function drawErsatzteile(){
       <select class="fs" id="et-fz-filter" style="height:30px;font-size:12px;width:auto;min-width:160px" onchange="etFzFilter=this.value;drawErsatzteile()">
         <option value="">Alle Fahrzeuge</option>
         <option value="__none__">Nicht zugeordnet</option>
-        ${fzOpts.map(([k,v])=>`<option value="${k}"${etFzFilter===k?' selected':''}>${esc(v.name)}</option>`).join('')}
+        ${fzOpts.map(([k,v])=>`<option value="${k}"${etFzFilter===k?' selected':''}>${esc(v.name)}${v.kz?" · "+v.kz:""}</option>`).join('')}
       </select>
       <label class="btn btn-g" style="cursor:pointer" title="Excel importieren">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="13" height="13" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -732,7 +769,7 @@ function fillLiefSel(sel,val){
   if(!sel)return;
   sel.innerHTML='<option value="">— Lieferant wählen —</option>'+
     Object.entries(lieferanten).filter(([k,v])=>v&&v.name).sort((a,b)=>a[1].name.localeCompare(b[1].name))
-    .map(([k,v])=>`<option value="${k}"${k===val?' selected':''}>${esc(v.name)}</option>`).join('');
+    .map(([k,v])=>`<option value="${k}"${k===val?' selected':''}>${esc(v.name)}${v.kz?" · "+v.kz:""}</option>`).join('');
 }
 function openET(key){
   etKey=key||null;
@@ -1017,7 +1054,7 @@ function importET(file){
   reader.readAsArrayBuffer(file);
 }
 
-// ── Input Event-Delegation für statische Toolbar-Felder ──
+// ── Input Event-Delegation ──
 document.addEventListener('input', function(e){
   const id = e.target?.id;
   if(id === 'sq-inp'){ sq = e.target.value.toLowerCase(); drawAuftraege(); }
