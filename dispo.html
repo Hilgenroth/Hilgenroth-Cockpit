@@ -2363,9 +2363,9 @@ function stRenderTouren(){
     '<div class="st-tour-row" style="display:grid;grid-template-columns:120px 1fr 110px auto;gap:6px;align-items:center;margin-bottom:6px">'
     // Material-Auswahl je Tour
     +'<select id="stMatSel'+i+'" onchange="stSetMat('+i+',this.value)">'
-    +'<option value=""'+(t.mat===''?' selected':'')+'">— Material —</option>'
-    +'<option value="Asphalt"'+(t.mat==='Asphalt'?' selected':'')+'">🟤 Asphalt</option>'
-    +'<option value="Strassenbaustoffe"'+(t.mat==='Strassenbaustoffe'?' selected':'')+'">🟢 Straßenbaustoffe</option>'
+    +'<option value=""'+(t.mat===''?' selected':'')+'>— Material —</option>'
+    +'<option value="Asphalt"'+(t.mat==='Asphalt'?' selected':'')+'>🟤 Asphalt</option>'
+    +'<option value="Strassenbaustoffe"'+(t.mat==='Strassenbaustoffe'?' selected':'')+'>🟢 Straßenbaustoffe</option>'
     +'</select>'
     // Sorten-Auswahl je Tour (gefiltert nach gewähltem Material)
     +'<select id="stSorteSel'+i+'" '+(t.mat?'':'disabled ')+' onchange="stSetSorte('+i+',this.value)">'
