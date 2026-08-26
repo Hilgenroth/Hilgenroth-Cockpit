@@ -1034,7 +1034,7 @@ td strong{color:var(--ink);font-weight:700}
         <div class="ms"><div class="ms-tags" id="msTagsSD"></div><select class="ms-sel" id="selSD" onchange="addTag('SD',this.value);this.value=''"><option value="">+ Fahrer hinzufügen…</option></select></div>
       </div>
       <div class="fg"><label>Material <span class="req">*</span></label>
-        <div class="rg"><label><input type="radio" name="material" value="Asphalt" required> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
+        <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
       </div>
       <div class="fg"><label>Sorte</label>
         <select name="sSorte" id="selSorteS" onchange="if(this.value==='__neu__')addAuftragsSortePrompt(document.querySelector('#formS [name=material]:checked')?.value)">
@@ -1894,6 +1894,7 @@ authReady.then(()=>{
       strasse:Array.isArray(v&&v.strasse)?v.strasse:[]
     };
     rebuildSorteDropdowns();
+    stRenderTouren();
     renderAuftragsSortenModal();
   });
 
@@ -2338,28 +2339,46 @@ window.stRemFzg=function(i){ stFzgZeilen.splice(i,1); stRenderFzg(); };
 function stResetFzg(){ stFzgZeilen=[]; stRenderFzg(); }
 
 // ===== SUNDERN: TOUREN (bis zu 4) =====
-let stTouren=[{sorte:'',menge:''}];
+let stTouren=[{mat:'',sorte:'',menge:''}];
+function stBuildSorteOpts(mat,curVal){
+  const key=mat==='Strassenbaustoffe'?'strasse':'asphalt';
+  const liste=auftragssorten[key]||[];
+  let opts='<option value="">— Sorte —</option>';
+  opts+=liste.map(s=>`<option value="${esc(s)}"${s===curVal?' selected':''}>${esc(s)}</option>`).join('');
+  opts+=`<option value="__neu__">+ Neue Sorte…</option>`;
+  return opts;
+}
 function stRenderTouren(){
   const list=document.getElementById('stTourenList');
   const btn=document.getElementById('stAddTourBtn');
   if(!list)return;
   list.innerHTML=stTouren.map((t,i)=>
-    '<div class="st-tour-row">'
-    +'<input type="text" placeholder="Sorte, z.B. AC 8 TS" value="'+esc(t.sorte)+'" oninput="stTouren['+i+'].sorte=this.value">'
+    '<div class="st-tour-row" style="display:grid;grid-template-columns:120px 1fr 110px auto;gap:6px;align-items:center;margin-bottom:6px">'
+    // Material-Auswahl je Tour
+    +'<select onchange="stTouren['+i+'].mat=this.value;stTouren['+i+'].sorte=\'\';stRenderTouren()">'
+    +'<option value=""'+(t.mat===''?' selected':'')+'">— Material —</option>'
+    +'<option value="Asphalt"'+(t.mat==='Asphalt'?' selected':'')+'">🟤 Asphalt</option>'
+    +'<option value="Strassenbaustoffe"'+(t.mat==='Strassenbaustoffe'?' selected':'')+'">🟢 Straßenbaustoffe</option>'
+    +'</select>'
+    // Sorten-Auswahl je Tour (gefiltert nach gewähltem Material)
+    +'<select '+(t.mat?'':'disabled ')+'onchange="if(this.value===\'__neu__\'){addAuftragsSortePrompt(stTouren['+i+'].mat||\'Asphalt\');this.value=\'\';}else{stTouren['+i+'].sorte=this.value;}">'
+    +stBuildSorteOpts(t.mat,t.sorte)
+    +'</select>'
+    // Menge
     +'<div style="position:relative">'
-    +'<input type="number" inputmode="decimal" min="0" step="0.5" placeholder="Menge" value="'+esc(t.menge)+'" oninput="stTouren['+i+'].menge=this.value" style="padding-right:20px">'
+    +'<input type="number" inputmode="decimal" min="0" step="0.5" placeholder="Menge" value="'+esc(t.menge)+'" oninput="stTouren['+i+'].menge=this.value" style="padding-right:20px;width:100%">'
     +'<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ink3);pointer-events:none">t</span>'
     +'</div>'
-    +(i>0?'<button type="button" onclick="stRemTour('+i+')">×</button>':'<span></span>')
+    +(i>0?'<button type="button" onclick="stRemTour('+i+')" style="padding:0 8px">×</button>':'<span></span>')
     +'</div>'
   ).join('');
   if(btn)btn.style.display=stTouren.length>=4?'none':'inline-block';
   const h=document.getElementById('stTourenJson');
   if(h)h.value=JSON.stringify(stTouren.filter(t=>t.sorte));
 }
-window.stAddTour=function(){ if(stTouren.length>=4)return; stTouren.push({sorte:'',menge:''}); stRenderTouren(); };
+window.stAddTour=function(){ if(stTouren.length>=4)return; stTouren.push({mat:'',sorte:'',menge:''}); stRenderTouren(); };
 window.stRemTour=function(i){ stTouren.splice(i,1); stRenderTouren(); };
-function stResetTouren(){ stTouren=[{sorte:'',menge:''}]; stRenderTouren(); }
+function stResetTouren(){ stTouren=[{mat:'',sorte:'',menge:''}]; stRenderTouren(); }
 // Initial rendern
 // Direkt aufrufen – DOMContentLoaded hätte nie gefeuert, da das Script am Ende des Body steht
 stRenderFzg();
@@ -2383,9 +2402,11 @@ document.getElementById('formF').addEventListener('submit',e=>{
 document.getElementById('formS').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
   const matRS=f.querySelector('[name="material"]:checked');
-  if(!matRS){showToast('Material wählen','amber');return;}
-  const fzgLabel=stFzgZeilen.length>0?stFzgZeilen.map(z=>z.anz+'× '+z.typ).join(', '):'';
   const gueltTouren=stTouren.filter(t=>t.sorte);
+  // Material nur Pflicht wenn keine Touren mit Sorte eingetragen
+  if(!matRS&&gueltTouren.length===0){showToast('Material wählen oder mindestens eine Tour mit Sorte eintragen','amber');return;}
+  if(!matRS&&gueltTouren.length<2){showToast('Material wählen','amber');return;}
+  const fzgLabel=stFzgZeilen.length>0?stFzgZeilen.map(z=>z.anz+'× '+z.typ).join(', '):'';
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
   const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
   const sorte=(()=>{
@@ -2402,8 +2423,7 @@ document.getElementById('formS').addEventListener('submit',e=>{
     anzahl:stFzgZeilen.reduce((s,z)=>s+z.anz,0)||'',
     vehicles:[...tags.SV],
     drivers:[...tags.SD],
-    material:matRS.value,
-    sorte:sorte,
+    material:matRS?matRS.value:(gueltTouren.length>1?'Gemischt':''),    sorte:sorte,
     menge:menge,
     touren:gueltTouren.length>1?gueltTouren:null,
     datum:f.datum.value,
@@ -2440,7 +2460,9 @@ window.startEdit=function(type,id){
       ? order.fahrzeugDetails.map(z=>({typ:z.typ,anz:parseInt(z.anz)||1}))
       : [];
     stRenderFzg();
-    stTouren=Array.isArray(order.touren)&&order.touren.length?[...order.touren]:[{sorte:order.sorte||'',menge:''}];
+    stTouren=Array.isArray(order.touren)&&order.touren.length
+      ? order.touren.map(t=>({mat:t.mat||order.material||'',sorte:t.sorte||'',menge:t.menge||''}))
+      : [{mat:order.material||'',sorte:order.sorte||'',menge:''}];
     stRenderTouren();
     const sF=document.getElementById('selSorteS');
     const mF=document.getElementById('stMengeInput');
@@ -3992,7 +4014,7 @@ function rebuildSorteDropdowns(){
 }
 // Bei Material-Wechsel Dropdown aktualisieren
 document.querySelectorAll('#formF [name="material"],#formS [name="material"]').forEach(r=>{
-  r.addEventListener('change',()=>rebuildSorteDropdowns());
+  r.addEventListener('change',()=>{rebuildSorteDropdowns();stRenderTouren();});
 });
 
 window.addAuftragsSortePrompt=function(mat){
