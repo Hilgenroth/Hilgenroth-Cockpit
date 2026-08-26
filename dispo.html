@@ -2108,15 +2108,31 @@ function rebuildSMSelect(){
   const txt=document.getElementById('smPhoneText');
   if(sm&&sm.phone){chip.style.display='flex';txt.textContent=sm.phone;}
   else{chip.style.display='none';}
+  // Baustellen-Dropdown nach SM filtern
+  filterBstBySmName(sel.value);
 }
 function renderSMModal(){
-  document.getElementById('smList').innerHTML=schachtmeister.map((s,i)=>`
-    <div class="sm-row">
-      <span title="${esc(s.name)}">${esc(s.name)}</span>
-      <span class="ph">${esc(s.phone||'—')}</span>
-      <span class="ph" title="Zugangs-PIN fürs Bestell-Terminal">${s.pin?'PIN '+esc(s.pin):'kein PIN'}</span>
-      <button onclick="removeSM(${i})" title="Entfernen">×</button>
-    </div>`).join('');
+  document.getElementById('smList').innerHTML=schachtmeister.map((s,i)=>{
+    const smBst=Array.isArray(s.baustellen)?s.baustellen:[];
+    const bstChips=smBst.map(nr=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--blu-s);color:var(--blu);font-size:11px;font-weight:700;padding:2px 7px;border-radius:100px">${esc(String(nr))}<button onclick="removeSmBst(${i},'${nr}')" style="background:none;border:none;color:var(--blu);cursor:pointer;font-size:13px;padding:0;line-height:1">×</button></span>`).join('');
+    const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`).join('');
+    return `<div class="sm-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 4px">
+      <div style="display:flex;align-items:center;gap:8px;width:100%">
+        <span style="font-weight:700;flex:1" title="${esc(s.name)}">${esc(s.name)}</span>
+        <span class="ph">${esc(s.phone||'—')}</span>
+        <span class="ph" title="Zugangs-PIN fürs Bestell-Terminal">${s.pin?'PIN '+esc(s.pin):'kein PIN'}</span>
+        <button onclick="removeSM(${i})" title="Entfernen">×</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        ${bstChips||'<span style="color:var(--muted);font-size:11px">Keine Baustellen zugeordnet</span>'}
+        <select id="smBstSel_${i}" style="font-size:11px;padding:3px 6px;border:1px solid var(--line);border-radius:var(--rs);background:var(--surf);max-width:200px">
+          <option value="">+ Baustelle zuordnen</option>
+          ${bstOpts}
+        </select>
+        <button onclick="addSmBst(${i})" class="btn-s" style="padding:3px 8px;font-size:11px">+</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 function openSMModal(){document.getElementById('smModal').classList.add('show');renderSMModal();}
 function closeSMModal(){document.getElementById('smModal').classList.remove('show');}
@@ -2129,11 +2145,26 @@ function addSM(){
   schachtmeister=[...schachtmeister,{name:n,phone:p,pin:pin}];
   smRef.set(schachtmeister).then(()=>{document.getElementById('newSMName').value='';document.getElementById('newSMPhone').value='';document.getElementById('newSMPin').value='';renderSMModal();rebuildSMSelect();showToast('Schachtmeister hinzugefügt','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
 }
-function removeSM(i){
-  if(!confirm('Schachtmeister "'+schachtmeister[i].name+'" entfernen?'))return;
-  schachtmeister=schachtmeister.filter((_,j)=>j!==i);
-  smRef.set(schachtmeister).then(()=>{renderSMModal();rebuildSMSelect();showToast('Entfernt','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
-}
+window.addSmBst=function(i){
+  const sel=document.getElementById('smBstSel_'+i);
+  if(!sel||!sel.value)return;
+  const nr=sel.value;
+  const sm={...schachtmeister[i]};
+  const arr=Array.isArray(sm.baustellen)?[...sm.baustellen]:[];
+  if(arr.includes(nr)){showToast('Bereits zugeordnet','amber');return;}
+  arr.push(nr);
+  sm.baustellen=arr;
+  schachtmeister=[...schachtmeister];
+  schachtmeister[i]=sm;
+  smRef.set(schachtmeister).then(()=>{renderSMModal();showToast('Baustelle '+nr+' zugeordnet','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
+window.removeSmBst=function(i,nr){
+  const sm={...schachtmeister[i]};
+  sm.baustellen=(Array.isArray(sm.baustellen)?sm.baustellen:[]).filter(b=>b!==nr);
+  schachtmeister=[...schachtmeister];
+  schachtmeister[i]=sm;
+  smRef.set(schachtmeister).then(()=>{renderSMModal();showToast('Baustelle entfernt','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
 
 function renderFFModal(){
   document.getElementById('ffList').innerHTML=fremdfirmen.map((f,i)=>`
@@ -2195,7 +2226,42 @@ document.querySelector('#formS [name="schachtmeister"]').addEventListener('chang
   const txt=document.getElementById('smPhoneText');
   if(sm&&sm.phone){chip.style.display='flex';txt.textContent=sm.phone;}
   else{chip.style.display='none';txt.textContent='';}
+  filterBstBySmName(name);
 });
+
+function filterBstBySmName(smName){
+  const bstSel=document.getElementById('selBstNr');
+  if(!bstSel)return;
+  const sm=schachtmeister.find(s=>s.name===smName);
+  const smBst=sm&&Array.isArray(sm.baustellen)&&sm.baustellen.length?sm.baustellen:null;
+  const curVal=bstSel.value;
+  // Alle Baustellen-Optionen aufbauen, SM-zugeordnete zuerst + hervorheben
+  let opts='<option value="">-- Nummer wählen --</option>';
+  if(smBst){
+    // SM-Baustellen zuerst
+    smBst.forEach(nr=>{
+      const b=baustellen.find(b=>String(b.nr)===String(nr));
+      const lbl=b?nr+' – '+b.name:nr;
+      opts+=`<option value="${esc(String(nr))}" style="font-weight:700">⭐ ${esc(lbl)}</option>`;
+    });
+    // Trennlinie
+    if(baustellen.length>smBst.length){
+      opts+='<option disabled>── Alle Baustellen ──</option>';
+      baustellen.filter(b=>!smBst.includes(String(b.nr))&&!smBst.includes(b.nr))
+        .forEach(b=>{opts+=`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`;});
+    }
+  } else {
+    baustellen.forEach(b=>{opts+=`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`;});
+  }
+  bstSel.innerHTML=opts;
+  // Erste SM-Baustelle automatisch vorauswählen
+  if(smBst&&smBst.length&&!curVal){
+    bstSel.value=String(smBst[0]);
+    onBstNrChange(bstSel.value);
+  } else if(curVal){
+    bstSel.value=curVal;
+  }
+}
 
 function rebuildSelects(){
   const vOpts=fleet.vehicles.map(v=>`<option>${esc(v)}</option>`).join('');
