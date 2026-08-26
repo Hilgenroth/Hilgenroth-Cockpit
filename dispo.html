@@ -1894,7 +1894,14 @@ authReady.then(()=>{
       strasse:Array.isArray(v&&v.strasse)?v.strasse:[]
     };
     rebuildSorteDropdowns();
-    stRenderTouren();
+    // Sorten-Selects in laufenden Touren aktualisieren ohne die Werte zu verlieren
+    stTouren.forEach((_,i)=>{
+      const sorteEl=document.getElementById('stSorteSel'+i);
+      if(sorteEl){
+        const cur=stTouren[i].sorte;
+        sorteEl.innerHTML=stBuildSorteOpts(stTouren[i].mat,cur);
+      }
+    });
     renderAuftragsSortenModal();
   });
 
@@ -2355,13 +2362,13 @@ function stRenderTouren(){
   list.innerHTML=stTouren.map((t,i)=>
     '<div class="st-tour-row" style="display:grid;grid-template-columns:120px 1fr 110px auto;gap:6px;align-items:center;margin-bottom:6px">'
     // Material-Auswahl je Tour
-    +'<select onchange="stTouren['+i+'].mat=this.value;stTouren['+i+'].sorte=\'\';stRenderTouren()">'
+    +'<select id="stMatSel'+i+'" onchange="stSetMat('+i+',this.value)">'
     +'<option value=""'+(t.mat===''?' selected':'')+'">— Material —</option>'
     +'<option value="Asphalt"'+(t.mat==='Asphalt'?' selected':'')+'">🟤 Asphalt</option>'
     +'<option value="Strassenbaustoffe"'+(t.mat==='Strassenbaustoffe'?' selected':'')+'">🟢 Straßenbaustoffe</option>'
     +'</select>'
     // Sorten-Auswahl je Tour (gefiltert nach gewähltem Material)
-    +'<select '+(t.mat?'':'disabled ')+'onchange="if(this.value===\'__neu__\'){addAuftragsSortePrompt(stTouren['+i+'].mat||\'Asphalt\');this.value=\'\';}else{stTouren['+i+'].sorte=this.value;}">'
+    +'<select id="stSorteSel'+i+'" '+(t.mat?'':'disabled ')+' onchange="stSetSorte('+i+',this.value)">'
     +stBuildSorteOpts(t.mat,t.sorte)
     +'</select>'
     // Menge
@@ -2376,8 +2383,36 @@ function stRenderTouren(){
   const h=document.getElementById('stTourenJson');
   if(h)h.value=JSON.stringify(stTouren.filter(t=>t.sorte));
 }
-window.stAddTour=function(){ if(stTouren.length>=4)return; stTouren.push({mat:'',sorte:'',menge:''}); stRenderTouren(); };
-window.stRemTour=function(i){ stTouren.splice(i,1); stRenderTouren(); };
+window.stSetMat=function(i,val){
+  stTouren[i].mat=val;
+  stTouren[i].sorte='';
+  stUpdateSorteSel(i);
+};
+window.stSetSorte=function(i,val){
+  if(val==='__neu__'){addAuftragsSortePrompt(stTouren[i].mat||'Asphalt');return;}
+  stTouren[i].sorte=val;
+};
+window.stUpdateSorteSel=function(i){
+  const matVal=stTouren[i].mat;
+  const sorteEl=document.getElementById('stSorteSel'+i);
+  if(!sorteEl)return;
+  sorteEl.innerHTML=stBuildSorteOpts(matVal,'');
+  sorteEl.disabled=!matVal;
+};
+function stSyncFromDom(){
+  // Nur Menge aus DOM lesen (Menge hat kein onchange, nur oninput)
+  stTouren.forEach((_,i)=>{
+    const mengeRows=document.querySelectorAll('#stTourenList input[type="number"]');
+    if(mengeRows[i])stTouren[i].menge=mengeRows[i].value;
+  });
+}
+window.stAddTour=function(){
+  if(stTouren.length>=4)return;
+  stSyncFromDom();
+  stTouren.push({mat:'',sorte:'',menge:''});
+  stRenderTouren();
+};
+window.stRemTour=function(i){ stSyncFromDom(); stTouren.splice(i,1); stRenderTouren(); };
 function stResetTouren(){ stTouren=[{mat:'',sorte:'',menge:''}]; stRenderTouren(); }
 // Initial rendern
 // Direkt aufrufen – DOMContentLoaded hätte nie gefeuert, da das Script am Ende des Body steht
@@ -2402,10 +2437,11 @@ document.getElementById('formF').addEventListener('submit',e=>{
 document.getElementById('formS').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
   const matRS=f.querySelector('[name="material"]:checked');
+  // DOM-Werte synchronisieren bevor Submit
+  stSyncFromDom();
   const gueltTouren=stTouren.filter(t=>t.sorte);
   // Material nur Pflicht wenn keine Touren mit Sorte eingetragen
-  if(!matRS&&gueltTouren.length===0){showToast('Material wählen oder mindestens eine Tour mit Sorte eintragen','amber');return;}
-  if(!matRS&&gueltTouren.length<2){showToast('Material wählen','amber');return;}
+  if(!matRS&&gueltTouren.length===0){showToast('Material wählen oder Touren mit Sorte eintragen','amber');return;}
   const fzgLabel=stFzgZeilen.length>0?stFzgZeilen.map(z=>z.anz+'× '+z.typ).join(', '):'';
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
   const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
