@@ -2229,22 +2229,18 @@ document.querySelector('#formS [name="schachtmeister"]').addEventListener('chang
   filterBstBySmName(name);
 });
 
-function filterBstBySmName(smName){
+function filterBstBySmName(smName,keepVal){
   const bstSel=document.getElementById('selBstNr');
   if(!bstSel)return;
   const sm=schachtmeister.find(s=>s.name===smName);
   const smBst=sm&&Array.isArray(sm.baustellen)&&sm.baustellen.length?sm.baustellen:null;
-  const curVal=bstSel.value;
-  // Alle Baustellen-Optionen aufbauen, SM-zugeordnete zuerst + hervorheben
   let opts='<option value="">-- Nummer wählen --</option>';
   if(smBst){
-    // SM-Baustellen zuerst
     smBst.forEach(nr=>{
       const b=baustellen.find(b=>String(b.nr)===String(nr));
       const lbl=b?nr+' – '+b.name:nr;
       opts+=`<option value="${esc(String(nr))}" style="font-weight:700">⭐ ${esc(lbl)}</option>`;
     });
-    // Trennlinie
     if(baustellen.length>smBst.length){
       opts+='<option disabled>── Alle Baustellen ──</option>';
       baustellen.filter(b=>!smBst.includes(String(b.nr))&&!smBst.includes(b.nr))
@@ -2254,12 +2250,14 @@ function filterBstBySmName(smName){
     baustellen.forEach(b=>{opts+=`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`;});
   }
   bstSel.innerHTML=opts;
-  // Erste SM-Baustelle automatisch vorauswählen
-  if(smBst&&smBst.length&&!curVal){
+  if(keepVal){
+    bstSel.value=String(keepVal);
+  } else if(smBst&&smBst.length){
     bstSel.value=String(smBst[0]);
     onBstNrChange(bstSel.value);
-  } else if(curVal){
-    bstSel.value=curVal;
+  } else {
+    bstSel.value='';
+    onBstNrChange('');
   }
 }
 
@@ -2470,6 +2468,7 @@ window.startEdit=function(type,id){
     const pChip=document.getElementById('smPhoneChip');
     const pTxt=document.getElementById('smPhoneText');
     if(smF&&smF.phone){pChip.style.display='flex';pTxt.textContent=smF.phone;}else{pChip.style.display='none';}
+    filterBstBySmName(order.schachtmeister, order.baustellennummer||'');
     onBstNrChange(order.baustellennummer||'');
   }
   if(activeTab()==='alle')renderAlle();
