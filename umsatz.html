@@ -115,31 +115,84 @@ function gt(t){
 }
 function tc(){cmp=!cmp;document.getElementById('pc').className='pi vj'+(cmp?' on':'');rn();}
 function sm2(m){selMonth=selMonth===m?null:m;bp();rn();}
+
+function parseCSV(text){
+  var lines=text.split(/[\r\n]+/);
+  var dv='',db='',wg='';
+  for(var i=0;i<20;i++){
+    var l=lines[i]||'';
+    if(l.indexOf('von LFSDatum')>=0){var p=l.split('\t').map(function(s){return s.replace(/"/g,'').trim();});dv=p[1]||'';db=p[3]||'';}
+    if(l.indexOf('von Warengr')>=0){var p=l.split('\t').map(function(s){return s.replace(/"/g,'').trim();});wg=p[1]||'';}
+  }
+  var hdr=-1;
+  for(var i=0;i<lines.length;i++){if(lines[i].indexOf('Artikelgruppe')>=0){hdr=i;break;}}
+  if(hdr<0)return null;
+  var items=[],cg='',ce='t';
+  function pn(s){s=String(s||'').replace(/[.]/g,'').replace(',','.');var n=parseFloat(s);return isNaN(n)?0:n;}
+  for(var i=hdr+1;i<lines.length;i++){
+    var l=lines[i];if(!l.trim())continue;
+    var p=l.split('\t').map(function(s){return s.replace(/"/g,'').trim();});
+    if(p.length<4)continue;
+    var c0=p[0];
+    if(/^[A-Z] /.test(c0)){
+      cg=c0;var em=c0.match(/[(]([A-Za-z]+)[)]/);ce=em?em[1]:'t';
+      items.push({typ:'gruppe',name:c0,menge:pn(p[1]),umsatz:pn(p[3]),einheit:ce,eur_einheit:pn(p[4]||'0')});
+    } else if(c0&&p.length>=6){
+      var nm=p[1];var m=pn(p[2]);
+      if(nm&&m>0)items.push({typ:'artikel',artnr:c0,name:nm,menge:m,einheit:p[3]||ce,umsatz:pn(p[4]),eur_einheit:pn(p[5]),gruppe:cg});
+    }
+  }
+  return{von:dv,bis:db,wg:wg,
+    gruppe:items.filter(function(i){return i.typ==='gruppe';})[0]||{},
+    artikel:items.filter(function(i){return i.typ==='artikel';})};
+}
+function isMonatsdatei(parsed){
+  if(!parsed||!parsed.von||!parsed.bis)return false;
+  var v=parsed.von.split('.');var b=parsed.bis.split('.');
+  return v.length===3&&b.length===3&&v[1]===b[1]&&v[2]===b[2];
+}
+function monatIdx(parsed){
+  if(!parsed||!parsed.von)return -1;
+  var p=parsed.von.split('.');return p.length===3?parseInt(p[1])-1:-1;
+}
+function jahrVal(parsed){
+  if(!parsed||!parsed.von)return null;
+  var p=parsed.von.split('.');return p.length===3?parseInt(p[2]):null;
+}
+function decodeCSV(buffer){
+  // Erst UTF-8 versuchen, bei Fehler Windows-1252
+  var bytes=new Uint8Array(buffer);
+  try{
+    var dec=new TextDecoder('utf-8',{fatal:true});
+    return dec.decode(bytes);
+  }catch(e){
+    // Fallback: Windows-1252 (deutsche BRZ-Exporte)
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
+}
 function impMonate(inp){
-  var files=Array.from(inp.files);
-  files.forEach(function(file){
+  Array.from(inp.files).forEach(function(file){
     var reader=new FileReader();
     reader.onload=function(e){
       try{
-        var parsed=parseCSV(e.target.result);
-        if(!parsed)return;
+        var parsed=parseCSV(decodeCSV(e.target.result));
+        if(!parsed){alert('Kein g\u00fcltiges BRZ-Format.');return;}
+        if(!isMonatsdatei(parsed)){alert('Keine Monatsdatei (Zeitraum umfasst mehr als einen Monat).');return;}
         var mi=monatIdx(parsed),yr=jahrVal(parsed);
         var typ=parsed.wg==='A'?'asphalt':parsed.wg==='B'?'beton':'asphalt';
         if(!D.monate)D.monate={};
         if(!D.monate[typ])D.monate[typ]={};
-        if(!D.monate[typ][yr])D.monate[typ][yr]={};
-        D.monate[typ][yr][mi]=parsed;
-        var st=document.getElementById('mo-status');
-        if(st){
-          var list=[];
-          Object.keys(D.monate).forEach(function(t){Object.keys(D.monate[t]).forEach(function(y){Object.keys(D.monate[t][y]).forEach(function(m){list.push(MN[parseInt(m)]+' '+y);});});});
-          st.textContent='✓ Geladen: '+list.join(', ');
-        }
+        if(!D.monate[typ][String(yr)])D.monate[typ][String(yr)]={};
+        D.monate[typ][String(yr)][String(mi)]=parsed;
         document.getElementById('sd').textContent=new Date().toLocaleDateString('de-DE');
+        alert('\u2713 '+MN[mi]+' '+yr+' ('+typ+') importiert \u2013 '+
+          parsed.artikel.length+' Artikel, '+
+          parsed.gruppe.umsatz.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' \u20ac');
+        ru2();
         rn();
-      }catch(err){console.warn(err);}
+      }catch(err){alert('Fehler: '+err.message);console.error(err);}
     };
-    reader.readAsText(file,'utf-8');
+    reader.readAsArrayBuffer(file);
   });
 }
 bp();rn();
@@ -366,6 +419,11 @@ function ru2(){
     div.querySelector('input').addEventListener('change',function(){imp(this,key);});
     grid.appendChild(div);
   });
+  // Monats-Upload Handler binden
+  var moInp=document.getElementById('mo-file-inp');
+  if(moInp){
+    moInp.addEventListener('change',function(){impMonate(this);});
+  }
 }
 
 function imp(inp,key){
@@ -373,7 +431,7 @@ function imp(inp,key){
   var reader=new FileReader();
   reader.onload=function(e){
     try{
-      var lines=e.target.result.split(/[\r\n]+/);
+      var lines=decodeCSV(e.target.result).split(/[\r\n]+/);
       var dv='',db='';
       for(var i=0;i<20;i++){var l=lines[i]||'';if(l.indexOf('von LFSDatum')>=0){var p=l.split('	').map(function(s){return s.replace(/"/g,'').trim();});dv=p[1]||'';db=p[3]||'';}}
       var hdr=-1;for(var i=0;i<lines.length;i++){if(lines[i].indexOf('Artikelgruppe')>=0){hdr=i;break;}}
@@ -394,7 +452,7 @@ function imp(inp,key){
       rn();
     }catch(err){alert('Fehler: '+err.message);}
   };
-  reader.readAsText(file,'utf-8');
+  reader.readAsArrayBuffer(file);
 }
 
 document.addEventListener("DOMContentLoaded",function(){bp();rn();});
