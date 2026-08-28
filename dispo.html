@@ -3730,16 +3730,48 @@ window.bestUebernehmen=function(id){
   set('schachtmeister',b.sm||'');
   set('baustellennummer',b.bstNr||'');
   set('baustelle',b.bstName||'');
-  set('sorte',b.material||'');
-  set('menge',b.menge||'');
   set('datum',b.datum||'');
   set('uhrzeit',b.uhrzeit||'');
   const hinw=[b.anfahrt?'Anfahrt: '+b.anfahrt:'',b.anfahrtNotiz?'Hinweis SM: '+b.anfahrtNotiz:'',b.bemerkung||''].filter(Boolean).join(' · ');
   set('bemerkung',hinw);
-  const rad=f.querySelector('input[name="material"][value="Strassenbaustoffe"]');
-  if(rad)rad.checked=true;
+  // Material parsen: "Strassenbaustoffe – Füllsand steinfrei" oder "Asphalt – AC 11 DN"
+  let matTyp='', sorteStr='';
+  if(b.material){
+    const parts=b.material.split(' – ');
+    matTyp=parts[0]||'';
+    sorteStr=parts.slice(1).join(' – ')||'';
+  }
+  // Material-Radio setzen
+  const radSt=f.querySelector('input[name="material"][value="Strassenbaustoffe"]');
+  const radAs=f.querySelector('input[name="material"][value="Asphalt"]');
+  if(matTyp==='Strassenbaustoffe'&&radSt)radSt.checked=true;
+  else if(matTyp==='Asphalt'&&radAs)radAs.checked=true;
+  // Sorte-Dropdown aktualisieren und Wert setzen
+  rebuildSorteDropdowns();
+  setTimeout(()=>{
+    const sel=document.getElementById('selSorteS');
+    if(sel&&sorteStr){sel.value=sorteStr; if(!sel.value)sel.value='';}
+    // Falls Menge aus Bestellung
+    const mengeEl=document.getElementById('stMengeInput');
+    if(mengeEl&&b.menge)mengeEl.value=parseFloat(b.menge)||'';
+  },150);
+  // Baustellennummer auslösen
   if(typeof onBstNrChange==='function'&&b.bstNr)try{onBstNrChange(b.bstNr);}catch(e){}
-  if(b.fahrzeugtyp){ tags.ST=[b.fahrzeugtyp]; try{renderTags('ST');}catch(e){} }
+  if(typeof filterBstBySmName==='function'&&b.sm)filterBstBySmName(b.sm,b.bstNr);
+  // Fahrzeuge übernehmen
+  if(Array.isArray(b.fahrzeugDetails)&&b.fahrzeugDetails.length){
+    stFzgZeilen=b.fahrzeugDetails
+      .filter(z=>z.typ)
+      .map(z=>({typ:String(z.typ).trim(),anz:Math.max(1,parseInt(z.anz)||1)}));
+  } else if(b.fahrzeugtyp){
+    // Fallback: "3× Sattel, 1× 3A-Zug" oder "3x Sattel, 1x 3A-Zug" parsen
+    stFzgZeilen=b.fahrzeugtyp.split(',').map(s=>{
+      const m=s.trim().match(/^(\d+)\s*[×x]\s*(.+)$/);
+      return m?{anz:parseInt(m[1]),typ:m[2].trim()}:{anz:1,typ:s.trim()};
+    }).filter(z=>z.typ&&z.typ!=='—');
+  }
+  if(!stFzgZeilen.length)stFzgZeilen=[{typ:'',anz:1}];
+  stRenderFzg();
   bestRef.child(id).update({uebernommen:true});
   showToast('In Sundern-Formular übernommen – bitte prüfen und speichern','success');
 };
