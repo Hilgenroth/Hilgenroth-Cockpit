@@ -749,7 +749,12 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
     bstName:(bst&&bst.name)||'',
     material:material,
     menge:mengeVal+' t',
-    fahrzeugDetails:bFzgZeilen.filter(z=>z.typ).map(z=>({typ:z.typ,anz:z.anz})),
+    fahrzeugDetails:bFzgZeilen.filter(z=>z.typ).map((z,i)=>{
+      // Anzahl nochmal frisch aus DOM lesen
+      const rows=document.querySelectorAll('#fzgList input[type="number"]');
+      const domAnz=rows[i]?parseInt(rows[i].value)||1:z.anz;
+      return {typ:z.typ,anz:domAnz};
+    }),
     fahrzeugtyp:bFzgZeilen.filter(z=>z.typ).map(z=>z.anz+'× '+z.typ).join(', '),
     datum:document.getElementById('datum').value,
     uhrzeit:uhrzeitVal?uhrzeitVal+' Uhr':'',
