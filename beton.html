@@ -923,16 +923,38 @@ function showView(name) {
 
 function renderUebersicht() {
   if (window.fbBeton && window.fbBeton.bereit) {
-    window.fbBeton.alleLaden().then(remote => {
-      Object.keys(remote || {}).forEach(nrKey => {
-        const d = remote[nrKey];
-        const nr = d['bericht-nr'] || nrKey;
-        localStorage.setItem('hilg-bp-' + nr, JSON.stringify(d));
-      });
-    }).catch(() => {}).finally(() => renderUebersichtTabelle());
+    ladeUndRenderUebersicht();
   } else {
+    // Firebase-Anmeldung noch nicht fertig — erstmal lokalen Stand zeigen,
+    // und sobald die Anmeldung durch ist (falls die Übersicht noch offen ist) automatisch nachladen.
     renderUebersichtTabelle();
+    const warteAufFirebase = () => {
+      window.removeEventListener('firebase-bereit', warteAufFirebase);
+      if (document.getElementById('view-uebersicht').classList.contains('active')) {
+        ladeUndRenderUebersicht();
+      }
+    };
+    window.addEventListener('firebase-bereit', warteAufFirebase);
   }
+}
+
+function ladeUndRenderUebersicht() {
+  window.fbBeton.alleLaden().then(remote => {
+    const remoteNummern = new Set();
+    Object.keys(remote || {}).forEach(nrKey => {
+      const d = remote[nrKey];
+      const nr = d['bericht-nr'] || nrKey;
+      remoteNummern.add(nr);
+      localStorage.setItem('hilg-bp-' + nr, JSON.stringify(d));
+    });
+    // Lokale Einträge entfernen, die inzwischen (z. B. von einem anderen Gerät) gelöscht wurden
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('hilg-bp-') && !k.startsWith('hilg-bp-liste-'))
+      .forEach(k => {
+        const nr = k.replace('hilg-bp-', '');
+        if (!remoteNummern.has(nr)) localStorage.removeItem(k);
+      });
+  }).catch(() => {}).finally(() => renderUebersichtTabelle());
 }
 
 function renderUebersichtTabelle() {
