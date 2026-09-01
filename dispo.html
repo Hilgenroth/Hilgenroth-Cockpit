@@ -185,10 +185,11 @@ td strong{color:var(--ink);font-weight:700}
 .ov-ph{padding:18px 28px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--surf)}
 .ov-pt{font-size:18px;font-weight:800;letter-spacing:-.015em;display:flex;align-items:center;gap:10px}
 .ov-pc{background:var(--ink);color:white;padding:4px 14px;border-radius:10px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.tour-row{padding:20px 28px;border-bottom:1px solid var(--line);transition:background .1s}
+.tour-row{padding:28px 28px;border-bottom:1px solid var(--line);transition:background .1s}
 .tour-row:last-child{border-bottom:none}
 .tour-row:hover{background:var(--surf)}
-.tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 100px 110px 80px 1fr 1fr 110px;gap:12px;align-items:start}
+.tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 120px 150px 80px 1fr 1fr 110px;gap:10px;align-items:start}
+.badge{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tg-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
 .t-name{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.2}
 .t-sub{font-size:12px;color:var(--ink3);margin-top:4px;font-weight:600}
@@ -890,13 +891,17 @@ td strong{color:var(--ink);font-weight:700}
       <div class="fg"><label>Auftragsnummer</label><input type="text" name="auftragsnummerF" placeholder="z.B. 5515"></div>
       <div class="fg"><label>Baustelle <span class="req">*</span></label><input type="text" name="baustelle" placeholder="z.B. Balve"></div>
       <div class="fg"><label>Material <span class="req">*</span></label>
-        <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
+        <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label><label><input type="radio" name="material" value="Beton"> Beton</label></div>
       </div>
       <div class="fg"><label>Sorte <span class="req">*</span></label>
-        <select name="sorte" id="selSorteF" onchange="if(this.value==='__neu__')addAuftragsSortePrompt(document.querySelector('#formF [name=material]:checked')?.value)">
-          <option value="">— Sorte wählen —</option>
-          <option value="__neu__">+ Neue Sorte hinzufügen…</option>
-        </select>
+        <input type="text" id="sorteSearchF" placeholder="Sorte suchen…" autocomplete="off"
+          oninput="sorteFilterF(this.value)" onfocus="sorteFilterF(this.value)" style="margin-bottom:4px">
+        <div id="sorteListF" style="display:none;border:1px solid var(--line);border-radius:var(--rs);max-height:200px;overflow-y:auto;position:relative;z-index:10;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.1)"></div>
+        <div id="sorteChipF" style="display:none;margin-top:4px;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between">
+          <span id="sorteChipFTxt"></span>
+          <button type="button" onclick="sorteClearF()" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+        </div>
+        <input type="hidden" name="sorte" id="sorteHiddenF">
       </div>
       <div class="r2">
         <div class="fg"><label>Menge <span class="req">*</span></label><input type="text" name="menge" placeholder="z.B. 10 t"></div>
@@ -1034,13 +1039,17 @@ td strong{color:var(--ink);font-weight:700}
         <div class="ms"><div class="ms-tags" id="msTagsSD"></div><select class="ms-sel" id="selSD" onchange="addTag('SD',this.value);this.value=''"><option value="">+ Fahrer hinzufügen…</option></select></div>
       </div>
       <div class="fg"><label>Material <span class="req">*</span></label>
-        <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label></div>
+        <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label><label><input type="radio" name="material" value="Beton"> Beton</label></div>
       </div>
       <div class="fg"><label>Sorte</label>
-        <select name="sSorte" id="selSorteS" onchange="if(this.value==='__neu__')addAuftragsSortePrompt(document.querySelector('#formS [name=material]:checked')?.value)">
-          <option value="">— Sorte wählen —</option>
-          <option value="__neu__">+ Neue Sorte hinzufügen…</option>
-        </select>
+        <input type="text" id="sorteSearchS" placeholder="Sorte suchen…" autocomplete="off"
+          oninput="sorteFilterS(this.value)" onfocus="sorteFilterS(this.value)" style="margin-bottom:4px">
+        <div id="sorteListS" style="display:none;border:1px solid var(--line);border-radius:var(--rs);max-height:200px;overflow-y:auto;position:relative;z-index:10;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.1)"></div>
+        <div id="sorteChipS" style="display:none;margin-top:4px;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between">
+          <span id="sorteChipSTxt"></span>
+          <button type="button" onclick="sorteClearS()" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+        </div>
+        <input type="hidden" name="sSorte" id="sorteHiddenS">
       </div>
       <div class="r2">
         <div class="fg"><label>Menge</label>
@@ -1637,10 +1646,10 @@ td strong{color:var(--ink);font-weight:700}
   <div class="modal xl">
     <h2>Auftragssorten verwalten</h2>
     <p>Sorten für Auftragsformulare – getrennt nach Materialtyp. Beim Ausfüllen eines Auftrags erscheinen diese als Dropdown-Auswahl.</p>
-    <div class="r2" style="margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
       <div>
         <div class="pt" style="margin-bottom:8px">🟤 Asphalt-Sorten</div>
-        <div id="asphaltSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:260px;overflow-y:auto;margin-bottom:8px"></div>
+        <div id="asphaltSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
         <div style="display:flex;gap:6px">
           <input type="text" id="newAsphaltSorte" placeholder="z.B. AC 8 TS" style="flex:1">
           <button class="btn-s" onclick="addAuftragsSorte('asphalt')">+</button>
@@ -1648,15 +1657,23 @@ td strong{color:var(--ink);font-weight:700}
       </div>
       <div>
         <div class="pt" style="margin-bottom:8px">🟢 Straßenbaustoffe-Sorten</div>
-        <div id="strasseSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:260px;overflow-y:auto;margin-bottom:8px"></div>
+        <div id="strasseSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
         <div style="display:flex;gap:6px">
           <input type="text" id="newStrasseSorte" placeholder="z.B. RC 0/56" style="flex:1">
           <button class="btn-s" onclick="addAuftragsSorte('strasse')">+</button>
         </div>
       </div>
+      <div>
+        <div class="pt" style="margin-bottom:8px">🔵 Beton-Sorten</div>
+        <div id="betonSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="newBetonSorte" placeholder="z.B. C25/30" style="flex:1">
+          <button class="btn-s" onclick="addAuftragsSorte('beton')">+</button>
+        </div>
+      </div>
     </div>
     <div style="background:var(--surf);border:1px solid var(--line);border-radius:var(--rs);padding:12px 14px;margin-bottom:14px">
-      <div class="pt" style="margin-bottom:8px">📥 Excel-Import (Spalte A = Sorte, Spalte B = Typ: asphalt/strasse)</div>
+      <div class="pt" style="margin-bottom:8px">📥 Excel-Import (Spalte A = Sorte, Spalte B = Typ: asphalt/strasse/beton)</div>
       <input type="file" id="sortenXlsxInput" accept=".xlsx,.xls" onchange="importSortenXlsx(this)">
     </div>
     <div class="modal-a">
@@ -1891,7 +1908,8 @@ authReady.then(()=>{
     const v=s.val();
     auftragssorten={
       asphalt:Array.isArray(v&&v.asphalt)?v.asphalt:[],
-      strasse:Array.isArray(v&&v.strasse)?v.strasse:[]
+      strasse:Array.isArray(v&&v.strasse)?v.strasse:[],
+      beton:Array.isArray(v&&v.beton)?v.beton:[]
     };
     rebuildSorteDropdowns();
     // Sorten-Selects in laufenden Touren aktualisieren ohne die Werte zu verlieren
@@ -2348,7 +2366,7 @@ function stResetFzg(){ stFzgZeilen=[]; stRenderFzg(); }
 // ===== SUNDERN: TOUREN (bis zu 4) =====
 let stTouren=[{mat:'',sorte:'',menge:''}];
 function stBuildSorteOpts(mat,curVal){
-  const key=mat==='Strassenbaustoffe'?'strasse':'asphalt';
+  const key=mat==='Strassenbaustoffe'?'strasse':mat==='Beton'?'beton':'asphalt';
   const liste=auftragssorten[key]||[];
   let opts='<option value="">— Sorte —</option>';
   opts+=liste.map(s=>`<option value="${esc(s)}"${s===curVal?' selected':''}>${esc(s)}</option>`).join('');
@@ -2360,47 +2378,74 @@ function stRenderTouren(){
   const btn=document.getElementById('stAddTourBtn');
   if(!list)return;
   list.innerHTML=stTouren.map((t,i)=>
-    '<div class="st-tour-row" style="display:grid;grid-template-columns:120px 1fr 110px auto;gap:6px;align-items:center;margin-bottom:6px">'
-    // Material-Auswahl je Tour
-    +'<select id="stMatSel'+i+'" onchange="stSetMat('+i+',this.value)">'
+    '<div class="st-tour-row" style="display:grid;grid-template-columns:140px 1fr 110px auto;gap:6px;align-items:start;margin-bottom:10px">'
+    // Material
+    +'<select id="stMatSel'+i+'" onchange="stSetMat('+i+',this.value)" style="height:38px">'
     +'<option value=""'+(t.mat===''?' selected':'')+'>— Material —</option>'
     +'<option value="Asphalt"'+(t.mat==='Asphalt'?' selected':'')+'>🟤 Asphalt</option>'
     +'<option value="Strassenbaustoffe"'+(t.mat==='Strassenbaustoffe'?' selected':'')+'>🟢 Straßenbaustoffe</option>'
+    +'<option value="Beton"'+(t.mat==='Beton'?' selected':'')+'>🔵 Beton</option>'
     +'</select>'
-    // Sorten-Auswahl je Tour (gefiltert nach gewähltem Material)
-    +'<select id="stSorteSel'+i+'" '+(t.mat?'':'disabled ')+' onchange="stSetSorte('+i+',this.value)">'
-    +stBuildSorteOpts(t.mat,t.sorte)
-    +'</select>'
+    // Sorte: Suchfeld + Chip
+    +'<div style="position:relative">'
+    +(t.sorte
+      ? '<div id="stSorteChip'+i+'" style="display:flex;align-items:center;justify-content:space-between;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs)">'
+        +'<span>'+esc(t.sorte)+'</span>'
+        +'<button type="button" onclick="stClearSorte('+i+')" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>'
+        +'</div>'
+      : '<input id="stSorteInp'+i+'" type="text" placeholder="'+(t.mat?'Sorte suchen…':'Erst Material wählen')+'" autocomplete="off"'
+        +(t.mat?'':' disabled')
+        +' oninput="stTourFilterSorte('+i+',this.value)"'
+        +' onfocus="stTourFilterSorte('+i+',this.value)">'
+    )
+    +'<div id="stSorteBox'+i+'" style="display:none;position:absolute;z-index:20;left:0;right:0;top:100%;background:var(--bg-e);border:1px solid var(--line);border-radius:var(--rs);max-height:180px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>'
+    +'</div>'
     // Menge
     +'<div style="position:relative">'
     +'<input type="number" inputmode="decimal" min="0" step="0.5" placeholder="Menge" value="'+esc(t.menge)+'" oninput="stTouren['+i+'].menge=this.value" style="padding-right:20px;width:100%">'
     +'<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ink3);pointer-events:none">t</span>'
     +'</div>'
-    +(i>0?'<button type="button" onclick="stRemTour('+i+')" style="padding:0 8px">×</button>':'<span></span>')
+    +(i>0?'<button type="button" onclick="stRemTour('+i+')" style="padding:0 8px;height:38px">×</button>':'<span></span>')
     +'</div>'
   ).join('');
   if(btn)btn.style.display=stTouren.length>=4?'none':'inline-block';
   const h=document.getElementById('stTourenJson');
   if(h)h.value=JSON.stringify(stTouren.filter(t=>t.sorte));
 }
+window.stTourFilterSorte=function(i,q){
+  const box=document.getElementById('stSorteBox'+i);
+  if(!box)return;
+  const mat=stTouren[i].mat;
+  const key=mat==='Strassenbaustoffe'?'strasse':mat==='Beton'?'beton':'asphalt';
+  const liste=auftragssorten[key]||[];
+  const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste;
+  const hl=s=>q.trim()?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--blu-s);color:var(--blu);border-radius:2px">$1</mark>'):s;
+  box.innerHTML=filtered.map(s=>'<div onclick="stTourSelectSorte('+i+','+JSON.stringify(s)+')" style="padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer">'+hl(s)+'</div>').join('')
+    +(q.trim()?'<div onclick="stTourSelectSorte('+i+','+JSON.stringify(q.trim())+')" style="padding:9px 12px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)">✎ „'+q.trim()+'" direkt verwenden</div>':'');
+  box.style.display=filtered.length||q.trim()?'block':'none';
+};
+window.stTourSelectSorte=function(i,val){
+  stTouren[i].sorte=val;
+  stRenderTouren();
+};
+window.stClearSorte=function(i){
+  stTouren[i].sorte='';
+  stRenderTouren();
+};
 window.stSetMat=function(i,val){
   stTouren[i].mat=val;
   stTouren[i].sorte='';
-  stUpdateSorteSel(i);
+  stRenderTouren();
 };
 window.stSetSorte=function(i,val){
   if(val==='__neu__'){addAuftragsSortePrompt(stTouren[i].mat||'Asphalt');return;}
   stTouren[i].sorte=val;
 };
 window.stUpdateSorteSel=function(i){
-  const matVal=stTouren[i].mat;
-  const sorteEl=document.getElementById('stSorteSel'+i);
-  if(!sorteEl)return;
-  sorteEl.innerHTML=stBuildSorteOpts(matVal,'');
-  sorteEl.disabled=!matVal;
+  // Noop – Suche übernimmt
 };
 function stSyncFromDom(){
-  // Nur Menge aus DOM lesen (Menge hat kein onchange, nur oninput)
+  // Nur Menge aus DOM lesen
   stTouren.forEach((_,i)=>{
     const mengeRows=document.querySelectorAll('#stTourenList input[type="number"]');
     if(mengeRows[i])stTouren[i].menge=mengeRows[i].value;
@@ -2424,14 +2469,14 @@ document.getElementById('formF').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
   if(!f.firmenname.value.trim()){showToast('Firmenname eingeben','amber');return;}
   if(!f.baustelle.value.trim()){showToast('Baustelle eingeben','amber');return;}
-  if(!f.sorte.value||f.sorte.value==='__neu__'){showToast('Bitte Sorte wählen','amber');return;}
+  if(!f.sorte.value){showToast('Bitte Sorte wählen','amber');return;}
   if(!f.menge.value.trim()){showToast('Menge eingeben','amber');return;}
   if(!f.abholung.value){showToast('Abholung-Datum eingeben','amber');return;}
   const matR=f.querySelector('[name="material"]:checked');
   if(!matR){showToast('Material wählen','amber');return;}
   const order={firmenname:f.firmenname.value.trim(),auftragsnummerF:f.auftragsnummerF.value.trim(),baustelle:f.baustelle.value.trim(),material:matR.value,sorte:f.sorte.value.trim(),menge:f.menge.value.trim(),abholung:f.abholung.value,uhrzeit:f.uhrzeit.value.trim(),bemerkung:f.bemerkung.value.trim(),vehicleTypes:[...tags.FT],anzahl:f.anzahlF?f.anzahlF.value.trim():'',vehicles:[...tags.FV],drivers:[...tags.FD],createdAt:firebase.database.ServerValue.TIMESTAMP};
   if(editingId.fremd!==null){fremdRef.child(editingId.fremd).update(order).then(()=>{cancelEdit('fremd');showToast('Auftrag aktualisiert','amber')}).catch(err=>showToast('Fehler: '+err.message,'amber'));return}
-  fremdRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.abholung.value=todayISO;clearTags('F');showToast('Fremdfirmen-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
+  fremdRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.abholung.value=todayISO;clearTags('F');sorteClearF();showToast('Fremdfirmen-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
 });
 
 document.getElementById('formS').addEventListener('submit',e=>{
@@ -2446,7 +2491,7 @@ document.getElementById('formS').addEventListener('submit',e=>{
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
   const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
   const sorte=(()=>{
-    const sel=f.sSorte&&f.sSorte.value&&f.sSorte.value!=='__neu__'?f.sSorte.value:'';
+    const sel=f.sSorte?f.sSorte.value.trim():'';
     return sel;
   })();
   const order={
@@ -2470,7 +2515,7 @@ document.getElementById('formS').addEventListener('submit',e=>{
   if(editingId.sundern!==null){
     sundernRef.child(editingId.sundern).update(order).then(()=>{cancelEdit('sundern');showToast('Auftrag aktualisiert','amber')}).catch(err=>showToast('Fehler: '+err.message,'amber'));return;
   }
-  sundernRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.datum.value=todayISO;clearTags('S');stResetFzg();stResetTouren();showToast('Sundern-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
+  sundernRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.datum.value=todayISO;clearTags('S');stResetFzg();stResetTouren();sorteClearS();showToast('Sundern-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
 });
 
 // ===== EDIT =====
@@ -2500,18 +2545,16 @@ window.startEdit=function(type,id){
       ? order.touren.map(t=>({mat:t.mat||order.material||'',sorte:t.sorte||'',menge:t.menge||''}))
       : [{mat:order.material||'',sorte:order.sorte||'',menge:''}];
     stRenderTouren();
-    const sF=document.getElementById('selSorteS');
     const mF=document.getElementById('stMengeInput');
-    if(sF){ setTimeout(()=>{sF.value=order.sorte||'';},200); }
     if(mF)mF.value=order.menge?parseFloat(order.menge)||'':'';
     const mR=document.querySelector(`#formS [name="material"][value="${order.material}"]`);
     if(mR)mR.checked=true;
-    // Sorte nach Dropdown-Rebuild setzen
-    setTimeout(()=>{const sel=document.getElementById('selSorteS');if(sel)sel.value=order.sorte||'';},250);
+    // Sorte als Chip setzen
+    if(order.sorte)window.sorteSelectS(order.sorte);else window.sorteClearS();
   }
   if(prefix==='F'){
     tags.FT=Array.isArray(order.vehicleTypes)?[...order.vehicleTypes]:[];renderTags('FT');
-    setTimeout(()=>{const sel=document.getElementById('selSorteF');if(sel)sel.value=order.sorte||'';},250);
+    if(order.sorte)window.sorteSelectF(order.sorte);else window.sorteClearF();
   }
   renderTags(prefix+'V');renderTags(prefix+'D');
   document.querySelectorAll('tbody tr').forEach(r=>r.classList.remove('er'));
@@ -3747,11 +3790,8 @@ window.bestUebernehmen=function(id){
   if(matTyp==='Strassenbaustoffe'&&radSt)radSt.checked=true;
   else if(matTyp==='Asphalt'&&radAs)radAs.checked=true;
   // Sorte-Dropdown aktualisieren und Wert setzen
-  rebuildSorteDropdowns();
+  if(sorteStr)window.sorteSelectS(sorteStr);
   setTimeout(()=>{
-    const sel=document.getElementById('selSorteS');
-    if(sel&&sorteStr){sel.value=sorteStr; if(!sel.value)sel.value='';}
-    // Falls Menge aus Bestellung
     const mengeEl=document.getElementById('stMengeInput');
     if(mengeEl&&b.menge)mengeEl.value=parseFloat(b.menge)||'';
   },150);
@@ -4061,29 +4101,78 @@ window.chatOaAnsehen=function(){
 
 // ===== AUFTRAGS-SORTEN =====
 function sorteListe(typ){
-  return typ==='Asphalt'?auftragssorten.asphalt:auftragssorten.strasse;
+  return typ==='Asphalt'?auftragssorten.asphalt:typ==='Beton'?auftragssorten.beton:auftragssorten.strasse;
 }
 function sorteKey(typ){
-  return typ==='Asphalt'?'asphalt':'strasse';
+  return typ==='Asphalt'?'asphalt':typ==='Beton'?'beton':'strasse';
 }
-function rebuildSorteDropdowns(){
-  ['F','S'].forEach(suffix=>{
-    const matEl=document.querySelector(`#form${suffix} [name="material"]:checked`);
-    const mat=matEl?matEl.value:'Asphalt';
-    const selId=suffix==='F'?'selSorteF':'selSorteS';
-    const sel=document.getElementById(selId); if(!sel)return;
-    const cur=sel.value;
-    const liste=sorteListe(mat);
-    sel.innerHTML='<option value="">— Sorte wählen —</option>'
-      +liste.map(s=>'<option value="'+esc(s)+'">'+esc(s)+'</option>').join('')
-      +'<option value="__neu__">+ Neue Sorte hinzufügen…</option>';
-    if(cur&&cur!=='__neu__')sel.value=cur;
+// ===== SORTE-SUCHE für formF und formS =====
+function sorteGetListe(formId){
+  const mat=document.querySelector('#'+formId+' [name="material"]:checked');
+  return sorteListe(mat?mat.value:'Asphalt');
+}function sorteRenderListe(boxId,q,onSelectName){
+  const box=document.getElementById(boxId); if(!box)return;
+  const isF=boxId.endsWith('F');
+  const liste=isF?sorteGetListe('formF'):sorteGetListe('formS');
+  const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste;
+  const hl=s=>q.trim()?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--blu-s);color:var(--blu);border-radius:2px">$1</mark>'):s;
+  box.innerHTML=filtered.map(s=>'<div onclick="window['+JSON.stringify(onSelectName)+']('+JSON.stringify(s)+')" style="padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer">'+hl(s)+'</div>').join('')
+    +(q.trim()?'<div onclick="window['+JSON.stringify(onSelectName)+']('+JSON.stringify(q.trim())+')" style="padding:10px 14px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)">✎ „'+q.trim()+'“ direkt verwenden</div>':'');
+  box.style.display=filtered.length||q.trim()?'block':'none';
+}
+window.sorteFilterF=function(q){ sorteRenderListe('sorteListF',q,'sorteSelectF'); };
+window.sorteFilterS=function(q){ sorteRenderListe('sorteListS',q,'sorteSelectS'); };
+window.sorteSelectF=function(val){
+  document.getElementById('sorteHiddenF').value=val;
+  document.getElementById('sorteSearchF').value='';
+  document.getElementById('sorteListF').style.display='none';
+  document.getElementById('sorteChipFTxt').textContent=val;
+  document.getElementById('sorteChipF').style.display='flex';
+};
+window.sorteSelectS=function(val){
+  document.getElementById('sorteHiddenS').value=val;
+  document.getElementById('sorteSearchS').value='';
+  document.getElementById('sorteListS').style.display='none';
+  document.getElementById('sorteChipSTxt').textContent=val;
+  document.getElementById('sorteChipS').style.display='flex';
+};
+window.sorteClearF=function(){
+  document.getElementById('sorteHiddenF').value='';
+  document.getElementById('sorteSearchF').value='';
+  document.getElementById('sorteListF').style.display='none';
+  document.getElementById('sorteChipF').style.display='none';
+};
+window.sorteClearS=function(){
+  document.getElementById('sorteHiddenS').value='';
+  document.getElementById('sorteSearchS').value='';
+  document.getElementById('sorteListS').style.display='none';
+  document.getElementById('sorteChipS').style.display='none';
+};
+// Liste schliessen bei Klick ausserhalb
+document.addEventListener('click',e=>{
+  ['F','S'].forEach(s=>{
+    const box=document.getElementById('sorteList'+s);
+    const inp=document.getElementById('sorteSearch'+s);
+    if(box&&inp&&!box.contains(e.target)&&e.target!==inp)box.style.display='none';
   });
-}
-// Bei Material-Wechsel Dropdown aktualisieren
-document.querySelectorAll('#formF [name="material"],#formS [name="material"]').forEach(r=>{
-  r.addEventListener('change',()=>{rebuildSorteDropdowns();stRenderTouren();});
+  // Tour-Sorte-Boxen
+  stTouren.forEach((_,i)=>{
+    const box=document.getElementById('stSorteBox'+i);
+    const inp=document.getElementById('stSorteInp'+i);
+    if(box&&inp&&!box.contains(e.target)&&e.target!==inp)box.style.display='none';
+  });
 });
+// Bei Material-Wechsel Sorte zuruecksetzen
+document.querySelectorAll('#formF [name="material"],#formS [name="material"]').forEach(r=>{
+  r.addEventListener('change',()=>{
+    const isF=r.closest('#formF');
+    if(isF){sorteClearF();}else{sorteClearS();}
+    stRenderTouren();
+  });
+});
+function rebuildSorteDropdowns(){
+  // Sorte-Suche übernimmt die Filterung – kein Dropdown mehr nötig
+}
 
 window.addAuftragsSortePrompt=function(mat){
   const name=prompt('Neue Sorte für '+((mat||'Asphalt'))+' eingeben:');
@@ -4100,8 +4189,8 @@ window.addAuftragsSortePrompt=function(mat){
 };
 
 function renderAuftragsSortenModal(){
-  ['asphalt','strasse'].forEach(key=>{
-    const listEl=document.getElementById(key==='asphalt'?'asphaltSortenList':'strasseSortenList');
+  ['asphalt','strasse','beton'].forEach(key=>{
+    const listEl=document.getElementById(key==='asphalt'?'asphaltSortenList':key==='strasse'?'strasseSortenList':'betonSortenList');
     if(!listEl)return;
     const arr=auftragssorten[key]||[];
     listEl.innerHTML=!arr.length
@@ -4129,7 +4218,7 @@ window.saveAuftragsSorte=function(key,i){
 window.openAuftragsSortenModal=function(){ renderAuftragsSortenModal(); document.getElementById('auftragssortenModal').classList.add('show'); };
 window.closeAuftragsSortenModal=function(){ document.getElementById('auftragssortenModal').classList.remove('show'); };
 window.addAuftragsSorte=function(key){
-  const inpId=key==='asphalt'?'newAsphaltSorte':'newStrasseSorte';
+  const inpId=key==='asphalt'?'newAsphaltSorte':key==='beton'?'newBetonSorte':'newStrasseSorte';
   const val=document.getElementById(inpId).value.trim();
   if(!val){showToast('Bitte Sorte eingeben','amber');return;}
   if((auftragssorten[key]||[]).includes(val)){showToast('Sorte bereits vorhanden','amber');return;}
@@ -4139,9 +4228,9 @@ window.addAuftragsSorte=function(key){
     showToast('Sorte hinzugefügt','success');
   }).catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
-['newAsphaltSorte','newStrasseSorte'].forEach(id=>{
+['newAsphaltSorte','newStrasseSorte','newBetonSorte'].forEach(id=>{
   const el=document.getElementById(id);
-  if(el)el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();addAuftragsSorte(id.includes('Asphalt')?'asphalt':'strasse');} });
+  if(el)el.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();addAuftragsSorte(id.includes('Asphalt')?'asphalt':id.includes('Beton')?'beton':'strasse');} });
 });
 window.removeAuftragsSorte=function(key,i){
   const arr=[...auftragssorten[key]]; arr.splice(i,1);
