@@ -2419,10 +2419,20 @@ window.stTourFilterSorte=function(i,q){
   const key=mat==='Strassenbaustoffe'?'strasse':mat==='Beton'?'beton':'asphalt';
   const liste=auftragssorten[key]||[];
   const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste;
-  const hl=s=>q.trim()?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--blu-s);color:var(--blu);border-radius:2px">$1</mark>'):s;
-  box.innerHTML=filtered.map(s=>'<div onclick="stTourSelectSorte('+i+','+JSON.stringify(s)+')" style="padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer">'+hl(s)+'</div>').join('')
-    +(q.trim()?'<div onclick="stTourSelectSorte('+i+','+JSON.stringify(q.trim())+')" style="padding:9px 12px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)">✎ „'+q.trim()+'" direkt verwenden</div>':'');
-  box.style.display=filtered.length||q.trim()?'block':'none';
+  box.innerHTML='';
+  const mk=s=>q.trim()?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\$&')+')','gi'),'<mark style="background:var(--blu-s);color:var(--blu);border-radius:2px">$1</mark>'):s;
+  const addRow=(val,label,isFrei)=>{
+    const d=document.createElement('div');
+    d.style.cssText=(isFrei?'padding:9px 12px;font-size:12px;color:var(--ink3);border-top:1px solid var(--line)':'padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600')+';cursor:pointer';
+    if(isFrei)d.textContent='✎ „'+val+'“ direkt verwenden';
+    else d.innerHTML=mk(val);
+    d.addEventListener('mousedown',function(e){e.preventDefault();e.stopPropagation();});
+    d.addEventListener('click',function(e){e.stopPropagation();stTouren[i].sorte=val;stRenderTouren();});
+    box.appendChild(d);
+  };
+  filtered.forEach(s=>addRow(s,s,false));
+  if(q.trim())addRow(q.trim(),q.trim(),true);
+  box.style.display=(filtered.length||q.trim())?'block':'none';
 };
 window.stTourSelectSorte=function(i,val){
   stTouren[i].sorte=val;
@@ -4115,10 +4125,20 @@ function sorteGetListe(formId){
   const isF=boxId.endsWith('F');
   const liste=isF?sorteGetListe('formF'):sorteGetListe('formS');
   const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste;
-  const hl=s=>q.trim()?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark style="background:var(--blu-s);color:var(--blu);border-radius:2px">$1</mark>'):s;
-  box.innerHTML=filtered.map(s=>'<div onclick="window['+JSON.stringify(onSelectName)+']('+JSON.stringify(s)+')" style="padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer">'+hl(s)+'</div>').join('')
-    +(q.trim()?'<div onclick="window['+JSON.stringify(onSelectName)+']('+JSON.stringify(q.trim())+')" style="padding:10px 14px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)">✎ „'+q.trim()+'“ direkt verwenden</div>':'');
-  box.style.display=filtered.length||q.trim()?'block':'none';
+  box.innerHTML='';
+  const mk=s=>q.trim()?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\$&')+')','gi'),'<mark style="background:var(--blu-s);color:var(--blu);border-radius:2px">$1</mark>'):s;
+  const addRow=(val,isFrei)=>{
+    const d=document.createElement('div');
+    d.style.cssText=(isFrei?'padding:10px 14px;font-size:12px;color:var(--ink3);border-top:1px solid var(--line)':'padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600')+';cursor:pointer';
+    if(isFrei)d.textContent='✎ „'+val+'“ direkt verwenden';
+    else d.innerHTML=mk(val);
+    d.addEventListener('mousedown',function(e){e.preventDefault();e.stopPropagation();});
+    d.addEventListener('click',function(e){e.stopPropagation();window[onSelectName](val);});
+    box.appendChild(d);
+  };
+  filtered.forEach(s=>addRow(s,false));
+  if(q.trim())addRow(q.trim(),true);
+  box.style.display=(filtered.length||q.trim())?'block':'none';
 }
 window.sorteFilterF=function(q){ sorteRenderListe('sorteListF',q,'sorteSelectF'); };
 window.sorteFilterS=function(q){ sorteRenderListe('sorteListS',q,'sorteSelectS'); };
@@ -4148,18 +4168,18 @@ window.sorteClearS=function(){
   document.getElementById('sorteListS').style.display='none';
   document.getElementById('sorteChipS').style.display='none';
 };
-// Liste schliessen bei Klick ausserhalb
+// Liste schliessen bei Klick ausserhalb – mit Verzögerung damit onclick der Einträge zuerst feuert
 document.addEventListener('click',e=>{
   ['F','S'].forEach(s=>{
     const box=document.getElementById('sorteList'+s);
     const inp=document.getElementById('sorteSearch'+s);
-    if(box&&inp&&!box.contains(e.target)&&e.target!==inp)box.style.display='none';
+    if(box&&inp&&!box.contains(e.target)&&!inp.contains(e.target))box.style.display='none';
   });
   // Tour-Sorte-Boxen
   stTouren.forEach((_,i)=>{
     const box=document.getElementById('stSorteBox'+i);
     const inp=document.getElementById('stSorteInp'+i);
-    if(box&&inp&&!box.contains(e.target)&&e.target!==inp)box.style.display='none';
+    if(box&&inp&&!box.contains(e.target)&&!inp.contains(e.target))box.style.display='none';
   });
 });
 // Bei Material-Wechsel Sorte zuruecksetzen
