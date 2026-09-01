@@ -135,6 +135,7 @@ td strong{color:var(--ink);font-weight:700}
 .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--asp);color:white;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
 .badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.6}
 .badge.sb{background:var(--grn-s);color:var(--grn)}
+.badge.be{background:#e8f0fe;color:#1a73e8}
 .pill-list{display:inline-flex;flex-wrap:wrap;gap:3px;max-width:200px}
 .pill{display:inline-block;padding:2px 7px;background:var(--surf);border:1px solid var(--line);border-radius:4px;font-size:10px;font-weight:700;color:var(--ink2);white-space:nowrap}
 .empty{text-align:center;padding:80px 20px;color:var(--ink3)}
@@ -2403,7 +2404,7 @@ function stRenderTouren(){
     // Menge
     +'<div style="position:relative">'
     +'<input type="number" inputmode="decimal" min="0" step="0.5" placeholder="Menge" value="'+esc(t.menge)+'" oninput="stTouren['+i+'].menge=this.value" style="padding-right:20px;width:100%">'
-    +'<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ink3);pointer-events:none">t</span>'
+    +'<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ink3);pointer-events:none">'+(t.mat==='Beton'?'m³':'t')+'</span>'
     +'</div>'
     +(i>0?'<button type="button" onclick="stRemTour('+i+')" style="padding:0 8px;height:38px">×</button>':'<span></span>')
     +'</div>'
@@ -2499,7 +2500,7 @@ document.getElementById('formS').addEventListener('submit',e=>{
   if(!matRS&&gueltTouren.length===0){showToast('Material wählen oder Touren mit Sorte eintragen','amber');return;}
   const fzgLabel=stFzgZeilen.length>0?stFzgZeilen.map(z=>z.anz+'× '+z.typ).join(', '):'';
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
-  const menge=mengeWert?(parseFloat(mengeWert)+' t'):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?parseFloat(t.menge)+' t':'').filter(Boolean).join(' + '):'');
+  const menge=mengeWert?String(parseFloat(mengeWert)):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?String(parseFloat(t.menge)):'').filter(Boolean).join(' + '):'');
   const sorte=(()=>{
     const sel=f.sSorte?f.sSorte.value.trim():'';
     return sel;
@@ -2728,7 +2729,7 @@ function renderOv(){
       ? o.fahrzeugDetails.map(z=>'<div style="font-weight:700;line-height:1.6">'+esc(z.anz)+'× '+esc(z.typ)+'</div>').join('')
       : (o.vehicleTypes||[]).map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('');
     const tourenHtml=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
+      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div></div>').join('')
       : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${smTel?`<a href="tel:${esc(smTel)}" class="bst-pill bst-pill-grn" style="margin-top:5px">📞 ${esc(smTel)}</a>`:''} ${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
@@ -2744,9 +2745,18 @@ function renderOv(){
     </div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxt||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Material</div>${(()=>{const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
     <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
-    <div><div class="tg-label">Menge</div><div style="font-weight:700">${o.menge?esc(o.menge):''}</div></div>
+    <div><div class="tg-label">Menge</div><div style="font-weight:700">${(()=>{
+  const cleanNum=(v,mat)=>{const n=parseFloat(String(v||'').replace(/ *(t|m³|cbm)\s*$/i,''));return (n&&n>0)?(n+(mat==='Beton'?' m³':' t')):'';};
+  // Touren vorhanden → alle Tour-Mengen anzeigen (0 ignorieren)
+  if(Array.isArray(o.touren)&&o.touren.length){
+    const parts=o.touren.filter(t=>parseFloat(t.menge)>0).map(t=>cleanNum(t.menge,t.mat||t.material||o.material)).filter(Boolean);
+    if(parts.length)return parts.join(' + ');
+  }
+  // Einzelauftrag → Hauptmenge
+  return cleanNum(o.menge,o.material);
+})()}</div></div>
     <div><div class="tg-label">Touren</div>${tourenHtml}</div>
     <div>${o.bemerkung?`<div class="tg-label" style="color:var(--amb)">⚠ Hinweis</div><div style="font-size:13px;font-weight:700;color:var(--ink2);background:var(--amb-s);border-left:3px solid var(--amb);border-radius:4px;padding:8px 10px;line-height:1.4;white-space:pre-wrap">${esc(o.bemerkung)}</div>`:''}</div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('sundern',o.id)}</div></div>
@@ -2767,16 +2777,25 @@ function renderOv(){
       ? o.vehicleTypes.map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('')
       : '';
     const tourenHtmlF=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( t.menge?' · '+esc(t.menge)+' t':'')+'</div></div>').join('')
+      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div></div>').join('')
       : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div></div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>${mapsHrefF?`<a href="${mapsHrefF}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:700;color:var(--blu);text-decoration:none;background:var(--blu-s);padding:3px 8px;border-radius:100px">🗺 Route starten</a>`:''}</div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></div>
+    <div><div class="tg-label">Material</div>${(()=>{const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
     <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
-    <div><div class="tg-label">Menge</div><div style="font-weight:700">${o.menge?esc(o.menge):''}</div></div>
+    <div><div class="tg-label">Menge</div><div style="font-weight:700">${(()=>{
+  const cleanNum=(v,mat)=>{const n=parseFloat(String(v||'').replace(/ *(t|m³|cbm)\s*$/i,''));return (n&&n>0)?(n+(mat==='Beton'?' m³':' t')):'';};
+  // Touren vorhanden → alle Tour-Mengen anzeigen (0 ignorieren)
+  if(Array.isArray(o.touren)&&o.touren.length){
+    const parts=o.touren.filter(t=>parseFloat(t.menge)>0).map(t=>cleanNum(t.menge,t.mat||t.material||o.material)).filter(Boolean);
+    if(parts.length)return parts.join(' + ');
+  }
+  // Einzelauftrag → Hauptmenge
+  return cleanNum(o.menge,o.material);
+})()}</div></div>
     <div><div class="tg-label">Touren</div>${tourenHtmlF}</div>
     <div>${o.bemerkung?`<div class="tg-label" style="color:var(--amb)">⚠ Hinweis</div><div style="font-size:13px;font-weight:700;color:var(--ink2);background:var(--amb-s);border-left:3px solid var(--amb);border-radius:4px;padding:8px 10px;line-height:1.4;white-space:pre-wrap">${esc(o.bemerkung)}</div>`:''}</div>
     <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><div class="t-time ${o.uhrzeit?'':'nt'}">${esc(o.uhrzeit)||'ohne Zeit'}</div><div class="row-a">${ra('fremd',o.id)}</div></div>
