@@ -888,19 +888,35 @@ td strong{color:var(--ink);font-weight:700}
   <div class="panel" id="panelF">
     <div class="pt"><span class="nl">Neuer Fremdfirmen-Auftrag</span><span class="eb">Bearbeiten-Modus</span></div>
     <form id="formF">
-      <div class="fg"><label>Firmenname <span class="req">*</span></label><input type="text" name="firmenname" placeholder="z.B. Ossenberg"></div>
+      <div class="fg"><label>Firmenname <span class="req">*</span></label>
+        <div style="position:relative">
+          <input type="text" name="firmenname" id="fremdFirmaInp" placeholder="z.B. Ossenberg" autocomplete="off"
+            oninput="fremdSuche('fremdFirmaList',this.value,fremdNamen,'fremdFirmaInp')"
+            onfocus="fremdSuche('fremdFirmaList',this.value,fremdNamen,'fremdFirmaInp')">
+          <div id="fremdFirmaList" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:160px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+        </div>
+      </div>
       <div class="fg"><label>Auftragsnummer</label><input type="text" name="auftragsnummerF" placeholder="z.B. 5515"></div>
-      <div class="fg"><label>Baustelle <span class="req">*</span></label><input type="text" name="baustelle" placeholder="z.B. Balve"></div>
+      <div class="fg"><label>Baustelle <span class="req">*</span></label>
+        <div style="position:relative">
+          <input type="text" name="baustelle" id="fremdBstInp" placeholder="z.B. Balve" autocomplete="off"
+            oninput="fremdSuche('fremdBstList',this.value,fremdBaustellen,'fremdBstInp')"
+            onfocus="fremdSuche('fremdBstList',this.value,fremdBaustellen,'fremdBstInp')">
+          <div id="fremdBstList" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:160px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+        </div>
+      </div>
       <div class="fg"><label>Material <span class="req">*</span></label>
         <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label><label><input type="radio" name="material" value="Beton"> Beton</label></div>
       </div>
       <div class="fg"><label>Sorte <span class="req">*</span></label>
-        <input type="text" id="sorteSearchF" placeholder="Sorte suchen…" autocomplete="off"
-          oninput="sorteFilterF(this.value)" onfocus="sorteFilterF(this.value)" style="margin-bottom:4px">
-        <div id="sorteListF" style="display:none;border:1px solid var(--line);border-radius:var(--rs);max-height:200px;overflow-y:auto;position:relative;z-index:10;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.1)"></div>
-        <div id="sorteChipF" style="display:none;margin-top:4px;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between">
-          <span id="sorteChipFTxt"></span>
-          <button type="button" onclick="sorteClearF()" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+        <div style="position:relative">
+          <input type="text" id="sorteSearchF" placeholder="Sorte suchen…" autocomplete="off"
+            oninput="sorteFilterF(this.value)" onfocus="sorteFilterF(this.value)">
+          <div id="sorteChipF" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between;z-index:2">
+            <span id="sorteChipFTxt"></span>
+            <button type="button" onclick="sorteClearF()" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+          </div>
+          <div id="sorteListF" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:200px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
         </div>
         <input type="hidden" name="sorte" id="sorteHiddenF">
       </div>
@@ -908,32 +924,43 @@ td strong{color:var(--ink);font-weight:700}
         <div class="fg"><label>Menge <span class="req">*</span></label><input type="text" name="menge" placeholder="z.B. 10 t"></div>
         <div class="fg"><label>Abholung <span class="req">*</span></label><input type="date" name="abholung"></div>
       </div>
-      <div class="fg"><label>Uhrzeit</label><input type="text" name="uhrzeit" placeholder="z.B. 6:00 Uhr"></div>
-      <div class="r2">
-        <div class="fg"><label>Fahrzeug-Typ <span style="font-weight:400;color:var(--ink3);font-size:11px;">(mehrere möglich)</span></label>
+
+      <!-- Abholung / Lieferung -->
+      <div class="fg">
+        <label style="font-weight:700;margin-bottom:8px;display:block">Art <span class="req">*</span></label>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="btnAbholung" onclick="setFremdArt('abholung')"
+            style="flex:1;padding:10px;border-radius:var(--rs);border:2px solid var(--brand);background:var(--brand);color:#fff;font-weight:700;cursor:pointer;font-size:14px">
+            🏭 Abholung
+          </button>
+          <button type="button" id="btnLieferung" onclick="setFremdArt('lieferung')"
+            style="flex:1;padding:10px;border-radius:var(--rs);border:2px solid var(--line);background:var(--surf);color:var(--ink2);font-weight:700;cursor:pointer;font-size:14px">
+            🚛 Lieferung
+          </button>
+        </div>
+        <input type="hidden" name="fremdArt" id="fremdArtHidden" value="abholung">
+      </div>
+
+      <!-- Fahrer/Fahrzeuge — nur bei Lieferung -->
+      <div id="lieferungFahrerWrap" style="display:none">
+        <div class="fg">
+          <label>Fahrzeuge <span style="font-weight:400;color:var(--ink3);font-size:11px">(mehrere möglich)</span></label>
+          <div class="ms"><div class="ms-tags" id="msTagsFV"></div><select class="ms-sel" id="selFV" onchange="addTag('FV',this.value);this.value=''"><option value="">+ Fahrzeug hinzufügen…</option></select></div>
+        </div>
+        <div class="fg">
+          <label>Fahrer / Kennzeichen <span style="font-weight:400;color:var(--ink3);font-size:11px">(mehrere möglich)</span></label>
+          <div class="ms"><div class="ms-tags" id="msTagsFD"></div><select class="ms-sel" id="selFD" onchange="addTag('FD',this.value);this.value=''"><option value="">+ Fahrer hinzufügen…</option></select></div>
+        </div>
+        <div class="fg"><label>Fahrzeug-Typ <span style="font-weight:400;color:var(--ink3);font-size:11px">(mehrere möglich)</span></label>
           <div class="ms"><div class="ms-tags" id="msTagsFT"></div>
           <select class="ms-sel" id="selFT" onchange="addTag('FT',this.value);this.value=''">
             <option value="">+ Fahrzeug-Typ…</option>
-            <option>3A-Zug</option>
-            <option>3A</option>
-            <option>Sattel</option>
-            <option>Trecker</option>
-            <option>Kipper</option>
-            <option>Tieflader</option>
-            <option>Betonmischer</option>
-            <option>Sonstiges</option>
+            <option>3A-Zug</option><option>3A</option><option>Sattel</option><option>Trecker</option><option>Kipper</option><option>Tieflader</option><option>Betonmischer</option><option>Sonstiges</option>
           </select></div>
         </div>
-        <div class="fg"><label>Anzahl</label><input type="number" name="anzahlF" placeholder="z.B. 1" min="0"></div>
       </div>
-      <div class="fg">
-        <label>Fahrzeuge <span style="font-weight:400;color:var(--ink3);font-size:11px;">(mehrere möglich)</span></label>
-        <div class="ms"><div class="ms-tags" id="msTagsFV"></div><select class="ms-sel" id="selFV" onchange="addTag('FV',this.value);this.value=''"><option value="">+ Fahrzeug hinzufügen…</option></select></div>
-      </div>
-      <div class="fg">
-        <label>Fahrer / Kennzeichen <span style="font-weight:400;color:var(--ink3);font-size:11px;">(mehrere möglich)</span></label>
-        <div class="ms"><div class="ms-tags" id="msTagsFD"></div><select class="ms-sel" id="selFD" onchange="addTag('FD',this.value);this.value=''"><option value="">+ Fahrer hinzufügen…</option></select></div>
-      </div>
+
+      <div class="fg"><label>Uhrzeit</label><input type="text" name="uhrzeit" placeholder="z.B. 6:00 Uhr"></div>
       <div class="fg"><label>Bemerkung</label><textarea name="bemerkung" placeholder="Optionale Hinweise..."></textarea></div>
       <div class="sr"><button type="submit" class="btn-p" id="submitF">Auftrag hinzufügen</button><button type="button" class="btn-c" onclick="cancelEdit('fremd')">Abbrechen</button></div>
     </form>
@@ -1043,12 +1070,14 @@ td strong{color:var(--ink);font-weight:700}
         <div class="rg"><label><input type="radio" name="material" value="Asphalt"> Asphalt</label><label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label><label><input type="radio" name="material" value="Beton"> Beton</label></div>
       </div>
       <div class="fg"><label>Sorte</label>
-        <input type="text" id="sorteSearchS" placeholder="Sorte suchen…" autocomplete="off"
-          oninput="sorteFilterS(this.value)" onfocus="sorteFilterS(this.value)" style="margin-bottom:4px">
-        <div id="sorteListS" style="display:none;border:1px solid var(--line);border-radius:var(--rs);max-height:200px;overflow-y:auto;position:relative;z-index:10;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.1)"></div>
-        <div id="sorteChipS" style="display:none;margin-top:4px;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between">
-          <span id="sorteChipSTxt"></span>
-          <button type="button" onclick="sorteClearS()" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+        <div style="position:relative">
+          <input type="text" id="sorteSearchS" placeholder="Sorte suchen…" autocomplete="off"
+            oninput="sorteFilterS(this.value)" onfocus="sorteFilterS(this.value)">
+          <div id="sorteChipS" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between;z-index:2">
+            <span id="sorteChipSTxt"></span>
+            <button type="button" onclick="sorteClearS()" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+          </div>
+          <div id="sorteListS" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:200px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
         </div>
         <input type="hidden" name="sSorte" id="sorteHiddenS">
       </div>
@@ -1875,6 +1904,10 @@ const authReady = pinReady
   .then(cred=>{ AUTH_UID=cred.user.uid; AUTH_OK=true; return cred.user; })
   .catch(err=>{ console.error('[Auth]',err); authErrorBanner(err); throw err; });
 const fremdRef=db.ref('fremd');
+const fremdNamenRef=db.ref('fremdNamen');
+const fremdBstRef=db.ref('fremdBaustellen');
+let fremdNamen=[];
+let fremdBaustellen=[];
 const sundernRef=db.ref('sundern');
 const fleetRef=db.ref('fleet');
 const fahrzeugeRef=db.ref('fahrzeuge');
@@ -1957,9 +1990,17 @@ authReady.then(()=>{
 
 
 
+  fremdNamenRef.on('value',s=>{fremdNamen=Array.isArray(s.val())?s.val():[];});
+  fremdBstRef.on('value',s=>{fremdBaustellen=Array.isArray(s.val())?s.val():[];});
   fremdRef.on('value',s=>{
     const v=s.val()||{};
-    data.fremd=objArr(v);renderF();if(activeTab()==='overview')renderOv();if(activeTab()==='alle')renderAlle();if(activeTab()==='tourenplan')renderTourenplan();document.getElementById('cntAlle').textContent=data.fremd.length+data.sundern.length
+    data.fremd=objArr(v);
+    // Firmen- und Baustellennamen aus Aufträgen sammeln
+    const namen=[...new Set(data.fremd.map(o=>o.firmenname).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de'));
+    const bsten=[...new Set(data.fremd.map(o=>o.baustelle).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de'));
+    if(!fremdNamen.length&&namen.length)fremdNamen=namen;
+    if(!fremdBaustellen.length&&bsten.length)fremdBaustellen=bsten;
+    renderF();if(activeTab()==='overview')renderOv();if(activeTab()==='alle')renderAlle();if(activeTab()==='tourenplan')renderTourenplan();document.getElementById('cntAlle').textContent=data.fremd.length+data.sundern.length
   });
   sundernRef.on('value',s=>{data.sundern=objArr(s.val());renderS();if(activeTab()==='overview')renderOv();if(activeTab()==='alle')renderAlle();if(activeTab()==='tourenplan')renderTourenplan();document.getElementById('cntAlle').textContent=data.fremd.length+data.sundern.length});
   fleetRef.on('value',s=>{
@@ -2485,9 +2526,21 @@ document.getElementById('formF').addEventListener('submit',e=>{
   if(!f.abholung.value){showToast('Abholung-Datum eingeben','amber');return;}
   const matR=f.querySelector('[name="material"]:checked');
   if(!matR){showToast('Material wählen','amber');return;}
-  const order={firmenname:f.firmenname.value.trim(),auftragsnummerF:f.auftragsnummerF.value.trim(),baustelle:f.baustelle.value.trim(),material:matR.value,sorte:f.sorte.value.trim(),menge:f.menge.value.trim(),abholung:f.abholung.value,uhrzeit:f.uhrzeit.value.trim(),bemerkung:f.bemerkung.value.trim(),vehicleTypes:[...tags.FT],anzahl:f.anzahlF?f.anzahlF.value.trim():'',vehicles:[...tags.FV],drivers:[...tags.FD],createdAt:firebase.database.ServerValue.TIMESTAMP};
+  const fahrerTypEl=f.querySelector('[name="fahrerTyp"]:checked');
+  const eigeneFahrer=fahrerTypEl&&fahrerTypEl.value==='hilgenroth';
+  const fremdArt=f.fremdArt?f.fremdArt.value:'abholung';
+  const order={firmenname:f.firmenname.value.trim(),auftragsnummerF:f.auftragsnummerF.value.trim(),baustelle:f.baustelle.value.trim(),material:matR.value,sorte:f.sorte.value.trim(),menge:f.menge.value.trim(),abholung:f.abholung.value,uhrzeit:f.uhrzeit.value.trim(),bemerkung:f.bemerkung.value.trim(),eigeneFahrer,fremdArt,vehicleTypes:[...tags.FT],anzahl:f.anzahlF?f.anzahlF.value.trim():'',vehicles:[...tags.FV],drivers:[...tags.FD],createdAt:firebase.database.ServerValue.TIMESTAMP};
   if(editingId.fremd!==null){fremdRef.child(editingId.fremd).update(order).then(()=>{cancelEdit('fremd');showToast('Auftrag aktualisiert','amber')}).catch(err=>showToast('Fehler: '+err.message,'amber'));return}
-  fremdRef.child(Date.now().toString()).set(order).then(()=>{f.reset();f.abholung.value=todayISO;clearTags('F');sorteClearF();showToast('Fremdfirmen-Auftrag angelegt','success')}).catch(err=>showToast('Fehler: '+err.message,'amber'));
+  fremdRef.child(Date.now().toString()).set(order).then(()=>{
+    f.reset();
+    f.abholung.value=todayISO;
+    clearTags('F');
+    sorteClearF();
+    setFremdArt('abholung');
+    document.getElementById('lieferungFahrerWrap').style.display='none';
+    fremdSaveNamenBst(order.firmenname,order.baustelle);
+    showToast('Fremdfirmen-Auftrag angelegt','success');
+  }).catch(err=>showToast('Fehler: '+err.message,'amber'));
 });
 
 document.getElementById('formS').addEventListener('submit',e=>{
@@ -2780,7 +2833,7 @@ function renderOv(){
       ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div></div>').join('')
       : '';
     return `<div class="tour-row"><div class="tour-grid">
-    <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div></div>
+    <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div>${o.fremdArt?`<div style="margin-top:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;display:inline-block;${o.fremdArt==='lieferung'?'color:var(--grn);background:var(--grn-s)':'color:var(--ink3);background:var(--surf);border:1px solid var(--line)'}">${o.fremdArt==='lieferung'?'🚛 Lieferung':'🏭 Abholung'}</div>`:''}</div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>${mapsHrefF?`<a href="${mapsHrefF}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:700;color:var(--blu);text-decoration:none;background:var(--blu-s);padding:3px 8px;border-radius:100px">🗺 Route starten</a>`:''}</div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
@@ -4428,6 +4481,58 @@ window.resetTabAdmin=function(){
   renderTabAdminList();
   showToast('Alle Tabs wieder eingeblendet','success');
 };
+
+// ===== FREMD-ART (Abholung / Lieferung) =====
+window.setFremdArt=function(art){
+  document.getElementById('fremdArtHidden').value=art;
+  const wrap=document.getElementById('lieferungFahrerWrap');
+  const btnA=document.getElementById('btnAbholung');
+  const btnL=document.getElementById('btnLieferung');
+  if(art==='lieferung'){
+    wrap.style.display='block';
+    btnL.style.background='var(--brand)';btnL.style.color='#fff';btnL.style.borderColor='var(--brand)';
+    btnA.style.background='var(--surf)';btnA.style.color='var(--ink2)';btnA.style.borderColor='var(--line)';
+  } else {
+    wrap.style.display='none';
+    btnA.style.background='var(--brand)';btnA.style.color='#fff';btnA.style.borderColor='var(--brand)';
+    btnL.style.background='var(--surf)';btnL.style.color='var(--ink2)';btnL.style.borderColor='var(--line)';
+  }
+};
+window.fremdSuche=function(boxId,q,liste,inpId){
+  const box=document.getElementById(boxId); if(!box)return;
+  const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste.slice(0,20);
+  box.innerHTML='';
+  filtered.forEach(val=>{
+    const d=document.createElement('div');
+    d.style.cssText='padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer';
+    d.textContent=val;
+    d.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();});
+    d.addEventListener('click',e=>{
+      e.stopPropagation();
+      const inp=document.getElementById(inpId);
+      if(inp)inp.value=val;
+      box.style.display='none';
+    });
+    box.appendChild(d);
+  });
+  box.style.display=filtered.length?'block':'none';
+};
+document.addEventListener('click',e=>{
+  ['fremdFirmaList','fremdBstList'].forEach(id=>{
+    const box=document.getElementById(id);
+    if(box&&!box.contains(e.target))box.style.display='none';
+  });
+});
+function fremdSaveNamenBst(firma,bst){
+  if(firma&&!fremdNamen.includes(firma)){
+    fremdNamen=[...fremdNamen,firma].sort((a,b)=>a.localeCompare(b,'de'));
+    fremdNamenRef.set(fremdNamen).catch(()=>{});
+  }
+  if(bst&&!fremdBaustellen.includes(bst)){
+    fremdBaustellen=[...fremdBaustellen,bst].sort((a,b)=>a.localeCompare(b,'de'));
+    fremdBstRef.set(fremdBaustellen).catch(()=>{});
+  }
+}
 
 function showToast(msg,v){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(v?' '+v:'');setTimeout(()=>t.classList.remove('show'),2200)}
 </script>
