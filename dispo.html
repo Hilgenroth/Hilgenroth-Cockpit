@@ -4506,8 +4506,8 @@ window.fremdSuche=function(boxId,q,liste,inpId){
     const d=document.createElement('div');
     d.style.cssText='padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer';
     d.textContent=val;
-    d.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();});
-    d.addEventListener('click',e=>{
+    d.addEventListener('mousedown',function(e){
+      e.preventDefault();
       e.stopPropagation();
       const inp=document.getElementById(inpId);
       if(inp)inp.value=val;
@@ -4517,10 +4517,15 @@ window.fremdSuche=function(boxId,q,liste,inpId){
   });
   box.style.display=filtered.length?'block':'none';
 };
-document.addEventListener('click',e=>{
-  ['fremdFirmaList','fremdBstList'].forEach(id=>{
-    const box=document.getElementById(id);
-    if(box&&!box.contains(e.target))box.style.display='none';
+// Box per blur schließen statt per globalem click
+['fremdFirmaInp','fremdBstInp'].forEach(id=>{
+  const inp=document.getElementById(id);
+  if(inp)inp.addEventListener('blur',function(){
+    setTimeout(()=>{
+      const boxId=id==='fremdFirmaInp'?'fremdFirmaList':'fremdBstList';
+      const box=document.getElementById(boxId);
+      if(box)box.style.display='none';
+    },150);
   });
 });
 function fremdSaveNamenBst(firma,bst){
