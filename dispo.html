@@ -2468,8 +2468,7 @@ window.stTourFilterSorte=function(i,q){
     d.style.cssText=(isFrei?'padding:9px 12px;font-size:12px;color:var(--ink3);border-top:1px solid var(--line)':'padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600')+';cursor:pointer';
     if(isFrei)d.textContent='✎ „'+val+'“ direkt verwenden';
     else d.innerHTML=mk(val);
-    d.addEventListener('mousedown',function(e){e.preventDefault();e.stopPropagation();});
-    d.addEventListener('click',function(e){e.stopPropagation();stTouren[i].sorte=val;stRenderTouren();});
+    d.addEventListener('pointerdown',function(e){e.preventDefault();e.stopPropagation();stTouren[i].sorte=val;stRenderTouren();});
     box.appendChild(d);
   };
   filtered.forEach(s=>addRow(s,s,false));
@@ -4204,8 +4203,7 @@ function sorteGetListe(formId){
     d.style.cssText=(isFrei?'padding:10px 14px;font-size:12px;color:var(--ink3);border-top:1px solid var(--line)':'padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600')+';cursor:pointer';
     if(isFrei)d.textContent='✎ „'+val+'“ direkt verwenden';
     else d.innerHTML=mk(val);
-    d.addEventListener('mousedown',function(e){e.preventDefault();e.stopPropagation();});
-    d.addEventListener('click',function(e){e.stopPropagation();window[onSelectName](val);});
+    d.addEventListener('pointerdown',function(e){e.preventDefault();e.stopPropagation();window[onSelectName](val);});
     box.appendChild(d);
   };
   filtered.forEach(s=>addRow(s,false));
@@ -4504,11 +4502,10 @@ window.fremdSuche=function(boxId,q,liste,inpId){
   box.innerHTML='';
   filtered.forEach(val=>{
     const d=document.createElement('div');
-    d.style.cssText='padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer';
+    d.style.cssText='padding:11px 14px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600;cursor:pointer;user-select:none';
     d.textContent=val;
-    d.addEventListener('mousedown',function(e){
+    d.addEventListener('pointerdown',function(e){
       e.preventDefault();
-      e.stopPropagation();
       const inp=document.getElementById(inpId);
       if(inp)inp.value=val;
       box.style.display='none';
@@ -4517,15 +4514,14 @@ window.fremdSuche=function(boxId,q,liste,inpId){
   });
   box.style.display=filtered.length?'block':'none';
 };
-// Box per blur schließen statt per globalem click
-['fremdFirmaInp','fremdBstInp'].forEach(id=>{
-  const inp=document.getElementById(id);
-  if(inp)inp.addEventListener('blur',function(){
-    setTimeout(()=>{
-      const boxId=id==='fremdFirmaInp'?'fremdFirmaList':'fremdBstList';
-      const box=document.getElementById(boxId);
-      if(box)box.style.display='none';
-    },150);
+// Box schließen bei Klick außerhalb
+document.addEventListener('pointerdown',function(e){
+  [['fremdFirmaList','fremdFirmaInp'],['fremdBstList','fremdBstInp']].forEach(([boxId,inpId])=>{
+    const box=document.getElementById(boxId);
+    const inp=document.getElementById(inpId);
+    if(box&&inp&&!box.contains(e.target)&&e.target!==inp){
+      box.style.display='none';
+    }
   });
 });
 function fremdSaveNamenBst(firma,bst){
