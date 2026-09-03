@@ -286,9 +286,10 @@ const IC = {
 
 const TOOLS = {
   sundern: [
-    {id:'su-urlaub', label:'Urlaubszentrale',   icon:'urlaub', file:'urlaubszentrale.html'},
-    {id:'su-miet',   label:'Mietrechner',        icon:'miet',   file:'mietrechner.html'},
-    {id:'su-lief',   label:'Lieferanten-Finder', icon:'lief',   file:'lieferanten.html'},
+    {id:'su-urlaub',   label:'Urlaubszentrale',   icon:'urlaub',   file:'urlaubszentrale.html'},
+    {id:'su-miet',     label:'Mietrechner',        icon:'miet',     file:'mietrechner.html'},
+    {id:'su-lief',     label:'Lieferanten-Finder', icon:'lief',     file:'lieferanten.html'},
+    {id:'su-personal', label:'Personal',           icon:'personal', file:'personalfragebogen.html', adminOnly:true},
   ],
   hellefeld: [
     {id:'he-dispo',    label:'Dispo-Zentrale',     icon:'dispo',   file:'dispo.html'},
@@ -433,9 +434,10 @@ function switchCompany(company,btn){
 
 // ── Alle Tool-IDs für Berechtigungen ──
 const ALL_PERMS = [
-  {id:'su-urlaub', label:'Urlaubszentrale', company:'sundern'},
-  {id:'su-miet',   label:'Mietrechner',     company:'sundern'},
-  {id:'su-lief',   label:'Lieferanten (STB)',company:'sundern'},
+  {id:'su-urlaub',   label:'Urlaubszentrale', company:'sundern'},
+  {id:'su-miet',     label:'Mietrechner',     company:'sundern'},
+  {id:'su-lief',     label:'Lieferanten (STB)',company:'sundern'},
+  {id:'su-personal', label:'Personal',        company:'sundern', adminOnly:true},
   {id:'he-dispo',  label:'Dispo-Zentrale',   company:'hellefeld'},
   {id:'he-lief',   label:'Lieferanten (HF)', company:'hellefeld'},
   {id:'he-labor',  label:'Labor',            company:'hellefeld'},
@@ -625,8 +627,8 @@ function startCockpit(){
   // TOOLS nach Berechtigungen filtern
   const perms = toArray(currentUser.perms);
   const filteredTools = {
-    sundern: TOOLS.sundern.filter(t=> t.sub || perms.includes(t.id)),
-    hellefeld: TOOLS.hellefeld.filter(t=> t.sub || perms.includes(t.id)),
+    sundern:   TOOLS.sundern.filter(t=>   t.sub || (t.adminOnly && currentUser.isAdmin) || perms.includes(t.id)),
+    hellefeld: TOOLS.hellefeld.filter(t=> t.sub || (t.adminOnly && currentUser.isAdmin) || perms.includes(t.id)),
   };
   // Labor nur zeigen wenn mind. ein Sub erlaubt
   // (Labor selbst hat kein file, daher immer erlaubt wenn Labor-Reiter gewünscht)
@@ -683,8 +685,8 @@ function renderTabs(company){
   if(!currentUser){ _origRenderTabs(company); return; }
   const perms = currentUser.perms;
   const filtered = {
-    sundern: TOOLS.sundern.filter(t=>t.sub||perms.includes(t.id)),
-    hellefeld: TOOLS.hellefeld.filter(t=>t.sub||perms.includes(t.id)),
+    sundern:   TOOLS.sundern.filter(t=>   t.sub || (t.adminOnly && currentUser.isAdmin) || perms.includes(t.id)),
+    hellefeld: TOOLS.hellefeld.filter(t=> t.sub || (t.adminOnly && currentUser.isAdmin) || perms.includes(t.id)),
   };
   renderTabsFiltered(company, filtered);
 }
