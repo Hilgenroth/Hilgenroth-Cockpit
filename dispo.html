@@ -1031,24 +1031,9 @@ td strong{color:var(--ink);font-weight:700}
         </select>
       </div>
       <div class="r2">
-        <div class="fg"><label>Fahrzeug-Typ <span style="font-weight:400;color:var(--ink3);font-size:11px;">mit Anzahl – z.B. 5× Sattel</span></label>
+        <div class="fg"><label>Fahrzeuge <span style="font-weight:400;color:var(--ink3);font-size:11px;">mit Fahrer & Aufgabe</span></label>
           <div id="stFzgList" style="margin-bottom:6px"></div>
-          <div style="display:flex;gap:6px">
-            <select id="selST" style="flex:1">
-              <option value="">— Typ wählen —</option>
-              <option>3A-Zug</option>
-              <option>3A</option>
-              <option>4A</option>
-              <option>Sattel</option>
-              <option>Trecker</option>
-              <option>Kipper</option>
-              <option>Tieflader</option>
-              <option>Betonmischer</option>
-              <option>Sonstiges</option>
-            </select>
-            <input type="number" id="stAnzSel" min="1" max="99" value="1" style="width:70px;padding:10px;border:1px solid var(--line);border-radius:var(--rs);font-size:14px;font-family:inherit;background:var(--surf)">
-            <button type="button" class="btn-s" onclick="stAddFzg()">+</button>
-          </div>
+          <button type="button" class="btn-s" onclick="stAddFzg()" id="stAddFzgBtn">+ Fahrzeug hinzufügen</button>
           <input type="hidden" name="vehicleTypesJson" id="stFzgJson">
         </div>
         
@@ -2010,7 +1995,7 @@ authReady.then(()=>{
       fleet.drivers=v.drivers||[...DFLT_D];
     }
     rebuildSelects();
-    renderFleetModal();
+    stRenderFzg(); // Fahrzeug-Selects in Sundern-Zeilen aktualisieren
   });
 
   fahrzeugeRef.on('value',s=>{
@@ -2385,21 +2370,68 @@ let stFzgZeilen=[];
 function stRenderFzg(){
   const list=document.getElementById('stFzgList');
   if(!list)return;
-  list.innerHTML=stFzgZeilen.map((z,i)=>
-    '<div class="st-fzg-zeile"><span>'+esc(z.anz)+'× '+esc(z.typ)+'</span>'
-    +'<button type="button" onclick="stRemFzg('+i+')">×</button></div>'
-  ).join('');
+  const FZG=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
+  const vOpts='<option value="">+ Kennzeichen…</option>'+fleet.vehicles.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  const dOpts='<option value="">+ Fahrer…</option>'+fleet.drivers.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+
+  list.innerHTML=stFzgZeilen.map((z,i)=>{
+    const vehicles=Array.isArray(z.vehicles)?z.vehicles:[];
+    const drivers=Array.isArray(z.drivers)?z.drivers:[];
+    return '<div style="border:1px solid var(--line);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px;background:var(--surf)">'
+    // Typ + Anzahl + Löschen
+    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
+    +'<select style="flex:1" onchange="stFzgZeilen['+i+'].typ=this.value;stSaveFzgJson()">'
+    +'<option value="">— Typ —</option>'
+    +FZG.map(t=>'<option value="'+t+'"'+(z.typ===t?' selected':'')+'>'+t+'</option>').join('')
+    +'</select>'
+    +'<input type="number" min="1" max="99" value="'+esc(z.anz||1)+'" style="width:55px;text-align:center;padding:5px;border:1px solid var(--line);border-radius:var(--rs);font-size:13px;font-family:inherit;background:var(--surf)" oninput="stFzgZeilen['+i+'].anz=parseInt(this.value)||1;stSaveFzgJson()">'
+    +'<span style="font-size:11px;color:var(--ink3)">Fzg.</span>'
+    +'<button type="button" onclick="stFzgZeilen.splice('+i+',1);stRenderFzg()" style="background:none;border:none;color:var(--brand);font-size:18px;cursor:pointer;line-height:1;padding:2px">×</button>'
+    +'</div>'
+    // Kennzeichen Chips
+    +'<div style="margin-bottom:4px">'
+    +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">'
+    +vehicles.map((v,vi)=>'<span style="display:inline-flex;align-items:center;gap:3px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px">'
+      +esc(v)
+      +'<button type="button" onclick="stFzgZeilen['+i+'].vehicles.splice('+vi+',1);stRenderFzg()" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;line-height:1;padding:0;margin-left:2px">×</button>'
+      +'</span>').join('')
+    +'</div>'
+    +'<select onchange="if(this.value){stFzgZeilen['+i+'].vehicles=stFzgZeilen['+i+'].vehicles||[];if(!stFzgZeilen['+i+'].vehicles.includes(this.value))stFzgZeilen['+i+'].vehicles.push(this.value);stRenderFzg();}this.value=\'\'" style="width:100%;font-size:12px">'
+    +vOpts+'</select>'
+    +'</div>'
+    // Fahrer Chips
+    +'<div style="margin-bottom:4px">'
+    +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">'
+    +drivers.map((d,di)=>'<span style="display:inline-flex;align-items:center;gap:3px;background:var(--brand);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px">'
+      +esc(d)
+      +'<button type="button" onclick="stFzgZeilen['+i+'].drivers.splice('+di+',1);stRenderFzg()" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;line-height:1;padding:0;margin-left:2px">×</button>'
+      +'</span>').join('')
+    +'</div>'
+    +'<select onchange="if(this.value){stFzgZeilen['+i+'].drivers=stFzgZeilen['+i+'].drivers||[];if(!stFzgZeilen['+i+'].drivers.includes(this.value))stFzgZeilen['+i+'].drivers.push(this.value);stRenderFzg();}this.value=\'\'" style="width:100%;font-size:12px">'
+    +dOpts+'</select>'
+    +'</div>'
+    // Tour zuweisen
+    +'<div style="margin-top:4px">'
+    +'<select style="width:100%;font-size:12px;margin-bottom:4px" onchange="stFzgZeilen['+i+'].tourIdx=this.value===\'\'?null:parseInt(this.value);stSaveFzgJson()">'
+    +'<option value="">— Tour zuweisen —</option>'
+    +stTouren.filter(t=>t.sorte).map((t,ti)=>{const ein=t.mat==='Beton'?' m³':' t';return '<option value="'+ti+'"'+(z.tourIdx===ti?' selected':'')+'>Tour '+(ti+1)+': '+esc(t.mat||'')+(t.sorte?' – '+esc(t.sorte):'')+(t.menge?' · '+t.menge+ein:'')+' </option>';}).join('')
+    +'</select>'
+    +'<div style="display:flex;gap:6px;margin-bottom:4px">'
+    +'<input type="text" placeholder="Uhrzeit (z.B. 6:00)" value="'+esc(z.uhrzeit||'')+'" oninput="stFzgZeilen['+i+'].uhrzeit=this.value;stSaveFzgJson()" style="width:110px;flex-shrink:0;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--rs);font-family:inherit;background:var(--surf)">'
+    +'<input type="text" placeholder="Hinweis für diesen LKW" value="'+esc(z.hinweis||'')+'" oninput="stFzgZeilen['+i+'].hinweis=this.value;stSaveFzgJson()" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--rs);font-family:inherit;background:var(--surf)">'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+  }).join('');
+
+  stSaveFzgJson();
+}
+window.stSaveFzgJson=function(){
   const h=document.getElementById('stFzgJson');
   if(h)h.value=JSON.stringify(stFzgZeilen);
-}
+};
 window.stAddFzg=function(){
-  const typ=document.getElementById('selST').value;
-  const anz=parseInt(document.getElementById('stAnzSel').value)||1;
-  if(!typ)return;
-  const v=stFzgZeilen.findIndex(z=>z.typ===typ);
-  if(v>=0){stFzgZeilen[v].anz=anz;}else{stFzgZeilen.push({typ,anz});}
-  document.getElementById('selST').value='';
-  document.getElementById('stAnzSel').value='1';
+  stFzgZeilen.push({typ:'',anz:1,vehicles:[],drivers:[],tourIdx:null,uhrzeit:'',hinweis:''});
   stRenderFzg();
 };
 window.stRemFzg=function(i){ stFzgZeilen.splice(i,1); stRenderFzg(); };
@@ -2478,6 +2510,7 @@ window.stTourFilterSorte=function(i,q){
 window.stTourSelectSorte=function(i,val){
   stTouren[i].sorte=val;
   stRenderTouren();
+  stRenderFzg(); // Tour-Dropdown in Fahrzeugzeilen aktualisieren
 };
 window.stClearSorte=function(i){
   stTouren[i].sorte='';
@@ -2505,8 +2538,12 @@ function stSyncFromDom(){
 window.stAddTour=function(){
   if(stTouren.length>=4)return;
   stSyncFromDom();
+  const tourIdx=stTouren.length;
   stTouren.push({mat:'',sorte:'',menge:''});
+  // Gleichzeitig neue Fahrzeugzeile für diese Tour
+  stFzgZeilen.push({typ:'',anz:1,vehicles:[],drivers:[],tourIdx,uhrzeit:'',hinweis:''});
   stRenderTouren();
+  stRenderFzg();
 };
 window.stRemTour=function(i){ stSyncFromDom(); stTouren.splice(i,1); stRenderTouren(); };
 function stResetTouren(){ stTouren=[{mat:'',sorte:'',menge:''}]; stRenderTouren(); }
@@ -2601,7 +2638,7 @@ window.startEdit=function(type,id){
   tags[prefix+'D']=Array.isArray(order.drivers)?[...order.drivers]:[];
   if(prefix==='S'){
     stFzgZeilen=Array.isArray(order.fahrzeugDetails)
-      ? order.fahrzeugDetails.map(z=>({typ:z.typ,anz:parseInt(z.anz)||1}))
+      ? order.fahrzeugDetails.map(z=>({typ:z.typ||'',anz:parseInt(z.anz)||1,vehicles:Array.isArray(z.vehicles)?z.vehicles:[],drivers:Array.isArray(z.drivers)?z.drivers:[],tourIdx:z.tourIdx!=null?parseInt(z.tourIdx):null}))
       : [];
     stRenderFzg();
     stTouren=Array.isArray(order.touren)&&order.touren.length
@@ -2778,7 +2815,13 @@ function renderOv(){
     const bstNrSlug=o.baustellennummer?o.baustellennummer.toString().replace(/[^a-z0-9]/gi,'-').toLowerCase():'allgemein';
     const chatKanal='hilgenroth-bst-'+bstNrSlug;
     const fzgTxt=Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length
-      ? o.fahrzeugDetails.map(z=>'<div style="font-weight:700;line-height:1.6">'+esc(z.anz)+'× '+esc(z.typ)+'</div>').join('')
+      ? o.fahrzeugDetails.map(z=>{
+          const tour=z.tourIdx!=null&&Array.isArray(o.touren)?o.touren[z.tourIdx]:null;
+          const tourLabel=tour?('<div style="font-size:11px;color:var(--grn);font-weight:700">Tour '+(z.tourIdx+1)+': '+esc(tour.sorte||'')+(tour.menge?' · '+tour.menge+(tour.mat==='Beton'?' m³':' t'):'')+'</div>'):'';
+          const uhrzeitLabel=z.uhrzeit?('<div style="font-size:11px;color:var(--amb);font-weight:700">⏰ '+esc(z.uhrzeit)+'</div>'):'';
+          const hinweisLabel=z.hinweis?('<div style="font-size:11px;color:var(--ink3);font-weight:600;font-style:italic">'+esc(z.hinweis)+'</div>'):'';
+          return '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--line)"><div style="font-weight:700;line-height:1.4">'+esc(z.anz)+'× '+esc(z.typ)+'</div>'+(Array.isArray(z.drivers)&&z.drivers.length?'<div style="font-size:11px;color:var(--blu);font-weight:600">'+z.drivers.map(esc).join(', ')+'</div>':'')+(Array.isArray(z.vehicles)&&z.vehicles.length?'<div style="font-size:11px;color:var(--ink3);font-weight:600">'+z.vehicles.map(esc).join(', ')+'</div>':'')+tourLabel+uhrzeitLabel+hinweisLabel+'</div>';
+        }).join('')
       : (o.vehicleTypes||[]).map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('');
     const tourenHtml=Array.isArray(o.touren)&&o.touren.length>1
       ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div></div>').join('')
@@ -3790,6 +3833,19 @@ function renderBest(){
       +row('Anfahrt',b.anfahrt)
       +row('Anfahrt (Schachtmeister)',b.anfahrtNotiz)
       +row('Bemerkung',b.bemerkung)
+      +(Array.isArray(b.fahrzeugDetails)&&b.fahrzeugDetails.some(z=>z.fahrer||z.aufgabe)
+        ? '<div style="margin:8px 0;border:1px solid var(--line);border-radius:var(--rs);overflow:hidden">'
+          +'<div style="background:var(--surf);padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);border-bottom:1px solid var(--line)">Fahrzeuge &amp; Aufgaben</div>'
+          +b.fahrzeugDetails.filter(z=>z.typ).map(z=>
+            '<div style="display:grid;grid-template-columns:70px 50px 1fr 1fr;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px">'
+            +'<div style="font-weight:700">'+esc(z.typ)+'</div>'
+            +'<div style="color:var(--ink3)">'+esc(z.anz)+'× Fzg.</div>'
+            +'<div>'+esc(z.fahrer||'—')+'</div>'
+            +'<div style="color:var(--ink3)">'+esc(z.aufgabe||'—')+'</div>'
+            +'</div>'
+          ).join('')
+          +'</div>'
+        : '')
       +(!istFremd?'<div class="fg" style="margin:10px 0 0">'
         +'<label style="font-size:11px">Nachricht an Schachtmeister</label>'
         +'<textarea id="dnote_'+b.id+'" placeholder="z.B. Lieferung erst morgen möglich" style="min-height:44px;font-size:12px">'+esc(b.dispoNotiz||'')+'</textarea>'
