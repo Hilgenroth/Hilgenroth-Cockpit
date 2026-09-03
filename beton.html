@@ -380,6 +380,15 @@ textarea.field-textarea:focus { border-color: var(--red); }
 .pk-table select { cursor: pointer; }
 .pk-table .pk-calc { font-weight: 600; color: #444; }
 .pk-table .pk-calc input { color: #444; font-weight: 600; }
+.pk-table tr.pk-result-row { background: #FFF6F6; }
+.pk-table tr.pk-result-row:nth-child(even) { background: #FFF0F0; }
+.pk-table tr.pk-result-row .pk-row-label { background: inherit; color: var(--ink); font-weight: 800; }
+.pk-table .pk-result span { font-size: 17px; font-weight: 800; color: var(--red); }
+@media print {
+  .pk-table tr.pk-result-row { background: #fff !important; }
+  .pk-table tr.pk-result-row:nth-child(even) { background: #fafafa !important; }
+  .pk-table .pk-result span { font-size: 14px !important; }
+}
 .pk-group-header td {
   background: var(--ink); color: #fff; font-family: var(--mono); font-size: 10px;
   font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; padding: 6px 12px;
@@ -394,13 +403,33 @@ textarea.field-textarea:focus { border-color: var(--red); }
 
 @media print {
   .pk-table-wrap { overflow: visible !important; border: none !important; }
-  .pk-table { min-width: 0 !important; width: 100% !important; font-size: 9.5px !important; }
-  .pk-table td, .pk-table th { padding: 3px 6px !important; }
-  .pk-row-label { position: static !important; box-shadow: none !important; }
+  .pk-table { min-width: 0 !important; width: 100% !important; font-size: 10.5px !important; }
+  .pk-table td, .pk-table th { padding: 4px 8px !important; line-height: 1.25 !important; }
+  .pk-row-label { position: static !important; box-shadow: none !important; min-width: 0 !important; font-size: 10.5px !important; }
   .pk-add-col-wrap { display: none !important; }
   .pk-table thead th .pk-remove { display: none !important; }
   .pk-group-header { page-break-inside: avoid; }
+  .pk-group-header td { padding: 5px 10px !important; font-size: 9px !important; }
   .pk-table tr { page-break-inside: avoid; }
+  .pk-table .pk-result span { font-size: 13px !important; }
+
+  /* Restliche Bereiche — gefüllt, aber weiterhin auf einer Seite */
+  @page { size: A4; margin: 9mm; }
+  .doc-body { padding: 12px 16px !important; }
+  .bk-logo-col { padding: 10px 16px !important; }
+  .bk-title-col { padding: 10px 16px 6px !important; }
+  .bk-meta { padding: 2px 16px 8px !important; gap: 14px !important; }
+  .bk-title-col h1 { font-size: 16px !important; }
+  .company-name { font-size: 14px !important; }
+  .company-sub { font-size: 9.5px !important; line-height: 1.3 !important; }
+  .field-row .field-label { font-size: 10px !important; }
+  .meta-grid { gap: 6px 24px !important; margin-bottom: 10px !important; }
+  .section-header { padding: 4px 12px !important; font-size: 11px !important; margin: 8px 0 0 !important; }
+  .footer-grid { margin-top: 12px !important; gap: 16px !important; }
+  textarea.field-textarea { min-height: 50px !important; padding: 6px 8px !important; font-size: 11px !important; }
+  .sign-block { gap: 6px !important; }
+  .sign-line { height: 36px !important; }
+  .ort-fest { font-size: 11px !important; }
 }
 @media screen and (max-width: 820px) {
   .pk-row-label { min-width: 150px; font-size: 10.5px !important; }
@@ -618,8 +647,8 @@ let pkCounter = 2;
 
 const RAW_FELDER = ['sorte','lsnr','herstell','bauteil','soll',
   'lufttemp','ausbreitmass','verdichtung','m_formbeton','m_form','vol_form',
-  'luftgehalt','korrektur','lagerung_wasser_f','lagerung_luft_f',
-  'einlieferung','lagerung_wasser_e','lagerung_luft_e','pruefdatum','ist',
+  'luftgehalt','lagerung_wasser_f','lagerung_luft_f',
+  'einlieferung','pruefdatum','ist',
   'ebenflaechigkeit','a','b','h','mb','bruchlast'];
 
 const PK_FELDER = [
@@ -639,14 +668,10 @@ const PK_FELDER = [
   { id: 'vol_form', label: 'Volumen (Form) V [dm³]', type: 'number', step: 0.001 },
   { id: 'rohdichte_frisch', label: 'Rohdichte D=m/V [kg/dm³]', type: 'calc' },
   { id: 'luftgehalt', label: 'gemes. Luftgehalt (LP-Topf) [Vol.-%]', type: 'number', step: 0.1 },
-  { id: 'korrektur', label: 'Korrekturfaktor G [Vol.-%]', type: 'number', step: 0.1 },
-  { id: 'lp_tats', label: 'LPtats.=LPgemes.-G [Vol.-%]', type: 'calc' },
   { id: 'lagerung_wasser_f', label: 'Lagerung (Wasser) [Tage/°C]', type: 'text' },
   { id: 'lagerung_luft_f', label: 'Lagerung (Luft) [Tage/°C]', type: 'text' },
 
   { id: 'einlieferung', label: 'Einlieferungsdatum', type: 'date', group: 'Festbeton' },
-  { id: 'lagerung_wasser_e', label: 'Lagerung (Wasser) [Tage/°C]', type: 'text' },
-  { id: 'lagerung_luft_e', label: 'Lagerung (Luft) [Tage/°C]', type: 'text' },
   { id: 'pruefdatum', label: 'Prüfdatum', type: 'date' },
   { id: 'ist', label: 'Prüfalter (Ist) [Tage]', type: 'number', step: 1 },
   { id: 'ebenflaechigkeit', label: 'Ebenflächigkeit', type: 'text' },
@@ -678,13 +703,15 @@ function buildPkBody() {
     if (feld.group) {
       html += `<tr class="pk-group-header"><td colspan="${pkSpalten.length + 1}">${feld.group}</td></tr>`;
     }
-    html += `<tr><td class="pk-row-label">${feld.label}</td>`;
+    const rowClass = feld.id === 'druckfestigkeit' ? ' class="pk-result-row"' : '';
+    html += `<tr${rowClass}><td class="pk-row-label">${feld.label}</td>`;
     pkSpalten.forEach(colId => {
       const cellId = feld.id + '_' + colId;
       if (feld.type === 'select') {
         html += `<td><select id="${cellId}" onchange="onSorteChange('${colId}')"><option value="">— wählen —</option>${sortenOptions()}</select></td>`;
       } else if (feld.type === 'calc') {
-        html += `<td class="pk-calc"><span id="${cellId}">—</span></td>`;
+        const calcClass = feld.id === 'druckfestigkeit' ? 'pk-calc pk-result' : 'pk-calc';
+        html += `<td class="${calcClass}"><span id="${cellId}">—</span></td>`;
       } else if (feld.type === 'date') {
         html += `<td><input type="date" id="${cellId}" onchange="berechnePK('${colId}')" /></td>`;
       } else if (feld.type === 'number') {
@@ -721,11 +748,6 @@ function berechnePK(colId) {
   const rohFrisch = (betonM !== null && volForm) ? betonM / volForm : null;
   g('rohdichte_frisch').textContent = fmt(rohFrisch, 3);
 
-  const lp = num(g('luftgehalt'));
-  const kor = num(g('korrektur'));
-  const lpTats = (lp !== null && kor !== null) ? (lp - kor) : null;
-  g('lp_tats').textContent = fmt(lpTats, 2);
-
   const a = num(g('a')), b = num(g('b')), h = num(g('h'));
   const vb = (a && b && h) ? (a * b * h / 1e6) : null; // mm³ → dm³ (Liter)
   g('vb').textContent = fmt(vb, 3);
@@ -737,7 +759,7 @@ function berechnePK(colId) {
   const F = num(g('bruchlast'));
   const ac = (a && b) ? a * b : null; // mm²
   const fcCube = (F !== null && ac) ? 0.92 * (F * 1000 / ac) : null;
-  g('druckfestigkeit').textContent = fmt(fcCube, 2);
+  g('druckfestigkeit').textContent = fmt(fcCube, 1);
 }
 
 function pkWerteSammeln() {
@@ -912,16 +934,38 @@ function showView(name) {
 
 function renderUebersicht() {
   if (window.fbBeton && window.fbBeton.bereit) {
-    window.fbBeton.alleLaden().then(remote => {
-      Object.keys(remote || {}).forEach(nrKey => {
-        const d = remote[nrKey];
-        const nr = d['bericht-nr'] || nrKey;
-        localStorage.setItem('hilg-bp-' + nr, JSON.stringify(d));
-      });
-    }).catch(() => {}).finally(() => renderUebersichtTabelle());
+    ladeUndRenderUebersicht();
   } else {
+    // Firebase-Anmeldung noch nicht fertig — erstmal lokalen Stand zeigen,
+    // und sobald die Anmeldung durch ist (falls die Übersicht noch offen ist) automatisch nachladen.
     renderUebersichtTabelle();
+    const warteAufFirebase = () => {
+      window.removeEventListener('firebase-bereit', warteAufFirebase);
+      if (document.getElementById('view-uebersicht').classList.contains('active')) {
+        ladeUndRenderUebersicht();
+      }
+    };
+    window.addEventListener('firebase-bereit', warteAufFirebase);
   }
+}
+
+function ladeUndRenderUebersicht() {
+  window.fbBeton.alleLaden().then(remote => {
+    const remoteNummern = new Set();
+    Object.keys(remote || {}).forEach(nrKey => {
+      const d = remote[nrKey];
+      const nr = d['bericht-nr'] || nrKey;
+      remoteNummern.add(nr);
+      localStorage.setItem('hilg-bp-' + nr, JSON.stringify(d));
+    });
+    // Lokale Einträge entfernen, die inzwischen (z. B. von einem anderen Gerät) gelöscht wurden
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('hilg-bp-') && !k.startsWith('hilg-bp-liste-'))
+      .forEach(k => {
+        const nr = k.replace('hilg-bp-', '');
+        if (!remoteNummern.has(nr)) localStorage.removeItem(k);
+      });
+  }).catch(() => {}).finally(() => renderUebersichtTabelle());
 }
 
 function renderUebersichtTabelle() {
