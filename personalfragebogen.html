@@ -849,18 +849,41 @@ function sichereLocalFelder(){
 }
 
 window.speichern=async()=>{
-  const key=rolle==='admin'?currentMAKey:eigenerMAKey; if(!key) return;
+  const key=rolle==='admin'?currentMAKey:eigenerMAKey;
+  if(!key){ toast('⚠ Kein Mitarbeiter ausgewählt'); return; }
+
+  // Auth sicherstellen
+  if(!auth.currentUser){
+    try { await signInAnonymously(auth); }
+    catch(e){ toast('⚠ Anmeldung fehlgeschlagen – Anonymous Auth in Firebase aktivieren!'); return; }
+  }
+
   sichereLocalFelder();
   const felder=Object.assign({},localFelder);
-  // Leere Strings raus
   Object.keys(felder).forEach(k=>{ if(felder[k]==='') delete felder[k]; });
-  if(felder.vorname||felder.familienname){
-    const name=[felder.vorname,felder.familienname].filter(Boolean).join(' ');
-    await set(ref(db,'personalfragebogen/'+key+'/name'),name);
+
+  // Unterschriften nur speichern wenn gezeichnet
+  ['unterschriftAN','unterschriftAG'].forEach(id=>{
+    const c=document.getElementById(id);
+    if(c && c.dataset.leer==='true') delete felder[id];
+  });
+
+  try {
+    if(felder.vorname||felder.familienname){
+      const name=[felder.vorname,felder.familienname].filter(Boolean).join(' ');
+      await set(ref(db,'personalfragebogen/'+key+'/name'),name);
+    }
+    await set(ref(db,'personalfragebogen/'+key+'/felder'),felder);
+    await set(ref(db,'personalfragebogen/'+key+'/geaendert'),new Date().toISOString());
+    toast('✓ Gespeichert');
+  } catch(e) {
+    console.error('Speicherfehler:',e);
+    if(e.code==='PERMISSION_DENIED'){
+      toast('⚠ Kein Schreibrecht – Firebase Rules oder Auth prüfen');
+    } else {
+      toast('⚠ Fehler: '+e.message);
+    }
   }
-  await set(ref(db,'personalfragebogen/'+key+'/felder'),felder);
-  await set(ref(db,'personalfragebogen/'+key+'/geaendert'),new Date().toISOString());
-  toast('✓ Gespeichert');
 };
 
 function sammleFelder(){
