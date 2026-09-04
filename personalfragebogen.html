@@ -359,6 +359,7 @@ let adminView    = 'uebersicht';
 let alleMA       = {};
 let feldConfig   = {};   // { key: { aktiv: true/false } }
 let eigenerMAKey = null;
+let localFelder  = {};   // lokaler Puffer – hält ALLE Felder aller Tabs
 
 // ── ALLE FELDER (für Einstellungen) ─────────────────────────────────────────
 const ALLE_FELDER = [
@@ -624,6 +625,7 @@ function renderUebersicht() {
 }
 
 window.oeffneBogen = (key) => {
+  localFelder={};
   currentMAKey=key; currentTab=0;
   zeigeAdminView('boegen');
   renderMATabs();
@@ -647,7 +649,7 @@ function renderMATabs() {
     const btn=document.createElement('button');
     btn.className='ma-tab'+(k===currentMAKey?' active':'');
     btn.innerHTML=`<span class="status-dot dot-${st.klasse}"></span>${ma.name||'Unbenannt'}`;
-    btn.onclick=()=>{currentMAKey=k;currentTab=0;renderMATabs();};
+    btn.onclick=()=>{localFelder={};currentMAKey=k;currentTab=0;renderMATabs();};
     bar.appendChild(btn);
   });
   renderAdminFormular(currentMAKey);
@@ -788,20 +790,26 @@ function formHtml(felder) {
 
 function renderAdminFormular(key){
   const ma=alleMA[key]||{};
+  // Beim Wechsel zu einem anderen MA: localFelder neu initialisieren
+  if(currentMAKey===key && Object.keys(localFelder).length===0){
+    localFelder = Object.assign({}, ma.felder||{});
+  } else if(currentMAKey!==key){
+    localFelder = Object.assign({}, ma.felder||{});
+  }
   document.getElementById('adminMain').innerHTML=formHtml(ma.felder||{});
-  ladeDaten(ma.felder||{});
+  ladeDaten(localFelder);
 }
 function renderMAFormular(key){
   const ma=alleMA[key]||{};
+  if(Object.keys(localFelder).length===0){
+    localFelder = Object.assign({}, ma.felder||{});
+  }
   document.getElementById('maMain').innerHTML=formHtml(ma.felder||{});
-  ladeDaten(ma.felder||{});
-  // AG-Felder sperren
+  ladeDaten(localFelder);
   document.querySelectorAll('#maMain .ag').forEach(el=>el.setAttribute('disabled',''));
-  // Gesperrte Felder sperren
   ALLE_FELDER.forEach(f=>{
     if(!feldIstAktiv(f.key)){
-      const container=rolle==='admin'?'adminMain':'maMain';
-      document.querySelectorAll(`#${container} [data-key="${f.key}"]`).forEach(el=>{
+      document.querySelectorAll(`#maMain [data-key="${f.key}"]`).forEach(el=>{
         el.setAttribute('disabled','');
         el.closest('.f')?.classList.add('gesperrt');
       });
@@ -810,15 +818,42 @@ function renderMAFormular(key){
 }
 
 window.wechselTab=n=>{
+  // Aktuelle Eingaben in localFelder sichern bevor Tab wechselt
+  sichereLocalFelder();
   currentTab=n;
   if(rolle==='admin') renderAdminFormular(currentMAKey);
   else renderMAFormular(eigenerMAKey);
 };
 
 // ── SPEICHERN ─────────────────────────────────────────────────────────────────
+// Aktuelle Feldinhalte in localFelder sichern (ohne Firebase)
+function sichereLocalFelder(){
+  const cont=rolle==='admin'?'adminMain':'maMain';
+  document.querySelectorAll('#'+cont+' [data-key]').forEach(el=>{
+    const k=el.dataset.key;
+    if(el.type==='radio'){ if(el.checked) localFelder[k]=el.value; }
+    else if(el.type==='checkbox'){ localFelder[k]=el.checked?'ja':''; }
+    else if(el.value!==undefined){
+      if((k==='iban'||k==='vwlIban')&&el.value&&!el.value.toUpperCase().startsWith('DE')){
+        localFelder[k]='DE'+el.value.replace(/\s/g,'');
+      } else {
+        localFelder[k]=el.value;
+      }
+    }
+  });
+  // Unterschriften aus Canvas holen
+  ['unterschriftAN','unterschriftAG'].forEach(id=>{
+    const c=document.getElementById(id);
+    if(c && !c.dataset.leer) localFelder[id]=c.toDataURL('image/png');
+  });
+}
+
 window.speichern=async()=>{
   const key=rolle==='admin'?currentMAKey:eigenerMAKey; if(!key) return;
-  const felder=sammleFelder();
+  sichereLocalFelder();
+  const felder=Object.assign({},localFelder);
+  // Leere Strings raus
+  Object.keys(felder).forEach(k=>{ if(felder[k]==='') delete felder[k]; });
   if(felder.vorname||felder.familienname){
     const name=[felder.vorname,felder.familienname].filter(Boolean).join(' ');
     await set(ref(db,'personalfragebogen/'+key+'/name'),name);
@@ -829,22 +864,8 @@ window.speichern=async()=>{
 };
 
 function sammleFelder(){
-  const f={};
-  const cont=rolle==='admin'?'adminMain':'maMain';
-  document.querySelectorAll('#'+cont+' [data-key]').forEach(el=>{
-    const k=el.dataset.key;
-    if(el.type==='radio'){if(el.checked)f[k]=el.value;}
-    else if(el.type==='checkbox'){f[k]=el.checked?'ja':'';}
-    else if(el.value){
-      // IBAN: DE voranstellen wenn nicht schon vorhanden
-      if((k==='iban'||k==='vwlIban')&&el.value&&!el.value.toUpperCase().startsWith('DE')){
-        f[k]='DE'+el.value.replace(/\s/g,'');
-      } else {
-        f[k]=el.value;
-      }
-    }
-  });
-  return f;
+  sichereLocalFelder();
+  return Object.assign({},localFelder);
 }
 function ladeDaten(felder){
   if(!felder) return;
@@ -1022,11 +1043,25 @@ function tab3(fd){return`
       ${f('vwlBic','VWL – BIC',inp('vwlBic'))}
     </div>
   </div></div>
-  <div class="sec"><div class="sec-hd">Abschluss</div><div class="sec-bd">
-    <div class="hint">Alle Angaben vollständig? Bitte Formular drucken – Unterschriften werden handschriftlich geleistet und bei WWP eingereicht.</div>
-    <div class="g g2">
+  <div class="sec"><div class="sec-hd">Abschluss & Unterschriften</div><div class="sec-bd">
+    <div class="hint">Bitte mit dem Finger (Handy) oder der Maus unterschreiben. Danach auf „Speichern ✓" klicken.</div>
+    <div class="g g2" style="margin-bottom:14px">
       ${f('datumAN','Datum Arbeitnehmer',inp('datumAN','date'))}
       ${f('datumAG','Datum Arbeitgeber (AG)',inp('datumAG','date','','ag'))}
+    </div>
+    <div class="g g2">
+      <div class="f">
+        <label>Unterschrift Arbeitnehmer</label>
+        <canvas id="unterschriftAN" width="300" height="100"
+          style="border:1px solid var(--border);border-radius:3px;background:#fff;touch-action:none;width:100%;cursor:crosshair;"></canvas>
+        <button type="button" onclick="clearCanvas('unterschriftAN')" style="margin-top:4px;background:none;border:1px solid var(--border);border-radius:3px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--grau4);">Löschen</button>
+      </div>
+      <div class="f">
+        <label>Unterschrift Arbeitgeber (AG)</label>
+        <canvas id="unterschriftAG" width="300" height="100"
+          style="border:1px solid var(--border);border-radius:3px;background:#fff;touch-action:none;width:100%;cursor:crosshair;${rolle==='ma'?'opacity:.5;pointer-events:none;':''}"></canvas>
+        ${rolle!=='ma'?`<button type="button" onclick="clearCanvas('unterschriftAG')" style="margin-top:4px;background:none;border:1px solid var(--border);border-radius:3px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--grau4);">Löschen</button>`:''}
+      </div>
     </div>
   </div></div>`;}
 
@@ -1042,6 +1077,78 @@ function pruefeURLParams(){
   }
 }
 setTimeout(pruefeURLParams,500);
+
+// ── CANVAS UNTERSCHRIFT ───────────────────────────────────────────────────────
+function initCanvas(id){
+  const canvas=document.getElementById(id); if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  // Auflösung anpassen
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*window.devicePixelRatio||300;
+  canvas.height=100*window.devicePixelRatio||100;
+  ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
+  ctx.strokeStyle='#1a1a1a';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
+
+  // Gespeicherte Unterschrift laden
+  const key=id==='unterschriftAN'?'unterschriftAN':'unterschriftAG';
+  const gespeichert=localFelder[key];
+  if(gespeichert&&gespeichert.startsWith('data:')){
+    const img=new Image();
+    img.onload=()=>ctx.drawImage(img,0,0,rect.width,100);
+    img.src=gespeichert;
+    canvas.dataset.leer='false';
+  } else {
+    canvas.dataset.leer='true';
+  }
+
+  let zeichnen=false;
+  function getPos(e){
+    const r=canvas.getBoundingClientRect();
+    const src=e.touches?e.touches[0]:e;
+    return{x:src.clientX-r.left,y:src.clientY-r.top};
+  }
+  function start(e){e.preventDefault();zeichnen=true;canvas.dataset.leer='false';const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function move(e){e.preventDefault();if(!zeichnen)return;const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();}
+  function stop(){zeichnen=false;}
+  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);
+  canvas.addEventListener('mouseup',stop);canvas.addEventListener('mouseleave',stop);
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  canvas.addEventListener('touchend',stop);
+}
+
+window.clearCanvas=(id)=>{
+  const canvas=document.getElementById(id); if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const rect=canvas.getBoundingClientRect();
+  ctx.clearRect(0,0,rect.width,100);
+  canvas.dataset.leer='true';
+  delete localFelder[id];
+};
+
+// Canvas nach jedem Tab-Render initialisieren
+const _origFormHtml=formHtml;
+function formHtmlMitCanvas(felder){
+  const html=_origFormHtml(felder);
+  return html;
+}
+
+// Canvas init nach DOM-Render (kurz verzögert)
+const _origWechselTab=window.wechselTab;
+window.wechselTab=n=>{
+  sichereLocalFelder();
+  currentTab=n;
+  if(rolle==='admin') renderAdminFormular(currentMAKey);
+  else renderMAFormular(eigenerMAKey);
+  if(n===3) setTimeout(()=>{initCanvas('unterschriftAN');initCanvas('unterschriftAG');},50);
+};
+
+// Beim ersten Render von Tab 3 auch initialisieren
+const _origRenderAdmin=renderAdminFormular;
+function renderAdminFormularMitCanvas(key){
+  _origRenderAdmin(key);
+  if(currentTab===3) setTimeout(()=>{initCanvas('unterschriftAN');initCanvas('unterschriftAG');},50);
+}
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function toast(msg){
