@@ -533,10 +533,16 @@ document.getElementById('btnMALogin').onclick = async () => {
   btn.disabled=true; btn.textContent='Wird geprüft …';
 
   try {
-    // Erst anonym anmelden
-    if(!auth.currentUser) await signInAnonymously(auth);
+    // Anonym anmelden (muss in Firebase Console aktiviert sein)
+    if(!auth.currentUser) {
+      try { await signInAnonymously(auth); }
+      catch(authErr) {
+        // Anonymous Auth nicht aktiviert → trotzdem versuchen DB zu lesen
+        console.warn('Anonymous Auth fehlgeschlagen:', authErr.code);
+      }
+    }
 
-    // Daten direkt lesen (nicht auf onValue warten)
+    // Daten lesen
     const snap = await get(ref(db,'personalfragebogen'));
     const alle  = snap.val() || {};
     let gef=null, gefKey=null;
@@ -829,15 +835,26 @@ function sammleFelder(){
     const k=el.dataset.key;
     if(el.type==='radio'){if(el.checked)f[k]=el.value;}
     else if(el.type==='checkbox'){f[k]=el.checked?'ja':'';}
-    else{if(el.value)f[k]=el.value;}
+    else if(el.value){
+      // IBAN: DE voranstellen wenn nicht schon vorhanden
+      if((k==='iban'||k==='vwlIban')&&el.value&&!el.value.toUpperCase().startsWith('DE')){
+        f[k]='DE'+el.value.replace(/\s/g,'');
+      } else {
+        f[k]=el.value;
+      }
+    }
   });
   return f;
 }
 function ladeDaten(felder){
   if(!felder) return;
   document.querySelectorAll('[data-key]').forEach(el=>{
-    const v=felder[el.dataset.key];
+    let v=felder[el.dataset.key];
     if(v===undefined||v===null) return;
+    // IBAN: gespeicherter Wert kann "DE..." enthalten – nur Teil nach DE anzeigen
+    if((el.dataset.key==='iban'||el.dataset.key==='vwlIban')&&v.toUpperCase().startsWith('DE')){
+      v=v.slice(2).trim();
+    }
     if(el.type==='radio'){if(el.value===v)el.checked=true;}
     else if(el.type==='checkbox'){el.checked=v==='ja';}
     else{el.value=v;}
@@ -903,7 +920,7 @@ function tab0(fd){return`
       ${f('personalnummer','Personalnummer (AG)',inp('personalnummer','text','placeholder="(Arbeitgeber)"','ag'))}
     </div>
     <div class="g g2">
-      ${f('iban','IBAN',inp('iban','text','placeholder="DE00 0000 0000 0000 0000 00" inputmode="numeric"'))}
+      ${f('iban','IBAN',`<div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:3px;overflow:hidden;"><span style="padding:10px 10px;background:var(--grau2);font-weight:600;font-size:14px;color:var(--schwarz);border-right:1px solid var(--border);flex-shrink:0;">DE</span><input type="text" data-key="iban" placeholder="00 0000 0000 0000 0000 00" inputmode="numeric" style="border:none;border-radius:0;flex:1;width:auto;" ${feldIstAktiv('iban')?'':'disabled'}></div>`)}
       ${f('bic','BIC',inp('bic','text','placeholder="XXXXDEXX"'))}
     </div>
   </div></div>`;}
@@ -1001,7 +1018,7 @@ function tab3(fd){return`
       ${f('vwlBetrag','VWL – Betrag (€/mtl.)',inp('vwlBetrag','text','inputmode="decimal"'))}
     </div>
     <div class="g g2">
-      ${f('vwlIban','VWL – IBAN',inp('vwlIban','text','placeholder="DE…"'))}
+      ${f('vwlIban','VWL – IBAN',`<div style="display:flex;align-items:center;border:1px solid var(--border);border-radius:3px;overflow:hidden;"><span style="padding:10px 10px;background:var(--grau2);font-weight:600;font-size:14px;color:var(--schwarz);border-right:1px solid var(--border);flex-shrink:0;">DE</span><input type="text" data-key="vwlIban" placeholder="00 0000 0000 0000 0000 00" inputmode="numeric" style="border:none;border-radius:0;flex:1;width:auto;" ${feldIstAktiv('vwlIban')?'':'disabled'}></div>`)}
       ${f('vwlBic','VWL – BIC',inp('vwlBic'))}
     </div>
   </div></div>
@@ -1021,7 +1038,7 @@ function pruefeURLParams(){
     window.zeigeMALogin();
     document.getElementById('maBenutzername').value=decodeURIComponent(b);
     document.getElementById('maPin').value=pin;
-    setTimeout(()=>document.getElementById('btnMALogin').click(),1800);
+    // Kein Auto-Klick – Mitarbeiter tippt selbst auf Anmelden
   }
 }
 setTimeout(pruefeURLParams,500);
