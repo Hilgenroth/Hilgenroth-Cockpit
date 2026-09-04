@@ -11,18 +11,17 @@
   --rot:#c0121a;--schwarz:#1a1a1a;--weiss:#fff;
   --grau1:#f4f4f4;--grau2:#e8e8e8;--grau3:#c0c0c0;--grau4:#6b6b6b;
   --border:#d4d4d4;--ag:#ebebeb;
+  --gruen:#1a7a44;--orange:#b85c00;
 }
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--grau1);color:var(--schwarz);min-height:100vh;font-size:15px;}
 
 /* ── SCREENS ── */
-.screen{display:none;min-height:100vh;}
-.screen.active{display:block;}
 #loadScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px;}
 .spinner{width:32px;height:32px;border:3px solid var(--grau2);border-top-color:var(--rot);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── LOGIN ── */
-#loginScreen{display:flex;align-items:center;justify-content:center;padding:24px;}
+#loginScreen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
 .login-box{background:var(--weiss);border:1px solid var(--border);border-radius:4px;padding:32px 28px;width:100%;max-width:340px;}
 .login-logo{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--grau4);margin-bottom:20px;text-transform:uppercase;}
 .login-logo b{color:var(--rot);}
@@ -34,12 +33,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--grau1);color:var(--
 .lf input:focus{border-color:var(--rot);box-shadow:0 0 0 2px rgba(192,18,26,.1);}
 .login-err{font-size:12px;color:var(--rot);min-height:16px;margin-bottom:8px;}
 .btn-login{width:100%;padding:11px;background:var(--rot);color:var(--weiss);border:none;border-radius:3px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
-.btn-login:active{opacity:.85;}
 .login-switch{margin-top:14px;text-align:center;font-size:12px;color:var(--grau4);}
 .login-switch a{color:var(--rot);text-decoration:none;cursor:pointer;}
 
+/* ── APP ── */
+#app{display:none;flex-direction:column;min-height:100vh;}
+
 /* ── HEADER ── */
-header{background:var(--schwarz);color:var(--weiss);padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+header{background:var(--schwarz);color:var(--weiss);padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-shrink:0;}
 .h-logo{font-size:12px;font-weight:600;letter-spacing:.03em;}
 .h-logo span{color:var(--rot);}
 .h-right{display:flex;gap:8px;align-items:center;}
@@ -48,17 +49,46 @@ header{background:var(--schwarz);color:var(--weiss);padding:0 16px;height:52px;d
 .btn-sm:hover{background:rgba(255,255,255,.1);}
 .btn-sm.rot{background:var(--rot);border-color:var(--rot);}
 
+/* ── ADMIN-NAV (Übersicht / Einzelbogen / Einstellungen) ── */
+.admin-nav{background:var(--weiss);border-bottom:1px solid var(--border);display:flex;padding:0 16px;gap:0;}
+.anav-btn{background:none;border:none;border-bottom:3px solid transparent;padding:12px 16px;font-family:inherit;font-size:13px;font-weight:500;color:var(--grau4);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.anav-btn.active{color:var(--rot);border-bottom-color:var(--rot);}
+.anav-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+
 /* ── MA-TAB-LEISTE ── */
-.ma-bar{background:var(--weiss);border-bottom:2px solid var(--border);overflow-x:auto;white-space:nowrap;display:flex;align-items:stretch;min-height:46px;-webkit-overflow-scrolling:touch;}
-.ma-tab{background:none;border:none;border-bottom:3px solid transparent;padding:0 15px;font-family:inherit;font-size:13px;font-weight:500;color:var(--grau4);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;margin-bottom:-2px;}
+.ma-bar{background:var(--weiss);border-bottom:2px solid var(--border);overflow-x:auto;white-space:nowrap;display:flex;align-items:stretch;min-height:44px;-webkit-overflow-scrolling:touch;}
+.ma-tab{background:none;border:none;border-bottom:3px solid transparent;padding:0 14px;font-family:inherit;font-size:13px;font-weight:500;color:var(--grau4);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;margin-bottom:-2px;}
 .ma-tab.active{color:var(--rot);border-bottom-color:var(--rot);}
-.ma-tab .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .dot-offen{background:var(--rot);}
-.dot-voll{background:#1a7a44;}
+.dot-halb{background:var(--orange);}
+.dot-voll{background:var(--gruen);}
 .btn-neu-ma{margin:0 8px;padding:6px 14px;background:var(--rot);color:var(--weiss);border:none;border-radius:3px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;align-self:center;flex-shrink:0;}
 
 /* ── MAIN ── */
-main{max-width:680px;margin:0 auto;padding:16px 14px 80px;}
+.main-wrap{max-width:720px;margin:0 auto;padding:16px 14px 80px;width:100%;}
+
+/* ── ÜBERSICHT ── */
+.uebersicht-grid{display:grid;gap:10px;}
+.ma-karte{background:var(--weiss);border:1px solid var(--border);border-radius:4px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s;}
+.ma-karte:hover{border-color:var(--rot);}
+.ma-karte .dot-gross{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ma-karte-info{flex:1;min-width:0;}
+.ma-karte-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ma-karte-meta{font-size:11px;color:var(--grau4);margin-top:2px;}
+.ma-karte-status{font-size:11px;font-weight:600;white-space:nowrap;}
+.status-offen{color:var(--rot);}
+.status-halb{color:var(--orange);}
+.status-voll{color:var(--gruen);}
+.ma-karte-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.progress-bar-wrap{width:80px;height:4px;background:var(--grau2);border-radius:2px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:2px;transition:width .3s;}
+
+/* ── ÜBERSICHT STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.stat-box{background:var(--weiss);border:1px solid var(--border);border-radius:4px;padding:14px;text-align:center;}
+.stat-zahl{font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1;}
+.stat-label{font-size:11px;color:var(--grau4);margin-top:4px;}
 
 /* ── FORM-TABS ── */
 .ftabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
@@ -77,12 +107,13 @@ main{max-width:680px;margin:0 auto;padding:16px 14px 80px;}
 .g3{grid-template-columns:1fr 1fr 1fr;}
 .s2{grid-column:span 2;}
 .s3{grid-column:span 3;}
-@media(max-width:500px){.g2,.g3{grid-template-columns:1fr;}.s2,.s3{grid-column:span 1;}}
+@media(max-width:500px){.g2,.g3{grid-template-columns:1fr;}.s2,.s3{grid-column:span 1;}.stats-row{grid-template-columns:1fr 1fr;}}
 
 /* ── FELDER ── */
-.f{display:flex;flex-direction:column;gap:4px;}
-.f label{font-size:11px;font-weight:500;color:var(--grau4);}
+.f{display:flex;flex-direction:column;gap:4px;position:relative;}
+.f label{font-size:11px;font-weight:500;color:var(--grau4);display:flex;align-items:center;gap:5px;}
 .f label .req{color:var(--rot);}
+.f label .lock-icon{font-size:10px;color:var(--grau3);}
 input[type=text],input[type=date],input[type=email],input[type=tel],select,textarea{
   width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:3px;
   font-family:inherit;font-size:14px;color:var(--schwarz);background:var(--weiss);
@@ -90,10 +121,12 @@ input[type=text],input[type=date],input[type=email],input[type=tel],select,texta
 }
 input:focus,select:focus,textarea:focus{border-color:var(--rot);box-shadow:0 0 0 2px rgba(192,18,26,.1);}
 input.ag,select.ag,textarea.ag{background:var(--ag);color:var(--grau4);}
+input:disabled,select:disabled,textarea:disabled{background:var(--grau2)!important;color:var(--grau3)!important;cursor:not-allowed;border-color:var(--grau2)!important;}
+.f.gesperrt label{color:var(--grau3);}
 
 /* ── RADIO / CHECK ── */
 .cg{display:flex;flex-wrap:wrap;gap:10px;padding-top:2px;}
-.ci{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;line-height:1.2;}
+.ci{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;}
 .ci input[type=checkbox],.ci input[type=radio]{width:17px;height:17px;accent-color:var(--rot);cursor:pointer;flex-shrink:0;}
 
 /* ── KINDER-TABELLE ── */
@@ -108,90 +141,135 @@ input.ag,select.ag,textarea.ag{background:var(--ag);color:var(--grau4);}
 .btn-nav{padding:10px 18px;border:none;border-radius:3px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;}
 .btn-back{background:var(--grau2);color:var(--schwarz);}
 .btn-next{background:var(--rot);color:var(--weiss);}
-.btn-gruen{background:#1a7a44;color:var(--weiss);}
+.btn-gruen{background:var(--gruen);color:var(--weiss);}
 
 /* ── HINT ── */
 .hint{background:#fff8f8;border-left:3px solid var(--rot);padding:9px 12px;font-size:12px;color:var(--grau4);margin-bottom:12px;line-height:1.5;}
 
-/* ── LEERE STATE ── */
-.empty{text-align:center;padding:48px 20px;color:var(--grau4);}
-.empty p{font-size:14px;margin-bottom:16px;line-height:1.5;}
+/* ── EINSTELLUNGEN ── */
+.einstell-sec{background:var(--weiss);border:1px solid var(--border);border-radius:4px;margin-bottom:14px;overflow:hidden;}
+.einstell-hd{background:var(--schwarz);color:var(--weiss);padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
+.einstell-hd::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--rot);flex-shrink:0;}
+.einstell-bd{padding:14px;}
+.feld-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--grau2);}
+.feld-toggle-row:last-child{border-bottom:none;}
+.feld-toggle-info{flex:1;}
+.feld-toggle-label{font-size:13px;font-weight:500;}
+.feld-toggle-sub{font-size:11px;color:var(--grau4);margin-top:1px;}
+/* Toggle Switch */
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--grau3);border-radius:22px;cursor:pointer;transition:background .2s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:var(--weiss);border-radius:50%;transition:transform .2s;}
+.toggle input:checked + .toggle-slider{background:var(--gruen);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(18px);}
+.toggle input:disabled + .toggle-slider{opacity:.5;cursor:not-allowed;}
 
 /* ── MODAL ── */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px;}
 .overlay.open{display:flex;}
-.modal{background:var(--weiss);border-radius:4px;width:100%;max-width:380px;padding:24px;}
+.modal{background:var(--weiss);border-radius:4px;width:100%;max-width:400px;padding:24px;max-height:90vh;overflow-y:auto;}
 .modal h3{font-size:16px;font-weight:600;margin-bottom:4px;}
 .modal .msub{font-size:12px;color:var(--grau4);margin-bottom:18px;}
 .mrow{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
-.pin-display{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:500;letter-spacing:.15em;background:var(--grau1);padding:12px 16px;border-radius:3px;text-align:center;color:var(--schwarz);border:1px solid var(--border);margin:12px 0;}
+.pin-display{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:500;letter-spacing:.12em;background:var(--grau1);padding:10px 14px;border-radius:3px;text-align:center;color:var(--schwarz);border:1px solid var(--border);margin:6px 0 12px;}
+.pin-display.small{font-size:14px;letter-spacing:.05em;padding:8px 11px;margin:4px 0 10px;}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:20px;right:14px;background:var(--schwarz);color:var(--weiss);padding:10px 16px;border-radius:3px;font-size:13px;border-left:3px solid var(--rot);opacity:0;transform:translateY(8px);transition:all .25s ease;z-index:400;pointer-events:none;max-width:280px;}
 #toast.show{opacity:1;transform:translateY(0);}
 
-/* ── MA-KARTE (Mitarbeiter-Ansicht) ── */
-.ma-card{background:var(--weiss);border:1px solid var(--border);border-radius:4px;padding:18px;margin-bottom:12px;}
-.ma-card h3{font-size:15px;font-weight:600;margin-bottom:3px;}
-.ma-card .ma-meta{font-size:12px;color:var(--grau4);}
+/* ── MA-App (eigener Bogen) ── */
+#maApp{display:none;flex-direction:column;min-height:100vh;}
 </style>
 </head>
 <body>
 
 <!-- LADEN -->
-<div id="loadScreen">
-  <div class="spinner"></div>
-  <span style="font-size:13px;color:var(--grau4)">Verbindung wird aufgebaut …</span>
-</div>
+<div id="loadScreen"><div class="spinner"></div><span style="font-size:13px;color:var(--grau4)">Wird geladen …</span></div>
 
-<!-- LOGIN (Superadmin: Email + PW | Mitarbeiter: Benutzername + PIN) -->
-<div id="loginScreen" class="screen" style="display:none;">
+<!-- LOGIN -->
+<div id="loginScreen" style="display:none;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;">
   <div class="login-box">
     <div class="login-logo">Rudolf Hilgenroth GmbH &amp; Co. KG <b>|</b> Personal</div>
-
-    <!-- SUPERADMIN-LOGIN -->
     <div id="adminLoginForm">
-      <h2>Anmelden</h2>
-      <p class="sub">Superadmin · E-Mail &amp; Passwort</p>
+      <h2>Anmelden</h2><p class="sub">Superadmin · E-Mail &amp; Passwort</p>
       <div class="lf"><label>E-Mail</label><input type="email" id="adminEmail" placeholder="name@hilgenroth.de" autocomplete="username"></div>
       <div class="lf"><label>Passwort</label><input type="password" id="adminPw" placeholder="Passwort" autocomplete="current-password"></div>
       <div class="login-err" id="adminErr"></div>
       <button class="btn-login" id="btnAdminLogin">Anmelden</button>
-      <div class="login-switch">Neuer Mitarbeiter? <a onclick="zeigeMALogin()">Zum Mitarbeiter-Login</a></div>
+      <div class="login-switch">Mitarbeiter? <a onclick="zeigeMALogin()">Zum Mitarbeiter-Login</a></div>
     </div>
-
-    <!-- MITARBEITER-LOGIN -->
     <div id="maLoginForm" style="display:none;">
-      <h2>Anmelden</h2>
-      <p class="sub">Mitarbeiter · Benutzername &amp; PIN</p>
-      <div class="lf"><label>Benutzername</label><input type="text" id="maBenutzername" placeholder="Benutzername" autocomplete="username" autocapitalize="none"></div>
-      <div class="lf"><label>PIN</label><input type="password" id="maPin" placeholder="4-stelliger PIN" inputmode="numeric" maxlength="6" autocomplete="current-password"></div>
+      <h2>Anmelden</h2><p class="sub">Mitarbeiter · Benutzername &amp; PIN</p>
+      <div class="lf"><label>Benutzername</label><input type="text" id="maBenutzername" placeholder="Benutzername" autocapitalize="none"></div>
+      <div class="lf"><label>PIN</label><input type="password" id="maPin" placeholder="4-stelliger PIN" inputmode="numeric" maxlength="6"></div>
       <div class="login-err" id="maErr"></div>
       <button class="btn-login" id="btnMALogin">Weiter</button>
       <div class="login-switch">Admin? <a onclick="zeigeAdminLogin()">Zum Admin-Login</a></div>
     </div>
   </div>
+  </div>
 </div>
 
-<!-- APP: SUPERADMIN -->
-<div id="adminApp" class="screen" style="display:none;">
+<!-- ADMIN APP -->
+<div id="app" style="display:none;flex-direction:column;min-height:100vh;">
   <header>
-    <div class="h-logo">Hilgenroth <span>|</span> Personalfragebogen</div>
+    <div class="h-logo">Hilgenroth <span>|</span> Personal</div>
     <div class="h-right">
       <span class="h-user" id="adminHeaderUser"></span>
       <button class="btn-sm" onclick="logout()">Abmelden</button>
     </div>
   </header>
-  <div class="ma-bar" id="maTabBar">
-    <button class="btn-neu-ma" onclick="oeffneNeuModal()">+ Neu</button>
+
+  <!-- Admin-Navigation: Übersicht | Bögen | Einstellungen -->
+  <div class="admin-nav">
+    <button class="anav-btn active" id="navUebersicht" onclick="zeigeAdminView('uebersicht')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Übersicht
+    </button>
+    <button class="anav-btn" id="navBoegen" onclick="zeigeAdminView('boegen')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Bögen
+    </button>
+    <button class="anav-btn" id="navEinstellungen" onclick="zeigeAdminView('einstellungen')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Einstellungen
+    </button>
   </div>
-  <main id="adminMain">
-    <div class="empty"><p>Noch keine Mitarbeiter angelegt.<br>Klicke auf <strong>+ Neu</strong>.</p></div>
-  </main>
+
+  <!-- View: Übersicht -->
+  <div id="viewUebersicht" class="main-wrap">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="uebersicht-grid" id="uebersichtGrid"></div>
+  </div>
+
+  <!-- View: Bögen (MA-Tabs + Formular) -->
+  <div id="viewBoegen" style="display:none;">
+    <div class="ma-bar" id="maTabBar">
+      <button class="btn-neu-ma" onclick="oeffneNeuModal()">+ Neu</button>
+    </div>
+    <div class="main-wrap" id="adminMain">
+      <div style="text-align:center;padding:48px 20px;color:var(--grau4)"><p>Noch keine Mitarbeiter angelegt.</p></div>
+    </div>
+  </div>
+
+  <!-- View: Einstellungen -->
+  <div id="viewEinstellungen" style="display:none;" class="main-wrap">
+    <div class="einstell-sec">
+      <div class="einstell-hd">Felder aktivieren / sperren</div>
+      <div class="einstell-bd" id="feldEinstellungen"></div>
+    </div>
+    <div class="einstell-sec">
+      <div class="einstell-hd">Mitarbeiter-Zugänge</div>
+      <div class="einstell-bd" id="maZugaenge"></div>
+    </div>
+  </div>
 </div>
 
-<!-- APP: MITARBEITER -->
-<div id="maApp" class="screen" style="display:none;">
+<!-- MA APP -->
+<div id="maApp" style="display:none;flex-direction:column;min-height:100vh;">
   <header>
     <div class="h-logo">Hilgenroth <span>|</span> Mein Fragebogen</div>
     <div class="h-right">
@@ -199,22 +277,20 @@ input.ag,select.ag,textarea.ag{background:var(--ag);color:var(--grau4);}
       <button class="btn-sm" onclick="logout()">Abmelden</button>
     </div>
   </header>
-  <main id="maMain" style="max-width:680px;margin:0 auto;padding:16px 14px 80px;">
-    <div class="empty"><p>Bitte warten …</p></div>
-  </main>
+  <div class="main-wrap" id="maMain"></div>
 </div>
 
-<!-- MODAL: Neuer Mitarbeiter anlegen -->
+<!-- MODAL: Neuer MA -->
 <div class="overlay" id="neuModal">
   <div class="modal">
     <h3>Neuen Mitarbeiter anlegen</h3>
-    <p class="msub">Name für das Register sowie Zugangsdaten festlegen.</p>
+    <p class="msub">Name und Zugangsdaten festlegen.</p>
     <div class="lf"><label>Vor- und Nachname</label><input type="text" id="neuName" placeholder="Max Mustermann"></div>
     <div class="lf"><label>Benutzername</label><input type="text" id="neuBenutzername" placeholder="mmustermann" autocapitalize="none"></div>
     <div class="lf" style="margin-bottom:0"><label>PIN (4–6 Ziffern)</label>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="text" id="neuPin" placeholder="z.B. 1234" inputmode="numeric" maxlength="6" style="flex:1;">
-        <button class="btn-sm rot" onclick="genPin()" style="white-space:nowrap;padding:10px 12px;">Zufällig</button>
+        <button class="btn-sm rot" onclick="genPin()" style="padding:10px 12px;">Zufällig</button>
       </div>
     </div>
     <div class="login-err" id="neuErr"></div>
@@ -225,25 +301,25 @@ input.ag,select.ag,textarea.ag{background:var(--ag);color:var(--grau4);}
   </div>
 </div>
 
-<!-- MODAL: PIN anzeigen nach Anlegen -->
+<!-- MODAL: PIN / Link anzeigen -->
 <div class="overlay" id="pinModal">
   <div class="modal">
     <h3 id="pinModalName"></h3>
-    <p class="msub">Zugangsdaten für den Mitarbeiter – per E-Mail versenden oder Screenshot machen.</p>
-    <div class="g g2" style="margin-bottom:12px">
-      <div class="f"><label>Benutzername</label><div class="pin-display" id="pinModalBenutzername"></div></div>
-      <div class="f"><label>PIN</label><div class="pin-display" id="pinModalPin"></div></div>
+    <p class="msub">Zugangsdaten für den Mitarbeiter – per E-Mail versenden.</p>
+    <div class="g g2" style="margin-bottom:4px">
+      <div class="f"><label>Benutzername</label><div class="pin-display small" id="pinModalBenutzername"></div></div>
+      <div class="f"><label>PIN</label><div class="pin-display small" id="pinModalPin"></div></div>
     </div>
     <div class="f" style="margin-bottom:12px">
-      <label>Direktlink für den Mitarbeiter</label>
+      <label>Direktlink</label>
       <div style="display:flex;gap:6px;align-items:center;">
         <input type="text" id="pinModalLink" readonly style="font-size:11px;font-family:'IBM Plex Mono',monospace;background:var(--grau1);flex:1;padding:8px 10px;">
         <button class="btn-sm rot" onclick="linkKopieren()" style="padding:9px 12px;flex-shrink:0;">Kopieren</button>
       </div>
     </div>
-    <div class="f" style="margin-bottom:0">
+    <div class="f">
       <label>E-Mail-Vorlage</label>
-      <textarea id="pinModalMailText" readonly rows="6" style="font-size:12px;line-height:1.5;background:var(--grau1);resize:none;"></textarea>
+      <textarea id="pinModalMailText" readonly rows="7" style="font-size:12px;line-height:1.5;background:var(--grau1);resize:none;"></textarea>
     </div>
     <div class="mrow">
       <button class="btn-nav btn-back" onclick="mailOeffnen()">📧 In Mail öffnen</button>
@@ -255,596 +331,678 @@ input.ag,select.ag,textarea.ag{background:var(--ag);color:var(--grau4);}
 <div id="toast"></div>
 
 <script type="module">
-import { initializeApp }          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue, set, push, get }
-                                   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { initializeApp }   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, onValue, set, push, get, remove }
+                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import { getAuth, signInWithEmailAndPassword, signInAnonymously,
          onAuthStateChanged, signOut }
-                                   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
-// ── CONFIG ──────────────────────────────────────────────────────────────────
 const cfg = {
-  apiKey:            "AIzaSyBnFgq0jZsdSMMaWUNzR0rMk6ezLEr9quE",
-  authDomain:        "preisliste-einkauf.firebaseapp.com",
-  databaseURL:       "https://preisliste-einkauf-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "preisliste-einkauf",
-  storageBucket:     "preisliste-einkauf.firebasestorage.app",
-  messagingSenderId: "572552313968",
-  appId:             "1:572552313968:web:5969b0ac5252a9bb0d08b5"
+  apiKey:"AIzaSyBnFgq0jZsdSMMaWUNzR0rMk6ezLEr9quE",
+  authDomain:"preisliste-einkauf.firebaseapp.com",
+  databaseURL:"https://preisliste-einkauf-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"preisliste-einkauf",
+  storageBucket:"preisliste-einkauf.firebasestorage.app",
+  messagingSenderId:"572552313968",
+  appId:"1:572552313968:web:5969b0ac5252a9bb0d08b5"
 };
 const fbApp = initializeApp(cfg);
 const db    = getDatabase(fbApp);
 const auth  = getAuth(fbApp);
 
 // ── STATE ────────────────────────────────────────────────────────────────────
-let rolle        = null;   // 'admin' | 'ma'
-let currentMAKey = null;   // aktiver Mitarbeiter-Key (admin-Ansicht)
-let currentTab   = 0;      // Formular-Tab 0–3
-let alleMA       = {};     // { key: { name, benutzername, pinHash, felder, … } }
-let eigenerMAKey = null;   // für Mitarbeiter-Login
+let rolle        = null;
+let currentMAKey = null;
+let currentTab   = 0;
+let adminView    = 'uebersicht';
+let alleMA       = {};
+let feldConfig   = {};   // { key: { aktiv: true/false } }
+let eigenerMAKey = null;
 
-// ── AUTH-INIT ────────────────────────────────────────────────────────────────
+// ── ALLE FELDER (für Einstellungen) ─────────────────────────────────────────
+const ALLE_FELDER = [
+  // Persönlich (AN)
+  {key:'familienname',  label:'Familienname',         tab:'Persönlich',    ag:false},
+  {key:'vorname',       label:'Vorname',               tab:'Persönlich',    ag:false},
+  {key:'geburtsname',   label:'Geburtsname',           tab:'Persönlich',    ag:false},
+  {key:'geburtsdatum',  label:'Geburtsdatum',          tab:'Persönlich',    ag:false},
+  {key:'strasse',       label:'Straße & Hausnummer',   tab:'Persönlich',    ag:false},
+  {key:'plzort',        label:'PLZ, Ort',              tab:'Persönlich',    ag:false},
+  {key:'svnummer',      label:'SV-Versicherungsnummer',tab:'Persönlich',    ag:false},
+  {key:'geschlecht',    label:'Geschlecht',            tab:'Persönlich',    ag:false},
+  {key:'geburtsort',    label:'Geburtsort',            tab:'Persönlich',    ag:false},
+  {key:'geburtsland',   label:'Geburtsland',           tab:'Persönlich',    ag:false},
+  {key:'staatsan',      label:'Staatsangehörigkeit',   tab:'Persönlich',    ag:false},
+  {key:'sozialkasse',   label:'AN-Nr. Sozialkasse Bau',tab:'Persönlich',    ag:false},
+  {key:'schwerbehindert',label:'Schwerbehindert',      tab:'Persönlich',    ag:false},
+  {key:'iban',          label:'IBAN',                  tab:'Persönlich',    ag:false},
+  {key:'bic',           label:'BIC',                   tab:'Persönlich',    ag:false},
+  // Persönlich (AG)
+  {key:'personalnummer',label:'Personalnummer',        tab:'Persönlich',    ag:true},
+  // Beschäftigung (AN)
+  {key:'eintrittsdatum',label:'Eintrittsdatum',        tab:'Beschäftigung', ag:false},
+  {key:'betrieb',       label:'Betrieb',               tab:'Beschäftigung', ag:false},
+  {key:'berufsbezeichnung',label:'Berufsbezeichnung',  tab:'Beschäftigung', ag:false},
+  {key:'taetigkeit',    label:'Ausgeübte Tätigkeit',   tab:'Beschäftigung', ag:false},
+  {key:'artbesch',      label:'Art der Beschäftigung', tab:'Beschäftigung', ag:false},
+  {key:'probezeit',     label:'Probezeit',             tab:'Beschäftigung', ag:false},
+  {key:'weiterebesch',  label:'Weitere Beschäftigungen',tab:'Beschäftigung',ag:false},
+  {key:'geringfuegig',  label:'Geringfügige Beschäftigung',tab:'Beschäftigung',ag:false},
+  {key:'arbeitszeit',   label:'Wöchentliche Arbeitszeit',tab:'Beschäftigung',ag:false},
+  {key:'vertragsform',  label:'Vertragsform',          tab:'Beschäftigung', ag:false},
+  {key:'befristungBis', label:'Befristung bis',        tab:'Beschäftigung', ag:false},
+  {key:'baugewerbeSeit',label:'Im Baugewerbe seit',    tab:'Beschäftigung', ag:false},
+  {key:'schulabschluss',label:'Schulabschluss',        tab:'Beschäftigung', ag:false},
+  {key:'berufsausbildung',label:'Berufsausbildung',    tab:'Beschäftigung', ag:false},
+  // Beschäftigung (AG)
+  {key:'kostenstelle',  label:'Kostenstelle',          tab:'Beschäftigung', ag:true},
+  {key:'abtNummer',     label:'Abt.-Nummer',           tab:'Beschäftigung', ag:true},
+  {key:'urlaubstage',   label:'Urlaubstage/Jahr',      tab:'Beschäftigung', ag:true},
+  // Steuer & SV (AN)
+  {key:'steuerIdNr',    label:'Steuer-ID',             tab:'Steuer & SV',   ag:false},
+  {key:'steuerklasse',  label:'Steuerklasse',          tab:'Steuer & SV',   ag:false},
+  {key:'kinderfreibetraege',label:'Kinderfreibeträge', tab:'Steuer & SV',   ag:false},
+  {key:'konfession',    label:'Konfession',            tab:'Steuer & SV',   ag:false},
+  {key:'krankenkasse',  label:'Gesetzl. Krankenkasse', tab:'Steuer & SV',   ag:false},
+  {key:'vorbeschVon',   label:'Vorbeschäftigung von',  tab:'Steuer & SV',   ag:false},
+  {key:'vorbeschBis',   label:'Vorbeschäftigung bis',  tab:'Steuer & SV',   ag:false},
+  {key:'vorbeschArt',   label:'Art der Vorbeschäftigung',tab:'Steuer & SV', ag:false},
+  // Steuer (AG)
+  {key:'deuvStatus',    label:'DEÜV-Status',           tab:'Steuer & SV',   ag:true},
+  {key:'uvTarif',       label:'UV-Gefahrentarif',      tab:'Steuer & SV',   ag:true},
+  // Entlohnung (AG)
+  {key:'lohn1bez',      label:'Lohn-Bezeichnung',      tab:'Entlohnung',    ag:true},
+  {key:'lohn1betrag',   label:'Lohn-Betrag (€/Monat)', tab:'Entlohnung',    ag:true},
+  {key:'stundenlohn',   label:'Stundenlohn (€)',        tab:'Entlohnung',    ag:true},
+  {key:'stundenlohnAb', label:'Stundenlohn gültig ab', tab:'Entlohnung',    ag:true},
+  {key:'personengruppe',label:'Personengruppe',        tab:'Entlohnung',    ag:true},
+  // VWL (AN)
+  {key:'vwlEmpfang',    label:'VWL – Empfang durch',   tab:'Entlohnung',    ag:false},
+  {key:'vwlBetrag',     label:'VWL – Betrag',          tab:'Entlohnung',    ag:false},
+  {key:'vwlIban',       label:'VWL – IBAN',            tab:'Entlohnung',    ag:false},
+  {key:'vwlBic',        label:'VWL – BIC',             tab:'Entlohnung',    ag:false},
+  {key:'datumAN',       label:'Datum Arbeitnehmer',    tab:'Entlohnung',    ag:false},
+  {key:'datumAG',       label:'Datum Arbeitgeber',     tab:'Entlohnung',    ag:true},
+];
+
+// Fortschritt berechnen
+function berechneProgress(felder) {
+  const anFelder = ALLE_FELDER.filter(f => !f.ag && feldIstAktiv(f.key));
+  if (!anFelder.length) return 0;
+  const ausgefuellt = anFelder.filter(f => felder && felder[f.key] && felder[f.key] !== '').length;
+  return Math.round((ausgefuellt / anFelder.length) * 100);
+}
+
+function feldIstAktiv(key) {
+  if (!feldConfig[key]) return true; // default: aktiv
+  return feldConfig[key].aktiv !== false;
+}
+
+function statusVonProgress(pct) {
+  if (pct === 0) return {klasse:'offen', text:'Nicht begonnen'};
+  if (pct < 90)  return {klasse:'halb',  text:`${pct}% ausgefüllt`};
+  return             {klasse:'voll',  text:'Vollständig'};
+}
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
-  hide('loadScreen');
+  document.getElementById('loadScreen').style.display = 'none';
   if (!user) { zeigeLoginScreen(); return; }
 
-  // Admin-Session?
+  // Feld-Config laden
+  onValue(ref(db, 'pf_feldconfig'), snap => {
+    feldConfig = snap.val() || {};
+  });
+  // MA-Daten laden
+  onValue(ref(db, 'personalfragebogen'), snap => {
+    alleMA = snap.val() || {};
+    if (rolle === 'admin') {
+      renderUebersicht();
+      renderMATabs();
+      renderEinstellungen();
+    }
+    if (rolle === 'ma' && eigenerMAKey) renderMAFormular(eigenerMAKey);
+  });
+
   const sess = sessionStorage.getItem('pf_rolle');
-  if (sess === 'admin') {
-    await ladeAlleMA();
-    zeigeAdminApp(sessionStorage.getItem('pf_adminEmail') || '');
-    return;
-  }
-  // Mitarbeiter-Session?
-  if (sess === 'ma') {
-    eigenerMAKey = sessionStorage.getItem('pf_maKey');
-    await ladeAlleMA();
-    zeigeMAApp(sessionStorage.getItem('pf_maBenutzername') || '');
-    return;
-  }
+  if (sess === 'admin') { rolle='admin'; zeigeAdminApp(sessionStorage.getItem('pf_email')||''); return; }
+  if (sess === 'ma')    { rolle='ma'; eigenerMAKey=sessionStorage.getItem('pf_maKey'); zeigeMAApp(sessionStorage.getItem('pf_maBenutzername')||''); return; }
   zeigeLoginScreen();
 });
 
-// ── FIREBASE: MA laden ────────────────────────────────────────────────────────
-async function ladeAlleMA() {
-  return new Promise(resolve => {
-    onValue(ref(db, 'personalfragebogen'), snap => {
-      alleMA = snap.val() || {};
-      if (rolle === 'admin') renderMATabs();
-      if (rolle === 'ma' && eigenerMAKey) renderMAFormular(eigenerMAKey);
-      resolve();
-    });
-  });
-}
-
 // ── SCREENS ───────────────────────────────────────────────────────────────────
-function hide(id)  { document.getElementById(id).style.display = 'none'; }
-function show(id, d='block') { document.getElementById(id).style.display = d; }
-
 function zeigeLoginScreen() {
-  hide('loadScreen'); hide('adminApp'); hide('maApp');
-  show('loginScreen', 'flex');
+  document.getElementById('loadScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('maApp').style.display='none';
 }
-
 function zeigeAdminApp(email) {
-  rolle = 'admin';
-  hide('loginScreen'); hide('maApp');
-  document.getElementById('adminHeaderUser').textContent = email;
-  show('adminApp');
-  renderMATabs();
+  rolle='admin';
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('maApp').style.display='none';
+  document.getElementById('adminHeaderUser').textContent=email;
+  renderUebersicht(); renderMATabs(); renderEinstellungen();
 }
-
 function zeigeMAApp(benutzername) {
-  rolle = 'ma';
-  hide('loginScreen'); hide('adminApp');
-  document.getElementById('maHeaderUser').textContent = benutzername;
-  show('maApp');
+  rolle='ma';
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('maApp').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('maHeaderUser').textContent=benutzername;
   if (eigenerMAKey) renderMAFormular(eigenerMAKey);
 }
 
 // ── LOGIN-TOGGLE ──────────────────────────────────────────────────────────────
-window.zeigeMALogin    = () => { hide('adminLoginForm'); show('maLoginForm'); };
-window.zeigeAdminLogin = () => { hide('maLoginForm'); show('adminLoginForm'); };
+window.zeigeMALogin    = ()=>{ document.getElementById('adminLoginForm').style.display='none'; document.getElementById('maLoginForm').style.display=''; };
+window.zeigeAdminLogin = ()=>{ document.getElementById('maLoginForm').style.display='none'; document.getElementById('adminLoginForm').style.display=''; };
 
-// ── ADMIN-LOGIN ───────────────────────────────────────────────────────────────
+// ── ADMIN LOGIN ───────────────────────────────────────────────────────────────
 document.getElementById('btnAdminLogin').onclick = async () => {
-  const email = document.getElementById('adminEmail').value.trim();
-  const pw    = document.getElementById('adminPw').value;
-  const err   = document.getElementById('adminErr');
-  err.textContent = '';
-  if (!email || !pw) { err.textContent = 'E-Mail und Passwort eingeben.'; return; }
+  const email=document.getElementById('adminEmail').value.trim();
+  const pw=document.getElementById('adminPw').value;
+  const err=document.getElementById('adminErr'); err.textContent='';
+  if(!email||!pw){err.textContent='E-Mail und Passwort eingeben.';return;}
   try {
-    await signInWithEmailAndPassword(auth, email, pw);
-    sessionStorage.setItem('pf_rolle', 'admin');
-    sessionStorage.setItem('pf_adminEmail', email);
+    await signInWithEmailAndPassword(auth,email,pw);
+    sessionStorage.setItem('pf_rolle','admin');
+    sessionStorage.setItem('pf_email',email);
     zeigeAdminApp(email);
-  } catch(e) {
-    err.textContent = 'Login fehlgeschlagen. E-Mail oder Passwort falsch.';
-  }
+  } catch(e){err.textContent='Login fehlgeschlagen. E-Mail oder Passwort falsch.';}
 };
-document.getElementById('adminPw').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('btnAdminLogin').click(); });
+document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btnAdminLogin').click();});
 
-// ── MITARBEITER-LOGIN ─────────────────────────────────────────────────────────
+// ── MA LOGIN ──────────────────────────────────────────────────────────────────
 document.getElementById('btnMALogin').onclick = async () => {
-  const bname = document.getElementById('maBenutzername').value.trim().toLowerCase();
-  const pin   = document.getElementById('maPin').value.trim();
-  const err   = document.getElementById('maErr');
-  err.textContent = '';
-  if (!bname || !pin) { err.textContent = 'Benutzername und PIN eingeben.'; return; }
-
-  // Anonym anmelden für Lesezugriff
-  try { await signInAnonymously(auth); } catch(e) {}
-
-  // MA-Datensatz finden
-  const snap = await get(ref(db, 'personalfragebogen'));
-  const alle = snap.val() || {};
-  let gefunden = null, gefKey = null;
-  for (const [k, v] of Object.entries(alle)) {
-    if (v && v.benutzername && v.benutzername.toLowerCase() === bname && v.pin === pin) {
-      gefunden = v; gefKey = k; break;
-    }
+  const bname=document.getElementById('maBenutzername').value.trim().toLowerCase();
+  const pin=document.getElementById('maPin').value.trim();
+  const err=document.getElementById('maErr'); err.textContent='';
+  if(!bname||!pin){err.textContent='Benutzername und PIN eingeben.';return;}
+  try{await signInAnonymously(auth);}catch(e){}
+  const snap=await get(ref(db,'personalfragebogen'));
+  const alle=snap.val()||{};
+  let gef=null,gefKey=null;
+  for(const[k,v] of Object.entries(alle)){
+    if(v&&v.benutzername&&v.benutzername.toLowerCase()===bname&&v.pin===pin){gef=v;gefKey=k;break;}
   }
-  if (!gefunden) { err.textContent = 'Benutzername oder PIN falsch.'; return; }
-
-  eigenerMAKey = gefKey;
-  sessionStorage.setItem('pf_rolle', 'ma');
-  sessionStorage.setItem('pf_maKey', gefKey);
-  sessionStorage.setItem('pf_maBenutzername', gefunden.benutzername);
-  alleMA = alle;
-  zeigeMAApp(gefunden.benutzername);
+  if(!gef){err.textContent='Benutzername oder PIN falsch.';return;}
+  eigenerMAKey=gefKey;
+  alleMA=alle;
+  sessionStorage.setItem('pf_rolle','ma');
+  sessionStorage.setItem('pf_maKey',gefKey);
+  sessionStorage.setItem('pf_maBenutzername',gef.benutzername);
+  zeigeMAApp(gef.benutzername);
 };
-document.getElementById('maPin').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('btnMALogin').click(); });
+document.getElementById('maPin').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btnMALogin').click();});
 
-// ── LOGOUT ────────────────────────────────────────────────────────────────────
-window.logout = async () => {
-  sessionStorage.clear();
-  rolle = null; eigenerMAKey = null; currentMAKey = null;
-  try { await signOut(auth); } catch(e){}
-  zeigeLoginScreen();
+window.logout=async()=>{sessionStorage.clear();rolle=null;eigenerMAKey=null;currentMAKey=null;try{await signOut(auth);}catch(e){}zeigeLoginScreen();};
+
+// ── ADMIN VIEW WECHSEL ────────────────────────────────────────────────────────
+window.zeigeAdminView = (v) => {
+  adminView = v;
+  ['uebersicht','boegen','einstellungen'].forEach(id=>{
+    document.getElementById('view'+id.charAt(0).toUpperCase()+id.slice(1)).style.display = id===v?'':'none';
+    document.getElementById('nav'+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle('active',id===v);
+  });
+  if(v==='uebersicht') renderUebersicht();
+  if(v==='einstellungen') renderEinstellungen();
 };
 
-// ── MODAL-HELFER ──────────────────────────────────────────────────────────────
-window.schliesseModal = id => document.getElementById(id).classList.remove('open');
-window.oeffneNeuModal = () => {
-  document.getElementById('neuName').value = '';
-  document.getElementById('neuBenutzername').value = '';
-  document.getElementById('neuPin').value = '';
-  document.getElementById('neuErr').textContent = '';
+// ── ÜBERSICHT ─────────────────────────────────────────────────────────────────
+function renderUebersicht() {
+  const keys=Object.keys(alleMA);
+  const progresse=keys.map(k=>berechneProgress(alleMA[k].felder||{}));
+  const offen=progresse.filter(p=>p===0).length;
+  const halb=progresse.filter(p=>p>0&&p<90).length;
+  const fertig=progresse.filter(p=>p>=90).length;
+
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-box"><div class="stat-zahl">${keys.length}</div><div class="stat-label">Gesamt</div></div>
+    <div class="stat-box"><div class="stat-zahl" style="color:var(--orange)">${halb}</div><div class="stat-label">In Bearbeitung</div></div>
+    <div class="stat-box"><div class="stat-zahl" style="color:var(--gruen)">${fertig}</div><div class="stat-label">Vollständig</div></div>`;
+
+  if(!keys.length){
+    document.getElementById('uebersichtGrid').innerHTML='<div style="text-align:center;padding:32px;color:var(--grau4);font-size:13px;">Noch keine Mitarbeiter angelegt.<br>Unter <strong>Bögen → + Neu</strong> anlegen.</div>';
+    return;
+  }
+
+  document.getElementById('uebersichtGrid').innerHTML=keys.map((k,i)=>{
+    const ma=alleMA[k];
+    const pct=progresse[i];
+    const st=statusVonProgress(pct);
+    const erstellt=ma.erstellt?new Date(ma.erstellt).toLocaleDateString('de-DE'):'–';
+    const geaendert=ma.geaendert?new Date(ma.geaendert).toLocaleDateString('de-DE'):'–';
+    const farbe=st.klasse==='offen'?'var(--rot)':st.klasse==='halb'?'var(--orange)':'var(--gruen)';
+    return `<div class="ma-karte" onclick="oeffneBogen('${k}')">
+      <div class="dot-gross status-dot" style="background:${farbe}"></div>
+      <div class="ma-karte-info">
+        <div class="ma-karte-name">${ma.name||'Unbenannt'}</div>
+        <div class="ma-karte-meta">Angelegt: ${erstellt} · Zuletzt: ${geaendert}</div>
+      </div>
+      <div class="ma-karte-right">
+        <div class="ma-karte-status status-${st.klasse}">${st.text}</div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${farbe}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.oeffneBogen = (key) => {
+  currentMAKey=key; currentTab=0;
+  zeigeAdminView('boegen');
+  renderMATabs();
+};
+
+// ── MA-TABS (Bögen-View) ──────────────────────────────────────────────────────
+function renderMATabs() {
+  const bar=document.getElementById('maTabBar');
+  const neuBtn=bar.querySelector('.btn-neu-ma');
+  bar.innerHTML=''; bar.appendChild(neuBtn);
+  const keys=Object.keys(alleMA);
+  if(!keys.length){
+    document.getElementById('adminMain').innerHTML='<div style="text-align:center;padding:40px;color:var(--grau4)"><p>Noch keine Mitarbeiter.</p></div>';
+    return;
+  }
+  if(!currentMAKey||!alleMA[currentMAKey]) currentMAKey=keys[0];
+  keys.forEach(k=>{
+    const ma=alleMA[k];
+    const pct=berechneProgress(ma.felder||{});
+    const st=statusVonProgress(pct);
+    const btn=document.createElement('button');
+    btn.className='ma-tab'+(k===currentMAKey?' active':'');
+    btn.innerHTML=`<span class="status-dot dot-${st.klasse}"></span>${ma.name||'Unbenannt'}`;
+    btn.onclick=()=>{currentMAKey=k;currentTab=0;renderMATabs();};
+    bar.appendChild(btn);
+  });
+  renderAdminFormular(currentMAKey);
+}
+
+// ── EINSTELLUNGEN ─────────────────────────────────────────────────────────────
+function renderEinstellungen() {
+  // Felder nach Tab gruppieren
+  const tabs={};
+  ALLE_FELDER.forEach(f=>{
+    if(!tabs[f.tab]) tabs[f.tab]=[];
+    tabs[f.tab].push(f);
+  });
+
+  let html='';
+  for(const [tabName, felder] of Object.entries(tabs)){
+    html+=`<div style="margin-bottom:6px;font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--grau4);text-transform:uppercase;padding:4px 0">${tabName}</div>`;
+    felder.forEach(f=>{
+      const aktiv=feldIstAktiv(f.key);
+      html+=`<div class="feld-toggle-row">
+        <div class="feld-toggle-info">
+          <div class="feld-toggle-label">${f.label}${f.ag?' <span style="font-size:10px;color:var(--grau3)">(AG)</span>':''}</div>
+          <div class="feld-toggle-sub">${aktiv?'Sichtbar für Mitarbeiter':'Ausgeblendet'}</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${aktiv?'checked':''} onchange="toggleFeld('${f.key}',this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>`;
+    });
+  }
+  document.getElementById('feldEinstellungen').innerHTML=html;
+
+  // Mitarbeiter-Zugänge
+  const keys=Object.keys(alleMA);
+  if(!keys.length){
+    document.getElementById('maZugaenge').innerHTML='<p style="font-size:13px;color:var(--grau4)">Noch keine Mitarbeiter angelegt.</p>';
+    return;
+  }
+  document.getElementById('maZugaenge').innerHTML=keys.map(k=>{
+    const ma=alleMA[k];
+    const pct=berechneProgress(ma.felder||{});
+    const st=statusVonProgress(pct);
+    return `<div class="feld-toggle-row" style="gap:12px">
+      <div class="feld-toggle-info">
+        <div class="feld-toggle-label">${ma.name||'Unbenannt'}</div>
+        <div class="feld-toggle-sub">
+          Benutzer: <strong>${ma.benutzername||'–'}</strong> &nbsp;·&nbsp; PIN: <strong>${ma.pin||'–'}</strong> &nbsp;·&nbsp;
+          <span class="status-${st.klasse}">${st.text}</span>
+        </div>
+      </div>
+      <button class="btn-sm" onclick="zeigePin('${k}')" style="font-size:11px;padding:5px 10px;color:var(--schwarz);border-color:var(--border);">Link</button>
+    </div>`;
+  }).join('');
+}
+
+window.toggleFeld = async (key, aktiv) => {
+  await set(ref(db,`pf_feldconfig/${key}`),{aktiv});
+  // Label sofort updaten
+  renderEinstellungen();
+  toast(aktiv ? `✓ "${key}" aktiviert` : `"${key}" gesperrt`);
+};
+
+window.zeigePin = (key) => {
+  const ma=alleMA[key]; if(!ma) return;
+  const baseUrl=window.location.href.split('?')[0].split('#')[0];
+  const link=`${baseUrl}?b=${encodeURIComponent(ma.benutzername)}&p=${ma.pin}`;
+  befuellePinModal(ma.name,ma.benutzername,ma.pin,link);
+  document.getElementById('pinModal').classList.add('open');
+};
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+window.schliesseModal=id=>document.getElementById(id).classList.remove('open');
+window.oeffneNeuModal=()=>{
+  ['neuName','neuBenutzername','neuPin'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('neuErr').textContent='';
   document.getElementById('neuModal').classList.add('open');
   setTimeout(()=>document.getElementById('neuName').focus(),120);
 };
-window.genPin = () => {
-  document.getElementById('neuPin').value = String(Math.floor(1000 + Math.random()*9000));
-};
+window.genPin=()=>document.getElementById('neuPin').value=String(Math.floor(1000+Math.random()*9000));
 
-// ── MITARBEITER ANLEGEN ───────────────────────────────────────────────────────
-window.maAnlegen = async () => {
-  const name  = document.getElementById('neuName').value.trim();
-  const bname = document.getElementById('neuBenutzername').value.trim().toLowerCase();
-  const pin   = document.getElementById('neuPin').value.trim();
-  const err   = document.getElementById('neuErr');
-  err.textContent = '';
-  if (!name)  { err.textContent = 'Name eingeben.'; return; }
-  if (!bname) { err.textContent = 'Benutzername eingeben.'; return; }
-  if (!/^\d{4,6}$/.test(pin)) { err.textContent = 'PIN muss 4–6 Ziffern sein.'; return; }
-
-  // Benutzername-Duplikat prüfen
-  const duplikat = Object.values(alleMA).some(v => v && v.benutzername && v.benutzername.toLowerCase() === bname);
-  if (duplikat) { err.textContent = 'Benutzername bereits vergeben.'; return; }
-
-  const key = push(ref(db, 'personalfragebogen')).key;
-  await set(ref(db, 'personalfragebogen/' + key), {
-    name, benutzername: bname, pin,
-    status: 'offen',
-    erstellt: new Date().toISOString(),
-    felder: {}
-  });
-
+window.maAnlegen=async()=>{
+  const name=document.getElementById('neuName').value.trim();
+  const bname=document.getElementById('neuBenutzername').value.trim().toLowerCase();
+  const pin=document.getElementById('neuPin').value.trim();
+  const err=document.getElementById('neuErr'); err.textContent='';
+  if(!name){err.textContent='Name eingeben.';return;}
+  if(!bname){err.textContent='Benutzername eingeben.';return;}
+  if(!/^\d{4,6}$/.test(pin)){err.textContent='PIN muss 4–6 Ziffern sein.';return;}
+  const dup=Object.values(alleMA).some(v=>v&&v.benutzername&&v.benutzername.toLowerCase()===bname);
+  if(dup){err.textContent='Benutzername bereits vergeben.';return;}
+  const key=push(ref(db,'personalfragebogen')).key;
+  await set(ref(db,'personalfragebogen/'+key),{name,benutzername:bname,pin,status:'offen',erstellt:new Date().toISOString(),felder:{}});
   schliesseModal('neuModal');
-  currentMAKey = key; currentTab = 0;
-
-  // Link + Mail generieren
-  const baseUrl = window.location.href.split('?')[0].split('#')[0];
-  const link = `${baseUrl}?b=${encodeURIComponent(bname)}&p=${pin}`;
-  const mailText =
-`Hallo ${name},
-
-für Ihre Einstellung bei der Rudolf Hilgenroth GmbH & Co. KG benötigen wir noch einige Angaben von Ihnen. Bitte füllen Sie Ihren persönlichen Fragebogen über folgenden Link aus:
-
-${link}
-
-Ihre Zugangsdaten:
-  Benutzername: ${bname}
-  PIN:          ${pin}
-
-Bitte füllen Sie den Bogen vollständig aus und klicken Sie am Ende auf „Speichern".
-
-Bei Fragen wenden Sie sich gerne an uns.
-
-Mit freundlichen Grüßen
-Rudolf Hilgenroth GmbH & Co. KG`;
-
-  // PIN-Modal befüllen
-  document.getElementById('pinModalName').textContent = name;
-  document.getElementById('pinModalBenutzername').textContent = bname;
-  document.getElementById('pinModalPin').textContent = pin;
-  document.getElementById('pinModalLink').value = link;
-  document.getElementById('pinModalMailText').value = mailText;
-  window._pinModalMail = { name, mailText };
+  currentMAKey=key; currentTab=0;
+  const baseUrl=window.location.href.split('?')[0].split('#')[0];
+  const link=`${baseUrl}?b=${encodeURIComponent(bname)}&p=${pin}`;
+  befuellePinModal(name,bname,pin,link);
   document.getElementById('pinModal').classList.add('open');
   toast('✓ Mitarbeiter angelegt');
 };
 
-// ── ADMIN: MA-TABS ────────────────────────────────────────────────────────────
-function renderMATabs() {
-  const bar  = document.getElementById('maTabBar');
-  const neuBtn = bar.querySelector('.btn-neu-ma');
-  bar.innerHTML = '';
-  bar.appendChild(neuBtn);
-
-  const keys = Object.keys(alleMA);
-  if (!keys.length) {
-    document.getElementById('adminMain').innerHTML =
-      '<div class="empty"><p>Noch keine Mitarbeiter angelegt.<br>Klicke auf <strong>+ Neu</strong>.</p></div>';
-    return;
-  }
-  if (!currentMAKey || !alleMA[currentMAKey]) currentMAKey = keys[0];
-
-  keys.forEach(k => {
-    const ma  = alleMA[k];
-    const voll = istVollstaendig(ma.felder || {});
-    const btn  = document.createElement('button');
-    btn.className = 'ma-tab' + (k === currentMAKey ? ' active' : '');
-    btn.innerHTML = `<span class="status-dot ${voll?'dot-voll':'dot-offen'}"></span>${ma.name||'Unbenannt'}`;
-    btn.onclick = () => { currentMAKey = k; currentTab = 0; renderMATabs(); };
-    bar.appendChild(btn);
-  });
-
-  renderAdminFormular(currentMAKey);
+function befuellePinModal(name,bname,pin,link){
+  const mailText=`Hallo ${name},\n\nfür Ihre Einstellung bei der Rudolf Hilgenroth GmbH & Co. KG bitten wir Sie, den folgenden Personalfragebogen auszufüllen:\n\n${link}\n\nIhre Zugangsdaten:\nBenutzername: ${bname}\nPIN: ${pin}\n\nBitte füllen Sie alle Felder vollständig aus und klicken Sie am Ende auf „Speichern".\n\nBei Fragen wenden Sie sich gerne an uns.\n\nMit freundlichen Grüßen\nRudolf Hilgenroth GmbH & Co. KG`;
+  document.getElementById('pinModalName').textContent=name;
+  document.getElementById('pinModalBenutzername').textContent=bname;
+  document.getElementById('pinModalPin').textContent=pin;
+  document.getElementById('pinModalLink').value=link;
+  document.getElementById('pinModalMailText').value=mailText;
+  window._pinModalMail={name,mailText};
 }
 
-function istVollstaendig(f) {
-  return !!(f.familienname && f.vorname && f.geburtsdatum && f.steuerIdNr);
+window.linkKopieren=()=>{
+  const val=document.getElementById('pinModalLink').value;
+  navigator.clipboard.writeText(val).then(()=>toast('✓ Link kopiert')).catch(()=>{document.getElementById('pinModalLink').select();document.execCommand('copy');toast('✓ Link kopiert');});
+};
+window.mailOeffnen=()=>{
+  const{name,mailText}=window._pinModalMail||{};
+  window.open(`mailto:?subject=${encodeURIComponent('Personalfragebogen – '+(name||'Bitte ausfüllen'))}&body=${encodeURIComponent(mailText||'')}`, '_self');
+};
+
+// ── FORMULAR ──────────────────────────────────────────────────────────────────
+const FTABS=['Persönlich','Beschäftigung','Steuer & SV','Entlohnung'];
+
+function formHtml(felder) {
+  const tabNav=`<div class="ftabs">${FTABS.map((t,i)=>`<button class="ftab${i===currentTab?' active':''}" onclick="wechselTab(${i})">${t}</button>`).join('')}</div>`;
+  let body='';
+  if(currentTab===0) body=tab0(felder);
+  else if(currentTab===1) body=tab1(felder);
+  else if(currentTab===2) body=tab2(felder);
+  else if(currentTab===3) body=tab3(felder);
+  const weiter=currentTab<3
+    ?`<button class="btn-nav btn-next" onclick="speichern();wechselTab(${currentTab+1})">Speichern &amp; Weiter →</button>`
+    :`<div style="display:flex;gap:8px;"><button class="btn-nav btn-back" onclick="drucken()">Drucken</button><button class="btn-nav btn-gruen" onclick="speichern()">Speichern ✓</button></div>`;
+  const zurueck=currentTab>0?`<button class="btn-nav btn-back" onclick="wechselTab(${currentTab-1})">← Zurück</button>`:'<span></span>';
+  return tabNav+body+`<div class="fnav">${zurueck}<span class="pi">0${currentTab+1} / 04</span>${weiter}</div>`;
 }
 
-// ── FORMULAR (gemeinsam für Admin + MA) ───────────────────────────────────────
-const FTABS = ['Persönlich','Beschäftigung','Steuer & SV','Entlohnung'];
-
-function formHtml(felder, readonly) {
-  const tabNav = `<div class="ftabs">${FTABS.map((t,i)=>
-    `<button class="ftab${i===currentTab?' active':''}" onclick="wechselTab(${i})">${t}</button>`
-  ).join('')}</div>`;
-
-  let body = '';
-  if      (currentTab===0) body = tab0(felder, readonly);
-  else if (currentTab===1) body = tab1(felder, readonly);
-  else if (currentTab===2) body = tab2(felder, readonly);
-  else if (currentTab===3) body = tab3(felder, readonly);
-
-  const weiter = currentTab < 3
-    ? `<button class="btn-nav btn-next" onclick="speichern();wechselTab(${currentTab+1})">Speichern &amp; Weiter →</button>`
-    : `<div style="display:flex;gap:8px;"><button class="btn-nav btn-back" onclick="drucken()">Drucken</button><button class="btn-nav btn-gruen" onclick="speichern()">Speichern ✓</button></div>`;
-  const zurueck = currentTab > 0
-    ? `<button class="btn-nav btn-back" onclick="wechselTab(${currentTab-1})">← Zurück</button>`
-    : '<span></span>';
-
-  const nav = `<div class="fnav">${zurueck}<span class="pi">0${currentTab+1} / 04</span>${weiter}</div>`;
-  return tabNav + body + nav;
+function renderAdminFormular(key){
+  const ma=alleMA[key]||{};
+  document.getElementById('adminMain').innerHTML=formHtml(ma.felder||{});
+  ladeDaten(ma.felder||{});
 }
-
-function renderAdminFormular(key) {
-  const ma = alleMA[key] || {};
-  document.getElementById('adminMain').innerHTML = formHtml(ma.felder || {}, false);
-  ladeDaten(ma.felder || {});
-}
-
-function renderMAFormular(key) {
-  const ma = alleMA[key] || {};
-  // MA darf nur eigene Felder ausfüllen, AG-Felder readonly
-  document.getElementById('maMain').innerHTML = formHtml(ma.felder || {}, false);
-  ladeDaten(ma.felder || {});
+function renderMAFormular(key){
+  const ma=alleMA[key]||{};
+  document.getElementById('maMain').innerHTML=formHtml(ma.felder||{});
+  ladeDaten(ma.felder||{});
   // AG-Felder sperren
-  document.querySelectorAll('#maMain .ag').forEach(el => el.setAttribute('disabled',''));
+  document.querySelectorAll('#maMain .ag').forEach(el=>el.setAttribute('disabled',''));
+  // Gesperrte Felder sperren
+  ALLE_FELDER.forEach(f=>{
+    if(!feldIstAktiv(f.key)){
+      const container=rolle==='admin'?'adminMain':'maMain';
+      document.querySelectorAll(`#${container} [data-key="${f.key}"]`).forEach(el=>{
+        el.setAttribute('disabled','');
+        el.closest('.f')?.classList.add('gesperrt');
+      });
+    }
+  });
 }
 
-window.wechselTab = n => {
-  currentTab = n;
-  if (rolle === 'admin') renderAdminFormular(currentMAKey);
+window.wechselTab=n=>{
+  currentTab=n;
+  if(rolle==='admin') renderAdminFormular(currentMAKey);
   else renderMAFormular(eigenerMAKey);
 };
 
 // ── SPEICHERN ─────────────────────────────────────────────────────────────────
-window.speichern = async () => {
-  const key = rolle === 'admin' ? currentMAKey : eigenerMAKey;
-  if (!key) return;
-  const felder = sammleFelder();
-  // MA-Namen aktualisieren wenn Vor- und Nachname vorhanden
-  if (felder.vorname || felder.familienname) {
-    const name = [felder.vorname, felder.familienname].filter(Boolean).join(' ');
-    await set(ref(db, 'personalfragebogen/' + key + '/name'), name);
+window.speichern=async()=>{
+  const key=rolle==='admin'?currentMAKey:eigenerMAKey; if(!key) return;
+  const felder=sammleFelder();
+  if(felder.vorname||felder.familienname){
+    const name=[felder.vorname,felder.familienname].filter(Boolean).join(' ');
+    await set(ref(db,'personalfragebogen/'+key+'/name'),name);
   }
-  await set(ref(db, 'personalfragebogen/' + key + '/felder'), felder);
-  await set(ref(db, 'personalfragebogen/' + key + '/geaendert'), new Date().toISOString());
+  await set(ref(db,'personalfragebogen/'+key+'/felder'),felder);
+  await set(ref(db,'personalfragebogen/'+key+'/geaendert'),new Date().toISOString());
   toast('✓ Gespeichert');
 };
 
-function sammleFelder() {
-  const f = {};
-  const container = rolle === 'admin' ? 'adminMain' : 'maMain';
-  document.querySelectorAll('#'+container+' [data-key]').forEach(el => {
-    const k = el.dataset.key;
-    if (el.type === 'radio')     { if (el.checked) f[k] = el.value; }
-    else if (el.type === 'checkbox') { f[k] = el.checked ? 'ja' : ''; }
-    else { if (el.value) f[k] = el.value; }
+function sammleFelder(){
+  const f={};
+  const cont=rolle==='admin'?'adminMain':'maMain';
+  document.querySelectorAll('#'+cont+' [data-key]').forEach(el=>{
+    const k=el.dataset.key;
+    if(el.type==='radio'){if(el.checked)f[k]=el.value;}
+    else if(el.type==='checkbox'){f[k]=el.checked?'ja':'';}
+    else{if(el.value)f[k]=el.value;}
   });
   return f;
 }
-
-function ladeDaten(felder) {
-  if (!felder) return;
-  document.querySelectorAll('[data-key]').forEach(el => {
-    const v = felder[el.dataset.key];
-    if (v === undefined || v === null) return;
-    if (el.type === 'radio')     { if (el.value === v) el.checked = true; }
-    else if (el.type === 'checkbox') { el.checked = v === 'ja'; }
-    else { el.value = v; }
+function ladeDaten(felder){
+  if(!felder) return;
+  document.querySelectorAll('[data-key]').forEach(el=>{
+    const v=felder[el.dataset.key];
+    if(v===undefined||v===null) return;
+    if(el.type==='radio'){if(el.value===v)el.checked=true;}
+    else if(el.type==='checkbox'){el.checked=v==='ja';}
+    else{el.value=v;}
   });
-  // Kinder-Zeilen befüllen
-  for (let i = 0; i < 5; i++) {
-    ['kindNn','kindVn','kindGeb'].forEach(pfx => {
-      const el = document.querySelector(`[data-key="${pfx}${i}"]`);
-      if (el && felder[pfx+i]) el.value = felder[pfx+i];
+  for(let i=0;i<5;i++){
+    ['kindNn','kindVn','kindGeb'].forEach(p=>{
+      const el=document.querySelector(`[data-key="${p}${i}"]`);
+      if(el&&felder[p+i]) el.value=felder[p+i];
     });
   }
 }
+window.drucken=()=>window.print();
 
-window.drucken = () => window.print();
-
-// ── TAB 0: PERSÖNLICH ─────────────────────────────────────────────────────────
-function tab0(f, ro) {
-  return `
-  <div class="sec"><div class="sec-hd">Persönliche Angaben</div><div class="sec-bd">
-    <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Familienname <span class="req">*</span></label><input type="text" data-key="familienname" placeholder="Nachname"></div>
-      <div class="f"><label>Vorname <span class="req">*</span></label><input type="text" data-key="vorname" placeholder="Vorname"></div>
-    </div>
-    <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Geburtsname</label><input type="text" data-key="geburtsname" placeholder="falls abweichend"></div>
-      <div class="f"><label>Geburtsdatum <span class="req">*</span></label><input type="date" data-key="geburtsdatum"></div>
-    </div>
-    <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Straße &amp; Hausnummer</label><input type="text" data-key="strasse" placeholder="Musterstraße 1"></div>
-      <div class="f"><label>PLZ, Ort</label><input type="text" data-key="plzort" placeholder="59846 Sundern"></div>
-    </div>
-    <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>SV-Versicherungsnummer</label><input type="text" data-key="svnummer" placeholder="12 123456 A 123"></div>
-      <div class="f"><label>Geschlecht</label><div class="cg">
-        <label class="ci"><input type="radio" name="geschlecht" value="männlich" data-key="geschlecht"> männlich</label>
-        <label class="ci"><input type="radio" name="geschlecht" value="weiblich" data-key="geschlecht"> weiblich</label>
-        <label class="ci"><input type="radio" name="geschlecht" value="divers" data-key="geschlecht"> divers</label>
-      </div></div>
-    </div>
-    <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Geburtsort</label><input type="text" data-key="geburtsort"></div>
-      <div class="f"><label>Geburtsland</label><input type="text" data-key="geburtsland" placeholder="Deutschland"></div>
-    </div>
-    <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Staatsangehörigkeit</label><input type="text" data-key="staatsan" placeholder="Deutsch"></div>
-      <div class="f"><label>AN-Nr. Sozialkasse Bau</label><input type="text" data-key="sozialkasse"></div>
-    </div>
-    <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Schwerbehindert</label><div class="cg">
-        <label class="ci"><input type="radio" name="schwerbehindert" value="ja" data-key="schwerbehindert"> ja</label>
-        <label class="ci"><input type="radio" name="schwerbehindert" value="nein" data-key="schwerbehindert"> nein</label>
-      </div></div>
-      <div class="f"><label>Personalnummer (AG)</label><input type="text" data-key="personalnummer" class="ag" placeholder="(Arbeitgeber)"></div>
-    </div>
-    <div class="g g2">
-      <div class="f"><label>IBAN</label><input type="text" data-key="iban" placeholder="DE00 0000 0000 0000 0000 00" inputmode="numeric"></div>
-      <div class="f"><label>BIC</label><input type="text" data-key="bic" placeholder="XXXXDEXX"></div>
-    </div>
-  </div></div>`;
+// ── FELD-HELPER: Feld rendern mit gesperrt-Prüfung ───────────────────────────
+function f(key,label,inputHtml,req=false){
+  const aktiv=feldIstAktiv(key);
+  const gesperrt=!aktiv?' gesperrt':'';
+  const lockIcon=!aktiv?' <span class="lock-icon">🔒</span>':'';
+  return `<div class="f${gesperrt}"><label>${label}${req?` <span class="req">*</span>`:''}${lockIcon}</label>${inputHtml}</div>`;
+}
+function inp(key,type='text',opts='',cls=''){
+  const aktiv=feldIstAktiv(key);
+  return `<input type="${type}" data-key="${key}" ${cls?`class="${cls}"`:''} ${opts} ${!aktiv?'disabled':''}>`;
+}
+function sel(key,options,cls=''){
+  const aktiv=feldIstAktiv(key);
+  return `<select data-key="${key}" ${cls?`class="${cls}"`:''}  ${!aktiv?'disabled':''}>${options}</select>`;
+}
+function radio(name,key,values){
+  const aktiv=feldIstAktiv(key);
+  return `<div class="cg">${values.map(v=>`<label class="ci"><input type="radio" name="${name}" value="${v}" data-key="${key}" ${!aktiv?'disabled':''}> ${v}</label>`).join('')}</div>`;
 }
 
-// ── TAB 1: BESCHÄFTIGUNG ──────────────────────────────────────────────────────
-function tab1(f, ro) {
-  return `
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function tab0(fd){return`
+  <div class="sec"><div class="sec-hd">Persönliche Angaben</div><div class="sec-bd">
+    <div class="g g2" style="margin-bottom:11px">
+      ${f('familienname','Familienname',inp('familienname','text','placeholder="Nachname"'),true)}
+      ${f('vorname','Vorname',inp('vorname','text','placeholder="Vorname"'),true)}
+    </div>
+    <div class="g g2" style="margin-bottom:11px">
+      ${f('geburtsname','Geburtsname',inp('geburtsname','text','placeholder="falls abweichend"'))}
+      ${f('geburtsdatum','Geburtsdatum',inp('geburtsdatum','date'),true)}
+    </div>
+    <div class="g g2" style="margin-bottom:11px">
+      ${f('strasse','Straße & Hausnummer',inp('strasse','text','placeholder="Musterstraße 1"'))}
+      ${f('plzort','PLZ, Ort',inp('plzort','text','placeholder="59846 Sundern"'))}
+    </div>
+    <div class="g g2" style="margin-bottom:11px">
+      ${f('svnummer','SV-Versicherungsnummer',inp('svnummer','text','placeholder="12 123456 A 123"'))}
+      ${f('geschlecht','Geschlecht',radio('geschlecht','geschlecht',['männlich','weiblich','divers']))}
+    </div>
+    <div class="g g2" style="margin-bottom:11px">
+      ${f('geburtsort','Geburtsort',inp('geburtsort'))}
+      ${f('geburtsland','Geburtsland',inp('geburtsland','text','placeholder="Deutschland"'))}
+    </div>
+    <div class="g g2" style="margin-bottom:11px">
+      ${f('staatsan','Staatsangehörigkeit',inp('staatsan','text','placeholder="Deutsch"'))}
+      ${f('sozialkasse','AN-Nr. Sozialkasse Bau',inp('sozialkasse'))}
+    </div>
+    <div class="g g2" style="margin-bottom:11px">
+      ${f('schwerbehindert','Schwerbehindert',radio('schwerbehindert','schwerbehindert',['ja','nein']))}
+      ${f('personalnummer','Personalnummer (AG)',inp('personalnummer','text','placeholder="(Arbeitgeber)"','ag'))}
+    </div>
+    <div class="g g2">
+      ${f('iban','IBAN',inp('iban','text','placeholder="DE00 0000 0000 0000 0000 00" inputmode="numeric"'))}
+      ${f('bic','BIC',inp('bic','text','placeholder="XXXXDEXX"'))}
+    </div>
+  </div></div>`;}
+
+function tab1(fd){return`
   <div class="sec"><div class="sec-hd">Beschäftigung</div><div class="sec-bd">
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Eintrittsdatum</label><input type="date" data-key="eintrittsdatum"></div>
-      <div class="f"><label>Betrieb</label><select data-key="betrieb">
-        <option value="">— wählen —</option>
-        <option>RH Sundern (Straßen-, Tief- und Kanalbau)</option>
-        <option>RH Hellefeld (Straßenbaustoffe &amp; Transportbeton)</option>
-      </select></div>
+      ${f('eintrittsdatum','Eintrittsdatum',inp('eintrittsdatum','date'))}
+      ${f('betrieb','Betrieb',sel('betrieb',`<option value="">— wählen —</option><option>RH Sundern (Straßen-, Tief- und Kanalbau)</option><option>RH Hellefeld (Straßenbaustoffe &amp; Transportbeton)</option>`))}
     </div>
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Berufsbezeichnung</label><input type="text" data-key="berufsbezeichnung" placeholder="z.B. Baufacharbeiter"></div>
-      <div class="f"><label>Ausgeübte Tätigkeit</label><input type="text" data-key="taetigkeit" placeholder="z.B. Straßenbau"></div>
+      ${f('berufsbezeichnung','Berufsbezeichnung',inp('berufsbezeichnung','text','placeholder="z.B. Baufacharbeiter"'))}
+      ${f('taetigkeit','Ausgeübte Tätigkeit',inp('taetigkeit','text','placeholder="z.B. Straßenbau"'))}
     </div>
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Art der Beschäftigung</label><div class="cg">
-        <label class="ci"><input type="radio" name="artbesch" value="Hauptbeschäftigung" data-key="artbesch"> Hauptbeschäftigung</label>
-        <label class="ci"><input type="radio" name="artbesch" value="Nebenbeschäftigung" data-key="artbesch"> Nebenbeschäftigung</label>
-      </div></div>
-      <div class="f"><label>Probezeit</label><div class="cg">
-        <label class="ci"><input type="radio" name="probezeit" value="ja" data-key="probezeit"> ja</label>
-        <label class="ci"><input type="radio" name="probezeit" value="nein" data-key="probezeit"> nein</label>
-      </div></div>
+      ${f('artbesch','Art der Beschäftigung',radio('artbesch','artbesch',['Hauptbeschäftigung','Nebenbeschäftigung']))}
+      ${f('probezeit','Probezeit',radio('probezeit','probezeit',['ja','nein']))}
     </div>
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Weitere Beschäftigungen?</label><div class="cg">
-        <label class="ci"><input type="radio" name="weiterebesch" value="ja" data-key="weiterebesch"> ja</label>
-        <label class="ci"><input type="radio" name="weiterebesch" value="nein" data-key="weiterebesch"> nein</label>
-      </div></div>
-      <div class="f"><label>Geringfügige Beschäftigung?</label><div class="cg">
-        <label class="ci"><input type="radio" name="geringfuegig" value="ja" data-key="geringfuegig"> ja</label>
-        <label class="ci"><input type="radio" name="geringfuegig" value="nein" data-key="geringfuegig"> nein</label>
-      </div></div>
+      ${f('weiterebesch','Weitere Beschäftigungen?',radio('weiterebesch','weiterebesch',['ja','nein']))}
+      ${f('geringfuegig','Geringfügige Beschäftigung?',radio('geringfuegig','geringfuegig',['ja','nein']))}
     </div>
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Arbeitszeit</label><div class="cg">
-        <label class="ci"><input type="radio" name="arbeitszeit" value="Vollzeit" data-key="arbeitszeit"> Vollzeit</label>
-        <label class="ci"><input type="radio" name="arbeitszeit" value="Teilzeit" data-key="arbeitszeit"> Teilzeit</label>
-      </div></div>
-      <div class="f"><label>Vertragsform</label><select data-key="vertragsform">
-        <option value="">— wählen —</option>
-        <option>1 – Unbefristet Vollzeit</option>
-        <option>2 – Unbefristet Teilzeit</option>
-        <option>3 – Befristet Vollzeit</option>
-        <option>4 – Befristet Teilzeit</option>
-      </select></div>
+      ${f('arbeitszeit','Wöchentliche Arbeitszeit',radio('arbeitszeit','arbeitszeit',['Vollzeit','Teilzeit']))}
+      ${f('vertragsform','Vertragsform',sel('vertragsform',`<option value="">— wählen —</option><option>1 – Unbefristet Vollzeit</option><option>2 – Unbefristet Teilzeit</option><option>3 – Befristet Vollzeit</option><option>4 – Befristet Teilzeit</option>`))}
     </div>
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Befristung bis</label><input type="date" data-key="befristungBis"></div>
-      <div class="f"><label>Im Baugewerbe seit</label><input type="date" data-key="baugewerbeSeit"></div>
+      ${f('befristungBis','Befristung bis',inp('befristungBis','date'))}
+      ${f('baugewerbeSeit','Im Baugewerbe seit',inp('baugewerbeSeit','date'))}
     </div>
   </div></div>
   <div class="sec"><div class="sec-hd">Bildungsabschlüsse</div><div class="sec-bd">
     <div class="g g2">
-      <div class="f"><label>Schulabschluss</label><select data-key="schulabschluss">
-        <option value="">— wählen —</option>
-        <option>Ohne Schulabschluss</option>
-        <option>Haupt-/Volksschulabschluss</option>
-        <option>Mittlere Reife</option>
-        <option>Abitur / Fachabitur</option>
-      </select></div>
-      <div class="f"><label>Berufsausbildung</label><select data-key="berufsausbildung">
-        <option value="">— wählen —</option>
-        <option>Ohne Berufsabschluss</option>
-        <option>Anerkannte Berufsausbildung</option>
-        <option>Meister / Techniker</option>
-        <option>Bachelor</option>
-        <option>Diplom / Master / Staatsexamen</option>
-        <option>Promotion</option>
-      </select></div>
+      ${f('schulabschluss','Schulabschluss',sel('schulabschluss',`<option value="">— wählen —</option><option>Ohne Schulabschluss</option><option>Haupt-/Volksschulabschluss</option><option>Mittlere Reife</option><option>Abitur / Fachabitur</option>`))}
+      ${f('berufsausbildung','Berufsausbildung',sel('berufsausbildung',`<option value="">— wählen —</option><option>Ohne Berufsabschluss</option><option>Anerkannte Berufsausbildung</option><option>Meister / Techniker</option><option>Bachelor</option><option>Diplom / Master</option><option>Promotion</option>`))}
     </div>
   </div></div>
   <div class="sec"><div class="sec-hd">Kostenstelle &amp; Urlaubsanspruch (AG)</div><div class="sec-bd">
     <div class="g g3">
-      <div class="f"><label>Kostenstelle</label><input type="text" data-key="kostenstelle" class="ag"></div>
-      <div class="f"><label>Abt.-Nummer</label><input type="text" data-key="abtNummer" class="ag"></div>
-      <div class="f"><label>Urlaubstage / Jahr</label><input type="text" data-key="urlaubstage" class="ag"></div>
+      ${f('kostenstelle','Kostenstelle',inp('kostenstelle','text','','ag'))}
+      ${f('abtNummer','Abt.-Nummer',inp('abtNummer','text','','ag'))}
+      ${f('urlaubstage','Urlaubstage / Jahr',inp('urlaubstage','text','','ag'))}
     </div>
-  </div></div>`;
-}
+  </div></div>`;}
 
-// ── TAB 2: STEUER & SV ────────────────────────────────────────────────────────
-function tab2(f, ro) {
-  let kinderRows = '';
-  for (let i=0;i<5;i++) kinderRows += `<tr>
-    <td><input type="text" data-key="kindNn${i}" placeholder="Nachname"></td>
-    <td><input type="text" data-key="kindVn${i}" placeholder="Vorname"></td>
-    <td><input type="date" data-key="kindGeb${i}"></td></tr>`;
-  return `
+function tab2(fd){
+  let kinderRows='';
+  for(let i=0;i<5;i++) kinderRows+=`<tr><td><input type="text" data-key="kindNn${i}" placeholder="Nachname"></td><td><input type="text" data-key="kindVn${i}" placeholder="Vorname"></td><td><input type="date" data-key="kindGeb${i}"></td></tr>`;
+  return`
   <div class="sec"><div class="sec-hd">Steuer</div><div class="sec-bd">
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f s2"><label>Steuer-Identifikationsnummer <span class="req">*</span></label><input type="text" data-key="steuerIdNr" placeholder="11-stellige Steuer-ID" inputmode="numeric"></div>
+      <div class="s2">${f('steuerIdNr','Steuer-Identifikationsnummer',inp('steuerIdNr','text','placeholder="11-stellige Steuer-ID" inputmode="numeric"'),true)}</div>
     </div>
     <div class="g g3">
-      <div class="f"><label>Steuerklasse</label><select data-key="steuerklasse">
-        <option value="">—</option><option>I</option><option>II</option><option>III</option><option>IV</option><option>V</option><option>VI</option>
-      </select></div>
-      <div class="f"><label>Kinderfreibeträge</label><input type="text" data-key="kinderfreibetraege" placeholder="z.B. 0,5" inputmode="decimal"></div>
-      <div class="f"><label>Konfession</label><select data-key="konfession">
-        <option value="">keine</option>
-        <option>ev (evangelisch)</option><option>rk (röm.-kath.)</option><option>Sonstige</option>
-      </select></div>
+      ${f('steuerklasse','Steuerklasse',sel('steuerklasse',`<option value="">—</option><option>I</option><option>II</option><option>III</option><option>IV</option><option>V</option><option>VI</option>`))}
+      ${f('kinderfreibetraege','Kinderfreibeträge',inp('kinderfreibetraege','text','placeholder="z.B. 0,5"'))}
+      ${f('konfession','Konfession',sel('konfession',`<option value="">keine</option><option>ev (evangelisch)</option><option>rk (röm.-kath.)</option><option>Sonstige</option>`))}
     </div>
   </div></div>
   <div class="sec"><div class="sec-hd">Sozialversicherung</div><div class="sec-bd">
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f s2"><label>Gesetzliche Krankenkasse</label><input type="text" data-key="krankenkasse" placeholder="z.B. AOK Nordwest"></div>
+      <div class="s2">${f('krankenkasse','Gesetzliche Krankenkasse',inp('krankenkasse','text','placeholder="z.B. AOK Nordwest"'))}</div>
     </div>
     <div class="g g2">
-      <div class="f"><label>DEÜV-Status (AG)</label><input type="text" data-key="deuvStatus" class="ag"></div>
-      <div class="f"><label>UV-Gefahrentarif (AG)</label><input type="text" data-key="uvTarif" class="ag"></div>
+      ${f('deuvStatus','DEÜV-Status (AG)',inp('deuvStatus','text','','ag'))}
+      ${f('uvTarif','UV-Gefahrentarif (AG)',inp('uvTarif','text','','ag'))}
     </div>
   </div></div>
   <div class="sec"><div class="sec-hd">Kinder (Elterneigenschaft nachweisbar)</div><div class="sec-bd">
-    <table class="ktab"><thead><tr><th>Name</th><th>Vorname</th><th>Geburtsdatum</th></tr></thead>
-    <tbody>${kinderRows}</tbody></table>
+    <table class="ktab"><thead><tr><th>Name</th><th>Vorname</th><th>Geburtsdatum</th></tr></thead><tbody>${kinderRows}</tbody></table>
   </div></div>
   <div class="sec"><div class="sec-hd">Vorbeschäftigung (lfd. Kalenderjahr)</div><div class="sec-bd">
     <div class="g g3">
-      <div class="f"><label>von</label><input type="date" data-key="vorbeschVon"></div>
-      <div class="f"><label>bis</label><input type="date" data-key="vorbeschBis"></div>
-      <div class="f"><label>Art der Beschäftigung</label><input type="text" data-key="vorbeschArt" placeholder="z.B. Angestellt"></div>
+      ${f('vorbeschVon','von',inp('vorbeschVon','date'))}
+      ${f('vorbeschBis','bis',inp('vorbeschBis','date'))}
+      ${f('vorbeschArt','Art der Beschäftigung',inp('vorbeschArt','text','placeholder="z.B. Angestellt"'))}
     </div>
-  </div></div>`;
-}
+  </div></div>`;}
 
-// ── TAB 3: ENTLOHNUNG ─────────────────────────────────────────────────────────
-function tab3(f, ro) {
-  return `
+function tab3(fd){return`
   <div class="sec"><div class="sec-hd">Entlohnung (AG)</div><div class="sec-bd">
     <div class="g g3" style="margin-bottom:11px">
-      <div class="f s2"><label>Bezeichnung</label><input type="text" data-key="lohn1bez" class="ag"></div>
-      <div class="f"><label>Betrag (€ / Monat)</label><input type="text" data-key="lohn1betrag" class="ag" inputmode="decimal"></div>
+      <div class="s2">${f('lohn1bez','Bezeichnung',inp('lohn1bez','text','','ag'))}</div>
+      ${f('lohn1betrag','Betrag (€/Monat)',inp('lohn1betrag','text','inputmode="decimal"','ag'))}
     </div>
     <div class="g g3">
-      <div class="f"><label>Stundenlohn (€)</label><input type="text" data-key="stundenlohn" class="ag" inputmode="decimal"></div>
-      <div class="f"><label>Gültig ab</label><input type="date" data-key="stundenlohnAb" class="ag"></div>
-      <div class="f"><label>Personengruppe</label><input type="text" data-key="personengruppe" class="ag"></div>
+      ${f('stundenlohn','Stundenlohn (€)',inp('stundenlohn','text','inputmode="decimal"','ag'))}
+      ${f('stundenlohnAb','Gültig ab',inp('stundenlohnAb','date','','ag'))}
+      ${f('personengruppe','Personengruppe',inp('personengruppe','text','','ag'))}
     </div>
   </div></div>
   <div class="sec"><div class="sec-hd">VWL (nur wenn Vertrag vorliegt)</div><div class="sec-bd">
     <div class="g g2" style="margin-bottom:11px">
-      <div class="f"><label>Empfang VWL durch</label><input type="text" data-key="vwlEmpfang" placeholder="Institut / Anbieter"></div>
-      <div class="f"><label>Betrag (€ / mtl.)</label><input type="text" data-key="vwlBetrag" inputmode="decimal"></div>
+      ${f('vwlEmpfang','VWL – Empfang durch',inp('vwlEmpfang','text','placeholder="Institut / Anbieter"'))}
+      ${f('vwlBetrag','VWL – Betrag (€/mtl.)',inp('vwlBetrag','text','inputmode="decimal"'))}
     </div>
     <div class="g g2">
-      <div class="f"><label>IBAN (VWL)</label><input type="text" data-key="vwlIban" placeholder="DE…" inputmode="numeric"></div>
-      <div class="f"><label>BIC (VWL)</label><input type="text" data-key="vwlBic"></div>
+      ${f('vwlIban','VWL – IBAN',inp('vwlIban','text','placeholder="DE…"'))}
+      ${f('vwlBic','VWL – BIC',inp('vwlBic'))}
     </div>
   </div></div>
   <div class="sec"><div class="sec-hd">Abschluss</div><div class="sec-bd">
     <div class="hint">Alle Angaben vollständig? Bitte Formular drucken – Unterschriften werden handschriftlich geleistet und bei WWP eingereicht.</div>
     <div class="g g2">
-      <div class="f"><label>Datum Arbeitnehmer</label><input type="date" data-key="datumAN"></div>
-      <div class="f"><label>Datum Arbeitgeber (AG)</label><input type="date" data-key="datumAG" class="ag"></div>
+      ${f('datumAN','Datum Arbeitnehmer',inp('datumAN','date'))}
+      ${f('datumAG','Datum Arbeitgeber (AG)',inp('datumAG','date','','ag'))}
     </div>
-  </div></div>`;
-}
+  </div></div>`;}
 
-// ── LINK KOPIEREN ─────────────────────────────────────────────────────────────
-window.linkKopieren = () => {
-  const val = document.getElementById('pinModalLink').value;
-  navigator.clipboard.writeText(val).then(() => toast('✓ Link kopiert'))
-    .catch(() => { document.getElementById('pinModalLink').select(); document.execCommand('copy'); toast('✓ Link kopiert'); });
-};
-
-// ── MAIL ÖFFNEN ───────────────────────────────────────────────────────────────
-window.mailOeffnen = () => {
-  const { name, mailText } = window._pinModalMail || {};
-  const subject = encodeURIComponent(`Personalfragebogen – ${name || 'Bitte ausfüllen'}`);
-  const body    = encodeURIComponent(mailText || '');
-  window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
-};
-
-// ── URL-AUTO-LOGIN (Mitarbeiter klickt Link) ──────────────────────────────────
-function pruefeURLParams() {
-  const params = new URLSearchParams(window.location.search);
-  const b = params.get('b');
-  const p = params.get('p');
-  if (b && p) {
-    // Mitarbeiter-Login vorausfüllen und direkt absenden
+// ── URL-AUTO-LOGIN ────────────────────────────────────────────────────────────
+function pruefeURLParams(){
+  const p=new URLSearchParams(window.location.search);
+  const b=p.get('b'),pin=p.get('p');
+  if(b&&pin){
     window.zeigeMALogin();
-    document.getElementById('maBenutzername').value = decodeURIComponent(b);
-    document.getElementById('maPin').value = p;
-    // Kurz warten bis Firebase ready, dann automatisch einloggen
-    setTimeout(() => document.getElementById('btnMALogin').click(), 1800);
+    document.getElementById('maBenutzername').value=decodeURIComponent(b);
+    document.getElementById('maPin').value=pin;
+    setTimeout(()=>document.getElementById('btnMALogin').click(),1800);
   }
 }
-// Nach Auth-Init aufrufen
-setTimeout(pruefeURLParams, 500);
+setTimeout(pruefeURLParams,500);
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
 }
 </script>
 </body>
