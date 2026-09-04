@@ -446,29 +446,35 @@ function statusVonProgress(pct) {
 }
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────
+let authInitDone = false;
 onAuthStateChanged(auth, async user => {
-  document.getElementById('loadScreen').style.display = 'none';
-  if (!user) { zeigeLoginScreen(); return; }
-
-  // Feld-Config laden
-  onValue(ref(db, 'pf_feldconfig'), snap => {
-    feldConfig = snap.val() || {};
-  });
-  // MA-Daten laden
-  onValue(ref(db, 'personalfragebogen'), snap => {
-    alleMA = snap.val() || {};
-    if (rolle === 'admin') {
-      renderUebersicht();
-      renderMATabs();
-      renderEinstellungen();
-    }
-    if (rolle === 'ma' && eigenerMAKey) renderMAFormular(eigenerMAKey);
-  });
-
+  // Beim MA-Login läuft signInAnonymously manuell – onAuthStateChanged danach ignorieren
+  // wenn Session schon gesetzt wurde
   const sess = sessionStorage.getItem('pf_rolle');
-  if (sess === 'admin') { rolle='admin'; zeigeAdminApp(sessionStorage.getItem('pf_email')||''); return; }
-  if (sess === 'ma')    { rolle='ma'; eigenerMAKey=sessionStorage.getItem('pf_maKey'); zeigeMAApp(sessionStorage.getItem('pf_maBenutzername')||''); return; }
-  zeigeLoginScreen();
+
+  if (!authInitDone) {
+    authInitDone = true;
+    document.getElementById('loadScreen').style.display = 'none';
+
+    if (!user) { zeigeLoginScreen(); return; }
+
+    // Feld-Config + MA-Daten dauerhaft hören
+    onValue(ref(db, 'pf_feldconfig'), snap => {
+      feldConfig = snap.val() || {};
+    });
+    onValue(ref(db, 'personalfragebogen'), snap => {
+      alleMA = snap.val() || {};
+      if (rolle === 'admin') {
+        renderUebersicht(); renderMATabs(); renderEinstellungen();
+      }
+      if (rolle === 'ma' && eigenerMAKey) renderMAFormular(eigenerMAKey);
+    });
+
+    if (sess === 'admin') { rolle='admin'; zeigeAdminApp(sessionStorage.getItem('pf_email')||''); return; }
+    if (sess === 'ma')    { rolle='ma'; eigenerMAKey=sessionStorage.getItem('pf_maKey'); zeigeMAApp(sessionStorage.getItem('pf_maBenutzername')||''); return; }
+    zeigeLoginScreen();
+  }
+  // Folge-Aufrufe (z.B. nach signInAnonymously im MA-Login): ignorieren wenn Session läuft
 });
 
 // ── SCREENS ───────────────────────────────────────────────────────────────────
@@ -518,22 +524,44 @@ document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='En
 document.getElementById('btnMALogin').onclick = async () => {
   const bname=document.getElementById('maBenutzername').value.trim().toLowerCase();
   const pin=document.getElementById('maPin').value.trim();
-  const err=document.getElementById('maErr'); err.textContent='';
+  const err=document.getElementById('maErr');
+  const btn=document.getElementById('btnMALogin');
+  err.textContent='';
   if(!bname||!pin){err.textContent='Benutzername und PIN eingeben.';return;}
-  try{await signInAnonymously(auth);}catch(e){}
-  const snap=await get(ref(db,'personalfragebogen'));
-  const alle=snap.val()||{};
-  let gef=null,gefKey=null;
-  for(const[k,v] of Object.entries(alle)){
-    if(v&&v.benutzername&&v.benutzername.toLowerCase()===bname&&v.pin===pin){gef=v;gefKey=k;break;}
+
+  // Ladestate
+  btn.disabled=true; btn.textContent='Wird geprüft …';
+
+  try {
+    // Erst anonym anmelden
+    if(!auth.currentUser) await signInAnonymously(auth);
+
+    // Daten direkt lesen (nicht auf onValue warten)
+    const snap = await get(ref(db,'personalfragebogen'));
+    const alle  = snap.val() || {};
+    let gef=null, gefKey=null;
+    for(const [k,v] of Object.entries(alle)){
+      if(v && v.benutzername && v.benutzername.toLowerCase()===bname && v.pin===pin){
+        gef=v; gefKey=k; break;
+      }
+    }
+    if(!gef){
+      err.textContent='Benutzername oder PIN falsch.';
+      btn.disabled=false; btn.textContent='Weiter';
+      return;
+    }
+    eigenerMAKey=gefKey;
+    alleMA=alle;
+    // Session setzen VOR zeigeMAApp damit onAuthStateChanged nichts überschreibt
+    sessionStorage.setItem('pf_rolle','ma');
+    sessionStorage.setItem('pf_maKey',gefKey);
+    sessionStorage.setItem('pf_maBenutzername',gef.benutzername);
+    zeigeMAApp(gef.benutzername);
+  } catch(e) {
+    err.textContent='Verbindungsfehler – bitte neu laden.';
+    btn.disabled=false; btn.textContent='Weiter';
+    console.error(e);
   }
-  if(!gef){err.textContent='Benutzername oder PIN falsch.';return;}
-  eigenerMAKey=gefKey;
-  alleMA=alle;
-  sessionStorage.setItem('pf_rolle','ma');
-  sessionStorage.setItem('pf_maKey',gefKey);
-  sessionStorage.setItem('pf_maBenutzername',gef.benutzername);
-  zeigeMAApp(gef.benutzername);
 };
 document.getElementById('maPin').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('btnMALogin').click();});
 
@@ -679,7 +707,7 @@ window.toggleFeld = async (key, aktiv) => {
 
 window.zeigePin = (key) => {
   const ma=alleMA[key]; if(!ma) return;
-  const baseUrl=window.location.href.split('?')[0].split('#')[0];
+  const baseUrl='https://pascal19991114.github.io/Hilgenroth-Anwesenheit/personalfragebogen.html';
   const link=`${baseUrl}?b=${encodeURIComponent(ma.benutzername)}&p=${ma.pin}`;
   befuellePinModal(ma.name,ma.benutzername,ma.pin,link);
   document.getElementById('pinModal').classList.add('open');
@@ -709,7 +737,7 @@ window.maAnlegen=async()=>{
   await set(ref(db,'personalfragebogen/'+key),{name,benutzername:bname,pin,status:'offen',erstellt:new Date().toISOString(),felder:{}});
   schliesseModal('neuModal');
   currentMAKey=key; currentTab=0;
-  const baseUrl=window.location.href.split('?')[0].split('#')[0];
+  const baseUrl='https://pascal19991114.github.io/Hilgenroth-Anwesenheit/personalfragebogen.html';
   const link=`${baseUrl}?b=${encodeURIComponent(bname)}&p=${pin}`;
   befuellePinModal(name,bname,pin,link);
   document.getElementById('pinModal').classList.add('open');
