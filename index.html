@@ -322,8 +322,8 @@ function buildFrames(){
   for(const tools of Object.values(TOOLS)) for(const t of tools) if(!t.sub) all.push(t);
   for(const [id,s] of Object.entries(SUB)) all.push({id, label:s.label, file:s.file});
   for(const t of all){
-    // Nicht erlaubte Tools überspringen (Sub-Tools immer bauen)
-    if(perms && !subIds.includes(t.id) && !perms.includes(t.id)) continue;
+    // Nicht erlaubte Tools überspringen (Sub-Tools und adminOnly-Admin-Tools immer bauen)
+    if(perms && !subIds.includes(t.id) && !perms.includes(t.id) && !(t.adminOnly && currentUser?.isAdmin)) continue;
     const loader=document.createElement('div');
     loader.className='loader';loader.id='loader-'+t.id;
     loader.innerHTML=`<div class="spinner"></div><div class="loader-text">${t.label} wird geladen</div>`;
