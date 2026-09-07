@@ -960,7 +960,12 @@ td strong{color:var(--ink);font-weight:700}
         </div>
       </div>
 
-      <div class="fg"><label>Uhrzeit</label><input type="text" name="uhrzeit" placeholder="z.B. 6:00 Uhr"></div>
+      <div class="fg"><label>Uhrzeit</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <select id="uhrzeitSelF" style="width:100px;flex-shrink:0" onchange="document.getElementById('uhrzeitInpF').value=this.value"></select>
+          <input type="text" id="uhrzeitInpF" name="uhrzeit" placeholder="oder tippen…" style="flex:1;min-width:0">
+        </div>
+      </div>
       <div class="fg"><label>Bemerkung</label><textarea name="bemerkung" placeholder="Optionale Hinweise..."></textarea></div>
       <div class="sr"><button type="submit" class="btn-p" id="submitF">Auftrag hinzufügen</button><button type="button" class="btn-c" onclick="cancelEdit('fremd')">Abbrechen</button></div>
     </form>
@@ -1073,7 +1078,12 @@ td strong{color:var(--ink);font-weight:700}
             <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--ink3);font-size:12px;pointer-events:none">t</span>
           </div>
         </div>
-        <div class="fg"><label>Uhrzeit</label><input type="text" name="uhrzeit" placeholder="z.B. 6 Uhr"></div>
+        <div class="fg"><label>Uhrzeit</label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <select id="uhrzeitSelS" style="width:100px;flex-shrink:0" onchange="document.getElementById('uhrzeitInpS').value=this.value"></select>
+            <input type="text" id="uhrzeitInpS" name="uhrzeit" placeholder="oder tippen…" style="flex:1;min-width:0">
+          </div>
+        </div>
       </div>
       <div class="fg"><label>Bemerkung</label><textarea name="bemerkung" placeholder="Optionale Hinweise..."></textarea></div>
       <div class="sr"><button type="submit" class="btn-p" id="submitS">Auftrag hinzufügen</button><button type="button" class="btn-c" onclick="cancelEdit('sundern')">Abbrechen</button></div>
@@ -2399,7 +2409,7 @@ function stRenderFzg(){
     +'<select onchange="if(this.value){stFzgZeilen['+i+'].vehicles=stFzgZeilen['+i+'].vehicles||[];if(!stFzgZeilen['+i+'].vehicles.includes(this.value))stFzgZeilen['+i+'].vehicles.push(this.value);stRenderFzg();}this.value=\'\'" style="width:100%;font-size:12px">'
     +vOpts+'</select>'
     +'</div>'
-    // Fahrer Chips
+    // Fahrer Chips + Suche
     +'<div style="margin-bottom:4px">'
     +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">'
     +drivers.map((d,di)=>'<span style="display:inline-flex;align-items:center;gap:3px;background:var(--brand);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px">'
@@ -2407,8 +2417,11 @@ function stRenderFzg(){
       +'<button type="button" onclick="stFzgZeilen['+i+'].drivers.splice('+di+',1);stRenderFzg()" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;line-height:1;padding:0;margin-left:2px">×</button>'
       +'</span>').join('')
     +'</div>'
-    +'<select onchange="if(this.value){stFzgZeilen['+i+'].drivers=stFzgZeilen['+i+'].drivers||[];if(!stFzgZeilen['+i+'].drivers.includes(this.value))stFzgZeilen['+i+'].drivers.push(this.value);stRenderFzg();}this.value=\'\'" style="width:100%;font-size:12px">'
-    +dOpts+'</select>'
+    +'<div style="position:relative">'
+    +'<input id="stFahrerInp'+i+'" type="text" placeholder="+ Fahrer suchen…" autocomplete="off" style="width:100%;font-size:12px;box-sizing:border-box"'
+    +' oninput="stFahrerSuche('+i+',this.value)" onfocus="stFahrerSuche('+i+',this.value)">'
+    +'<div id="stFahrerBox'+i+'" style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:160px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>'
+    +'</div>'
     +'</div>'
     // Tour zuweisen
     +'<div style="margin-top:4px">'
@@ -2417,7 +2430,13 @@ function stRenderFzg(){
     +stTouren.filter(t=>t.sorte).map((t,ti)=>{const ein=t.mat==='Beton'?' m³':' t';return '<option value="'+ti+'"'+(z.tourIdx===ti?' selected':'')+'>Tour '+(ti+1)+': '+esc(t.mat||'')+(t.sorte?' – '+esc(t.sorte):'')+(t.menge?' · '+t.menge+ein:'')+' </option>';}).join('')
     +'</select>'
     +'<div style="display:flex;gap:6px;margin-bottom:4px">'
-    +'<input type="text" placeholder="Uhrzeit (z.B. 6:00)" value="'+esc(z.uhrzeit||'')+'" oninput="stFzgZeilen['+i+'].uhrzeit=this.value;stSaveFzgJson()" style="width:110px;flex-shrink:0;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--rs);font-family:inherit;background:var(--surf)">'
+    +'<div style="display:flex;gap:3px;align-items:center;width:220px;flex-shrink:0">'
+    +'<select style="width:95px" onchange="stFzgZeilen['+i+'].uhrzeit=this.value;document.querySelectorAll(\'#stFzgList .fzg-uhr\')['+i+'].value=this.value;stSaveFzgJson()">'
+    +'<option value="">—</option>'
+    +Array.from({length:57},(_,k)=>{const h=4+Math.floor(k/4);const m=(k%4)*15;return `<option value="${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}"${z.uhrzeit===String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')?' selected':''}>`;+`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</option>`;}).join('')
+    +'</select>'
+    +'<input type="text" class="fzg-uhr" placeholder="Uhrzeit" value="'+esc(z.uhrzeit||'')+'" oninput="stFzgZeilen['+i+'].uhrzeit=this.value;stSaveFzgJson()" style="width:80px;font-size:12px;padding:5px 6px;border:1px solid var(--line);border-radius:var(--rs);font-family:inherit;background:var(--surf)">'
+    +'</div>'
     +'<input type="text" placeholder="Hinweis für diesen LKW" value="'+esc(z.hinweis||'')+'" oninput="stFzgZeilen['+i+'].hinweis=this.value;stSaveFzgJson()" style="flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--rs);font-family:inherit;background:var(--surf)">'
     +'</div>'
     +'</div>'
@@ -2430,6 +2449,34 @@ window.stSaveFzgJson=function(){
   const h=document.getElementById('stFzgJson');
   if(h)h.value=JSON.stringify(stFzgZeilen);
 };
+window.stFahrerSuche=function(i,q){
+  const box=document.getElementById('stFahrerBox'+i);
+  if(!box)return;
+  const liste=fleet.drivers||[];
+  const filtered=q.trim()?liste.filter(d=>d.toLowerCase().includes(q.toLowerCase())):liste;
+  box.innerHTML='';
+  filtered.forEach(val=>{
+    const d=document.createElement('div');
+    d.style.cssText='padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer';
+    d.textContent=val;
+    d.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      if(!stFzgZeilen[i].drivers)stFzgZeilen[i].drivers=[];
+      if(!stFzgZeilen[i].drivers.includes(val))stFzgZeilen[i].drivers.push(val);
+      stRenderFzg();
+    });
+    box.appendChild(d);
+  });
+  box.style.display=filtered.length?'block':'none';
+};
+// Box schließen bei Klick außerhalb
+document.addEventListener('pointerdown',function(e){
+  stFzgZeilen.forEach((_,i)=>{
+    const box=document.getElementById('stFahrerBox'+i);
+    const inp=document.getElementById('stFahrerInp'+i);
+    if(box&&inp&&!box.contains(e.target)&&e.target!==inp)box.style.display='none';
+  });
+});
 window.stAddFzg=function(){
   stFzgZeilen.push({typ:'',anz:1,vehicles:[],drivers:[],tourIdx:null,uhrzeit:'',hinweis:''});
   stRenderFzg();
@@ -2551,6 +2598,18 @@ function stResetTouren(){ stTouren=[{mat:'',sorte:'',menge:''}]; stRenderTouren(
 // Direkt aufrufen – DOMContentLoaded hätte nie gefeuert, da das Script am Ende des Body steht
 stRenderFzg();
 stRenderTouren();
+// Uhrzeit-Selects befüllen
+['F','S'].forEach(s=>{
+  const sel=document.getElementById('uhrzeitSel'+s);
+  if(sel)sel.innerHTML=timeOpts();
+  const inp=document.getElementById('uhrzeitInp'+s);
+  if(sel&&inp){
+    sel.addEventListener('change',()=>inp.value=sel.value);
+    inp.addEventListener('input',function(){
+      sel.value=sel.querySelector(`option[value="${this.value}"]`)?this.value:'';
+    });
+  }
+});
 
 // ===== FORMS =====
 document.getElementById('formF').addEventListener('submit',e=>{
@@ -4590,6 +4649,40 @@ function fremdSaveNamenBst(firma,bst){
     fremdBstRef.set(fremdBaustellen).catch(()=>{});
   }
 }
+
+// ===== UHRZEIT-PICKER =====
+function timeOpts(){
+  const opts=['<option value="">— Uhrzeit —</option>'];
+  for(let h=4;h<=18;h++){
+    for(let m=0;m<60;m+=15){
+      const hh=String(h).padStart(2,'0');
+      const mm=String(m).padStart(2,'0');
+      opts.push(`<option value="${hh}:${mm}">${hh}:${mm}</option>`);
+    }
+  }
+  return opts.join('');
+}
+// Globales Uhrzeit-Widget: Select + Freitext nebeneinander
+function timePickerHtml(selectId,inputId,curVal){
+  // Prüfe ob curVal in den Optionen vorkommt
+  const isPreset=/^\d{2}:\d{2}$/.test(curVal);
+  return `<div style="display:flex;gap:4px;align-items:center">
+    <select id="${selectId}" style="width:100px;flex-shrink:0" onchange="document.getElementById('${inputId}').value=this.value">
+      ${timeOpts()}
+    </select>
+    <input type="text" id="${inputId}" placeholder="oder tippen…" value="${esc(curVal||'')}" style="flex:1;min-width:0">
+  </div>`;
+}
+window.timePickerInit=function(selectId,inputId){
+  const inp=document.getElementById(inputId);
+  const sel=document.getElementById(selectId);
+  if(!inp||!sel)return;
+  // Sync: wenn Freitext geändert wird, Select zurücksetzen falls nicht passend
+  inp.addEventListener('input',function(){
+    if(sel.querySelector(`option[value="${this.value}"]`)){sel.value=this.value;}
+    else sel.value='';
+  });
+};
 
 function showToast(msg,v){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(v?' '+v:'');setTimeout(()=>t.classList.remove('show'),2200)}
 </script>
