@@ -171,7 +171,16 @@ tr:hover .ra{opacity:1;}
   <div class="md">
     <div class="mdt" id="preis-title">Neuer Preis</div>
     <div class="fr2">
-      <div class="fr" style="margin:0"><label>Datum</label><input class="fi" type="date" id="p-datum"></div>
+      <div class="fr" style="margin:0">
+        <label>Datum</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input class="fi" type="date" id="p-datum" style="flex:1">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--slate);cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="p-kein-datum" onchange="toggleDatum('p-datum','p-kein-datum')" style="cursor:pointer">
+            Kein Datum
+          </label>
+        </div>
+      </div>
       <div class="fr" style="margin:0"><label>Bst.-Nr.</label><input class="fi" id="p-bstnr" placeholder="z.B. 5025"></div>
     </div>
     <div class="fr" style="margin-top:10px"><label>Spediteur *</label><select class="fs" id="p-sped"></select></div>
@@ -270,7 +279,15 @@ try {
 let speds={}, preise={};
 let curTab='overview', curSped=null;
 let preisKey=null, spedKey=null;
-let sortCol='datum', sortDir=-1;
+function toggleDatum(dateId, cbId){
+  const inp = document.getElementById(dateId);
+  const cb  = document.getElementById(cbId);
+  if(!inp||!cb) return;
+  inp.disabled = cb.checked;
+  inp.style.opacity = cb.checked ? '0.35' : '1';
+  if(cb.checked) inp.value = '';
+}
+let sortCol='pos', sortDir=1;
 let sq='', filterMat='', filterSped='';
 let csvRows=[];
 
@@ -355,7 +372,7 @@ function drawOverview(){
     const mats=[...new Set(pArr.map(p=>p.material).filter(Boolean))];
     const avgPreis=pArr.filter(p=>p.preis).length?
       (pArr.filter(p=>p.preis).reduce((s,p)=>s+pnum(fixPreis(p.preis)),0)/pArr.filter(p=>p.preis).length).toFixed(2).replace('.',','):null;
-    const preview=pArr.sort((a,b)=>(b.datum||'').localeCompare(a.datum||'')).slice(0,3);
+    const preview=pArr.sort((a,b)=>(Number(a.pos)||999)-(Number(b.pos)||999)).slice(0,3);
 
     html+=`<div class="sped-card" onclick="setCurSped('${esc(v.name)}',document.querySelector('.sped-btn[onclick*=\\'${esc(v.name)}\\']')||document.getElementById('sb-alle'));goTab('preise')">
       <div class="sped-card-name">${esc(v.name)}</div>
@@ -392,6 +409,13 @@ function drawPreise(){
 
   // Sortieren
   rows.sort((a,b)=>{
+    if(sortCol==='pos'){
+      // Reihenfolge: erst nach pos, dann nach createdAt, dann nach key
+      const ap=a[1].pos!==undefined?Number(a[1].pos):(a[1].createdAt||a[0]);
+      const bp=b[1].pos!==undefined?Number(b[1].pos):(b[1].createdAt||b[0]);
+      if(typeof ap==='number'&&typeof bp==='number') return (ap-bp)*sortDir;
+      return String(ap).localeCompare(String(bp))*sortDir;
+    }
     const av=a[1][sortCol]||'', bv=b[1][sortCol]||'';
     if(sortCol==='preis'||sortCol==='km') return (pnum(av)-pnum(bv))*sortDir;
     return av.localeCompare(bv)*sortDir;
@@ -428,6 +452,7 @@ function drawPreise(){
     </select>
   </div>
   <div class="twrap"><table class="tbl"><thead><tr>
+    ${sortBtn('pos','Nr.')}
     ${sortBtn('datum','Datum')}
     ${sortBtn('spediteur','Spediteur')}
     ${sortBtn('von','Von')}
@@ -480,7 +505,16 @@ function drawAnfrage(){
   <div style="max-width:580px">
     <div class="twrap" style="padding:20px">
       <div class="fr2">
-        <div class="fr" style="margin:0"><label>Datum</label><input class="fi" type="date" id="a-datum" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="fr" style="margin:0">
+          <label>Datum</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input class="fi" type="date" id="a-datum" value="${new Date().toISOString().slice(0,10)}" style="flex:1">
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--slate);cursor:pointer;white-space:nowrap">
+              <input type="checkbox" id="a-kein-datum" onchange="toggleDatum('a-datum','a-kein-datum')" style="cursor:pointer">
+              Kein Datum
+            </label>
+          </div>
+        </div>
         <div class="fr" style="margin:0"><label>Bst.-Nr.</label><input class="fi" id="a-bstnr" placeholder="z.B. 5025"></div>
       </div>
       <div class="fr" style="margin-top:10px"><label>Spediteur *</label>
