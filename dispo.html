@@ -962,7 +962,7 @@ td strong{color:var(--ink);font-weight:700}
 
       <div class="fg"><label>Uhrzeit</label>
         <div style="display:flex;gap:4px;align-items:center">
-          <select id="uhrzeitSelF" style="width:100px;flex-shrink:0" onchange="document.getElementById('uhrzeitInpF').value=this.value"></select>
+          <select id="uhrzeitSelF" style="width:110px;flex-shrink:0"></select>
           <input type="text" id="uhrzeitInpF" name="uhrzeit" placeholder="oder tippen…" style="flex:1;min-width:0">
         </div>
       </div>
@@ -1080,7 +1080,7 @@ td strong{color:var(--ink);font-weight:700}
         </div>
         <div class="fg"><label>Uhrzeit</label>
           <div style="display:flex;gap:4px;align-items:center">
-            <select id="uhrzeitSelS" style="width:100px;flex-shrink:0" onchange="document.getElementById('uhrzeitInpS').value=this.value"></select>
+            <select id="uhrzeitSelS" style="width:110px;flex-shrink:0"></select>
             <input type="text" id="uhrzeitInpS" name="uhrzeit" placeholder="oder tippen…" style="flex:1;min-width:0">
           </div>
         </div>
@@ -2604,9 +2604,14 @@ stRenderTouren();
   if(sel)sel.innerHTML=timeOpts();
   const inp=document.getElementById('uhrzeitInp'+s);
   if(sel&&inp){
-    sel.addEventListener('change',()=>inp.value=sel.value);
-    inp.addEventListener('input',function(){
-      sel.value=sel.querySelector(`option[value="${this.value}"]`)?this.value:'';
+    // Select wählen → Wert ins Textfeld setzen, danach Select auf "—" zurücksetzen
+    sel.addEventListener('change',function(){
+      if(this.value){
+        inp.value=this.value;
+        inp.focus();
+        // Select auf Platzhalter zurück damit User merkt dass Textfeld führt
+        setTimeout(()=>this.value='',50);
+      }
     });
   }
 });
@@ -4652,7 +4657,7 @@ function fremdSaveNamenBst(firma,bst){
 
 // ===== UHRZEIT-PICKER =====
 function timeOpts(){
-  const opts=['<option value="">— Uhrzeit —</option>'];
+  const opts=['<option value="">⏰ Schnellauswahl</option>'];
   for(let h=4;h<=18;h++){
     for(let m=0;m<60;m+=15){
       const hh=String(h).padStart(2,'0');
