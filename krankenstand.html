@@ -196,10 +196,8 @@
     <select id="filterJahr"><option value="">Alle Jahre</option></select>
   </label>
   <label>Mitarbeiter suchen
-    <input type="text" id="searchMa" placeholder="Name eingeben…" style="min-width:160px" oninput="filterMaDropdown(this.value)">
-  </label>
-  <label>Mitarbeiter
-    <select id="filterMa" style="min-width:180px"><option value="">Alle Mitarbeiter</option></select>
+    <input type="text" id="searchMa" list="maSuggestions" placeholder="Name eingeben…" style="min-width:220px" oninput="onSearchMa(this.value)" onchange="onSearchMa(this.value)">
+    <datalist id="maSuggestions"></datalist>
   </label>
   <label>Status
     <select id="filterStatus">
@@ -384,16 +382,12 @@ function rebuildSelects() {
   years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;jSel.appendChild(o);});
   jSel.value=curJ;
 
-  // Mitarbeiter dropdown — sorted by name, unique persnr
-  const empMap={};
-  RAW.forEach(r=>{if(!empMap[r.persnr])empMap[r.persnr]=r.name;});
-  const empList=Object.entries(empMap).sort((a,b)=>a[1].localeCompare(b[1]));
-  _allEmpList=empList;
-  const mSel=document.getElementById('filterMa');
-  const curM=mSel.value;
-  mSel.innerHTML='<option value="">Alle Mitarbeiter</option>';
-  empList.forEach(([pid,nm])=>{const o=document.createElement('option');o.value=pid;o.textContent=nm+' ('+pid+')';mSel.appendChild(o);});
-  mSel.value=curM;
+  // Mitarbeiter datalist — sorted by name, unique persnr
+  // Deduplizierung nach Name (gleicher Name = gleiche Person, egal welche Persnr)
+  const nameSet=[...new Set(RAW.map(r=>r.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de'));
+  _allEmpList=nameSet.map(nm=>[nm,nm]); // [value, label] both = name
+  const dl=document.getElementById('maSuggestions');
+  if(dl){dl.innerHTML='';nameSet.forEach(nm=>{const o=document.createElement('option');o.value=nm;dl.appendChild(o);});}
 
   const bezs=[...new Set(RAW.map(r=>r.bezeichnung))].filter(Boolean).sort();
   const bSel=document.getElementById('filterBez');
@@ -406,7 +400,7 @@ function rebuildSelects() {
 function init(){
   rebuildSelects();
   document.getElementById('filterJahr').onchange=e=>{filterJahr=e.target.value;render();};
-  document.getElementById('filterMa').onchange=e=>{filterMa=e.target.value;render();};
+  // filterMa is now set via onSearchMa() / datalist input
   document.getElementById('filterStatus').onchange=e=>{filterStatus=e.target.value;render();};
   document.getElementById('filterBez').onchange=e=>{filterBez=e.target.value;render();};
   const empSet=new Set(RAW.map(r=>r.persnr));
@@ -419,32 +413,31 @@ function init(){
 function getFiltered(){
   return RAW.filter(r=>{
     if(filterJahr && r.jahr!=filterJahr) return false;
-    if(filterMa && r.persnr!==filterMa) return false;
+    if(filterMa && r.name!==filterMa) return false;
     if(filterBez && r.bezeichnung!==filterBez) return false;
     if(filterStatus==='aktiv' && r.austrittsdatum) return false;
     if(filterStatus==='ausgetreten' && !r.austrittsdatum) return false;
     return true;
   });
 }
-// ─── Mitarbeiter-Suchfeld filtert Dropdown ────────────────────────────────────
+// ─── Mitarbeiter-Suche via datalist ──────────────────────────────────────────
 let _allEmpList=[];
-function filterMaDropdown(q){
-  const mSel=document.getElementById('filterMa');
-  const cur=mSel.value;
+function onSearchMa(q){
+  if(!q){filterMa='';render();return;}
+  // exact match from datalist
+  const exact=_allEmpList.find(([nm])=>nm===q);
+  if(exact){filterMa=exact[0];render();return;}
+  // partial match: apply if unique
   const lq=q.toLowerCase();
-  mSel.innerHTML='<option value="">Alle Mitarbeiter</option>';
-  const list=q ? _allEmpList.filter(([pid,nm])=>nm.toLowerCase().includes(lq)||pid.includes(lq)) : _allEmpList;
-  list.forEach(([pid,nm])=>{const o=document.createElement('option');o.value=pid;o.textContent=nm+' ('+pid+')';mSel.appendChild(o);});
-  mSel.value=cur;
+  const matches=_allEmpList.filter(([nm])=>nm.toLowerCase().includes(lq));
+  if(matches.length===1){filterMa=matches[0][0];render();}
 }
 
-// ─── Top-10 Klick → in Übersicht filtern (nicht Detail-Tab) ──────────────────
-function filterToEmp(persnr){
-  filterMa=persnr;
-  document.getElementById('filterMa').value=persnr;
-  // Suchfeld leeren damit Dropdown nicht versteckt ist
-  const s=document.getElementById('searchMa'); if(s) s.value='';
-  filterMaDropdown('');
+// ─── Top-20 Klick → in Übersicht filtern (nicht Detail-Tab) ─────────────────
+function filterToEmp(name){
+  filterMa=name;
+  const s=document.getElementById('searchMa');
+  if(s) s.value=name;
   showTab('overview');
   render();
 }
@@ -452,9 +445,7 @@ function filterToEmp(persnr){
 function resetFilter(){
   filterJahr='';filterMa='';filterStatus='';filterBez='';
   document.getElementById('filterJahr').value='';
-  document.getElementById('filterMa').value='';
   document.getElementById('searchMa').value='';
-  filterMaDropdown('');
   document.getElementById('filterStatus').value='';
   document.getElementById('filterBez').value='';
   render();
@@ -515,7 +506,7 @@ function renderTopListen(data){
       const pct=maxV>0?(x[field]/maxV*100):0;
       const rank=i<3?`<span class="top-rank ${['gold','silver','bronze'][i]}">${R[i]}</span>`:`<span class="top-rank">${i+1}</span>`;
       const barCol=valCls?'var(--kk-col)':'var(--rot)';
-      return `<div class="top-item" onclick="filterToEmp('${x.persnr}')" style="cursor:pointer" title="In Übersicht filtern">
+      return `<div class="top-item" onclick="filterToEmp('${x.name.replace(/'/g,"\\\'")}')" style="cursor:pointer" title="In Übersicht filtern">
         ${rank}
         <span class="top-name" title="${x.name}" style="font-weight:600">${x.name}</span>
         <div style="flex:1;background:#f0f0f0;border-radius:3px;height:8px;margin:0 6px">
@@ -661,8 +652,7 @@ function renderCharts(data){
       ctx.fillText(leg.l,lx+14,H-6);
     });
     // Hinweis: Klick auf Balken filtert das Jahr
-    ctx.fillStyle='#aaa'; ctx.font='9px system-ui'; ctx.textAlign='right';
-    ctx.fillText('Balken anklicken zum Filtern',W-PAD,H-6);
+    // hint text removed
   };
   requestAnimationFrame(drawCanvas);
 
