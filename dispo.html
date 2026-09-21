@@ -2857,7 +2857,15 @@ function renderOv(){
   const d=new Date(ovDate);
   document.getElementById('ovWd').textContent=days[d.getDay()];
   document.getElementById('ovDb').textContent=String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
-  const sl=data.sundern.filter(o=>o.datum===ovDate).sort((a,b)=>pTime(a.uhrzeit)-pTime(b.uhrzeit));
+  const smOrder=schachtmeister.map(s=>s.name);
+  const sl=data.sundern.filter(o=>o.datum===ovDate).sort((a,b)=>{
+    const ai=smOrder.indexOf(a.schachtmeister);
+    const bi=smOrder.indexOf(b.schachtmeister);
+    const aIdx=ai===-1?9999:ai;
+    const bIdx=bi===-1?9999:bi;
+    if(aIdx!==bIdx)return aIdx-bIdx;
+    return pTime(a.uhrzeit)-pTime(b.uhrzeit);
+  });
   const fl=data.fremd.filter(o=>o.abholung===ovDate).sort((a,b)=>pTime(a.uhrzeit)-pTime(b.uhrzeit));
   document.getElementById('ovCntS').textContent=sl.length;
   document.getElementById('ovCntF').textContent=fl.length;
@@ -3029,30 +3037,59 @@ window.exportTagesuebersicht=function(exportDatum){
   const sl=data.sundern.filter(o=>o.datum===heute)
     .sort((a,b)=>(a.uhrzeit||'').localeCompare(b.uhrzeit||''));
 
-  const sundernRows=sl.map(o=>{
-    const fzg=Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length
-      ? o.fahrzeugDetails.map(z=>z.anz+'× '+z.typ).join(', ')
-      : (o.vehicleTypes||[]).join(', ');
+  const sundernRows=[];
+  sl.forEach(o=>{
     const smData=schachtmeister.find(s=>s.name===o.schachtmeister);
+    const telefon=(smData&&smData.phone)||'';
     const tourenStr=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'Tour '+(i+1)+': '+t.sorte+(t.menge?' ('+t.menge+' t)':'')).join(' | ')
+      ? o.touren.map((t,i)=>'Tour '+(i+1)+': '+(t.mat?t.mat+' – ':'')+t.sorte+(t.menge?' ('+t.menge+(t.mat==='Beton'?' m³':' t')+')':'')).join(' | ')
       : '';
-    return {
-      'Uhrzeit':o.uhrzeit||'',
-      'Schachtmeister':o.schachtmeister||'',
-      'Telefon':(smData&&smData.phone)||'',
-      'Bst.-Nr.':o.baustellennummer||'',
-      'Auftr.-Nr.':o.auftragsnummer||'',
-      'Baustelle':o.baustelle||'',
-      'Fahrzeugtyp':fzg,
-      'Fahrzeuge':(o.vehicles||[]).join(', '),
-      'Fahrer':(o.drivers||[]).join(', '),
-      'Material':o.material||'',
-      'Sorte':o.sorte||'',
-      'Menge':o.menge||'',
-      'Touren':tourenStr,
-      'Bemerkung':o.bemerkung||''
-    };
+    // Wenn fahrzeugDetails vorhanden: eine Zeile pro Fahrzeuggruppe
+    if(Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length){
+      o.fahrzeugDetails.forEach((z,zi)=>{
+        const tour=z.tourIdx!=null&&Array.isArray(o.touren)?o.touren[z.tourIdx]:null;
+        const tourLabel=tour?('Tour '+(z.tourIdx+1)+': '+(tour.mat?tour.mat+' – ':'')+tour.sorte+(tour.menge?' ('+tour.menge+(tour.mat==='Beton'?' m³':' t')+')':'')):'';
+        sundernRows.push({
+          'Uhrzeit':z.uhrzeit||o.uhrzeit||'',
+          'Schachtmeister':o.schachtmeister||'',
+          'Telefon':telefon,
+          'Bst.-Nr.':o.baustellennummer||'',
+          'Auftr.-Nr.':o.auftragsnummer||'',
+          'Baustelle':o.baustelle||'',
+          'Fahrzeugtyp':(z.anz||1)+'× '+(z.typ||''),
+          'Fahrzeuge':(z.vehicles||[]).join(', '),
+          'Fahrer':(z.drivers||[]).join(', '),
+          'Material':tour?tour.mat:o.material||'',
+          'Sorte':tour?tour.sorte:o.sorte||'',
+          'Menge':tour?tour.menge:o.menge||'',
+          'Tour-Zuweisung':tourLabel,
+          'Touren':tourenStr,
+          'Hinweis (Fahrzeug)':z.hinweis||'',
+          'Bemerkung':o.bemerkung||''
+        });
+      });
+    } else {
+      // Fallback: eine Zeile gesamt
+      const fzg=(o.vehicleTypes||[]).join(', ');
+      sundernRows.push({
+        'Uhrzeit':o.uhrzeit||'',
+        'Schachtmeister':o.schachtmeister||'',
+        'Telefon':telefon,
+        'Bst.-Nr.':o.baustellennummer||'',
+        'Auftr.-Nr.':o.auftragsnummer||'',
+        'Baustelle':o.baustelle||'',
+        'Fahrzeugtyp':fzg,
+        'Fahrzeuge':(o.vehicles||[]).join(', '),
+        'Fahrer':(o.drivers||[]).join(', '),
+        'Material':o.material||'',
+        'Sorte':o.sorte||'',
+        'Menge':o.menge||'',
+        'Tour-Zuweisung':'',
+        'Touren':tourenStr,
+        'Hinweis (Fahrzeug)':'',
+        'Bemerkung':o.bemerkung||''
+      });
+    }
   });
 
   // Fremdfirmen: nur heutiger Tag
