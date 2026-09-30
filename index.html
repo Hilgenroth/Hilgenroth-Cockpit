@@ -270,6 +270,8 @@ const IC = {
   urlaub:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 2v3M16 2v3M3 9h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M8 14l2 2 4-4"/></svg>`,
   einkauf:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`,
   sped:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg>`,
+  betonkalk:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+  personal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   umsatz:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
   werkstatt:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
   geraete:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>`,
@@ -280,6 +282,7 @@ const IC = {
   labor:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 3v6.5L4.5 17a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L15 9.5V3M8 3h8M8 14h8"/></svg>`,
   asphalt:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 17h18M3 17l3-11h12l3 11M8 6l-1 11M16 6l1 11M12 6v11"/></svg>`,
   beton:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M7 8V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3M7 13h4M13 16h4"/></svg>`,
+  beton2:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 20h20M4 20V10l8-6 8 6v10"/><path d="M9 20v-5h6v5"/></svg>`,
   bericht:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>`,
   chev:`<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>`,
   warn:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>`,
@@ -296,22 +299,34 @@ const TOOLS = {
     {id:'he-dispo',    label:'Dispo-Zentrale',     icon:'dispo',   file:'dispo.html'},
     {id:'he-lief',     label:'Lieferanten-Finder', icon:'lief',    file:'lieferanten.html'},
     {id:'he-labor',    label:'Labor',              icon:'labor',   sub:true},
+    {id:'he-beton',    label:'Beton',              icon:'beton2',  sub:true},
     {id:'he-einkauf',  label:'Einkauf',            icon:'einkauf', file:'einkauf.html'},
     {id:'he-sped',     label:'Spedition',           icon:'sped',    file:'spedition.html'},
     {id:'he-geraete',  label:'Geräte- & Fahrzeug-Manager', icon:'geraete', file:'geraete.html'},
     {id:'he-werkstatt',label:'Werkstatt',                 icon:'werkstatt', file:'werkstatt.html'},
     {id:'he-umsatz',   label:'Umsatz & Statistik',         icon:'umsatz',    file:'umsatz.html'},
+    {id:'he-personal',  label:'Personal',                    icon:'personal',  file:'personal.html'},
+    {id:'he-betonkalk', label:'Beton-Kalkulation',             icon:'betonkalk', file:'beton-kalkulation.html'},
+    {id:'he-urlaub',  label:'Urlaubszentrale',              icon:'urlaub',    file:'urlaubszentrale-he.html'},
   ],
 };
 
-const SUB = {
-  'labor-beton':   {label:'Betonpruefungen',          icon:'beton',   file:'beton.html'},
-  'labor-asphalt': {label:'Analyse Asphaltmischgut',  icon:'asphalt', file:'asphalt.html'},
-  'labor-bericht': {label:'Laborbericht-Pruefanalyse',icon:'bericht', file:'laborbericht.html'},
+const SUBS_BY_TOOL = {
+  'he-labor': {
+    'labor-asphalt': {label:'Analyse Asphaltmischgut',   icon:'asphalt',   file:'asphalt.html'},
+    'labor-bericht': {label:'Laborbericht-Prüfanalyse',  icon:'bericht',   file:'laborbericht.html'},
+  },
+  'he-beton': {
+    'beton-pruefung':{label:'Betonpruefungen',            icon:'beton',     file:'beton.html'},
+    'beton-kalk':    {label:'Beton-Kalkulation',         icon:'betonkalk', file:'beton-kalkulation.html'},
+  }
 };
+// Aktuell aktives Sub-Dict (wird bei Tool-Wechsel gesetzt)
+let SUB = SUBS_BY_TOOL['he-labor'];
+
 
 const loaded = new Set();
-let currentSub = 'labor-beton';
+let currentSub = 'labor-asphalt';
 
 function buildFrames(){
   const stage = document.getElementById('stage');
@@ -368,7 +383,17 @@ function activate(toolId){
   const t=Object.values(TOOLS).flat().find(x=>x.id===toolId);
   if(!t)return;
   const subbar=document.getElementById('subbar');
-  if(t.sub){subbar.classList.add('visible');activateSub(currentSub);return;}
+  if(t.sub){
+    subbar.classList.add('visible');
+    // Richtiges Sub-Dict für dieses Tool laden
+    if(SUBS_BY_TOOL[toolId]){
+      SUB = SUBS_BY_TOOL[toolId];
+      currentSub = Object.keys(SUB)[0];
+      renderSubbar();
+    }
+    activateSub(currentSub);
+    return;
+  }
   subbar.classList.remove('visible');
   loadShow(toolId,t.file);
 }
@@ -447,12 +472,15 @@ const ALL_PERMS = [
   {id:'he-geraete',label:'Geräte-Manager',   company:'hellefeld'},
   {id:'he-werkstatt',label:'Werkstatt',         company:'hellefeld'},
   {id:'he-umsatz',   label:'Umsatz & Statistik', company:'hellefeld'},
+  {id:'he-personal',  label:'Personal',           company:'hellefeld'},
+  {id:'he-beton',     label:'Beton',              company:'hellefeld'},
+  {id:'he-urlaub',  label:'Urlaubszentrale HF', company:'hellefeld'},
 ];
 
 const ADMIN_PASS = 'Hilgenroth2026!'; // ← Master-Admin-Passwort
 // Feste Nutzer (funktionieren auch ohne Firebase)
 const FIXED_USERS = [
-  {name:'Pascal', pass:'Albufeira1!', perms: ['su-urlaub','su-miet','su-lief','su-krank','he-dispo','he-lief','he-labor','he-einkauf','he-sped','he-geraete','he-werkstatt','he-umsatz'], isAdmin: true},
+  {name:'Pascal', pass:'Albufeira1!', perms: ['su-urlaub','su-miet','su-lief','su-krank','he-dispo','he-lief','he-labor','he-einkauf','he-sped','he-geraete','he-werkstatt','he-umsatz','he-personal','he-urlaub','he-beton'], isAdmin: true},
 ];
 let currentUser = null; // {name, perms:[...ids]}
 
@@ -631,6 +659,8 @@ function startCockpit(){
     sundern: TOOLS.sundern.filter(t=> t.sub || perms.includes(t.id)),
     hellefeld: TOOLS.hellefeld.filter(t=> t.sub || perms.includes(t.id)),
   };
+  // Beton-Subs
+  const betonSubs = ['beton-pruefung','beton-kalk'];
   // Labor nur zeigen wenn mind. ein Sub erlaubt
   // (Labor selbst hat kein file, daher immer erlaubt wenn Labor-Reiter gewünscht)
 
