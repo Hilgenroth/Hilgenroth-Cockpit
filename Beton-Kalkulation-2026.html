@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beton-Kalkulation 2026 · RH Hellefeld</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#c8102e; --red-dark:#9e0c24; --red-soft:#fbe9ec;
+  --black:#141414; --ink:#1d1d1f; --muted:#6b6b70; --line:#e3e3e6;
+  --bg:#f3f3f4; --card:#ffffff; --field:#fafafa;
+  --ok:#1f8a4c; --ok-soft:#e6f4ec; --warn:#b7791f; --warn-soft:#fdf3e1; --bad:#c8102e; --bad-soft:#fbe9ec;
+  --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace; --sans:'IBM Plex Sans',system-ui,Segoe UI,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
+.num,input[type=number],.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* Header im Cockpit-Stil */
+header.top{background:var(--black);color:#fff;border-bottom:4px solid var(--red)}
+.top-inner{max-width:1320px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px}
+.brand small{display:block;color:#b9b9bd;font-size:12px;font-weight:400}
+.top-meta{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{border:1px solid #3a3a3e;border-radius:999px;padding:4px 10px;font-size:12px;color:#d6d6da}
+.pill b{color:#fff;font-family:var(--mono);font-weight:500}
+.btn{font-family:var(--sans);font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:#bdbdc2}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.red:hover{background:var(--red-dark)}
+.btn.ghost-dark{background:transparent;color:#fff;border-color:#3a3a3e}
+.btn.ghost-dark:hover{border-color:#fff}
+
+nav.tabs{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.tabs-inner{max-width:1320px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:12px 14px;font-family:var(--sans);font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--ink);border-bottom-color:var(--red)}
+
+main{max-width:1320px;margin:0 auto;padding:20px}
+.view{display:none}.view.active{display:block}
+.grid{display:grid;gap:16px}
+.g-calc{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:980px){.g-calc,.g2,.g3{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.card-h{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.card-h h2{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.card-h .bar{width:4px;height:16px;background:var(--red);border-radius:2px}
+.card-h .right{margin-left:auto;font-size:12px;color:var(--muted)}
+.card-b{padding:14px 16px}
+
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+.form .full{grid-column:1/-1}
+@media (max-width:560px){.form{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+label.f .hint{font-weight:400;font-size:11px;color:#8b8b90}
+.inp{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:6px;background:var(--field);overflow:hidden}
+.inp:focus-within{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+.inp input,.inp select{flex:1;min-width:0;border:none;background:transparent;padding:8px 10px;font-size:14px;color:var(--ink);outline:none;font-family:inherit}
+.inp input[type=number]{text-align:right}
+.inp .u{padding:8px 10px;color:var(--muted);font-size:12px;background:#f0f0f2;border-left:1px solid var(--line);white-space:nowrap;display:flex;align-items:center}
+.inp.assume{background:#fffaf0;border-color:#efd9ad}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:none;background:#fff;padding:7px 12px;font-size:13px;cursor:pointer;font-family:var(--sans);color:var(--muted)}
+.seg button.on{background:var(--black);color:#fff}
+.checks{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px}
+.checks label{display:flex;gap:6px;align-items:center;cursor:pointer}
+input[type=checkbox]{accent-color:var(--red);width:16px;height:16px}
+
+.sorte-info{margin-top:6px;font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-block;background:#f0f0f2;border-radius:4px;padding:2px 7px;font-size:11.5px;color:#444}
+.tag.red{background:var(--red-soft);color:var(--red-dark)}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;position:relative}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.kpi .v{font-family:var(--mono);font-size:21px;font-weight:600;margin-top:2px}
+.kpi .s{font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.kpi.ok{border-color:#bfe1cd;background:var(--ok-soft)}.kpi.ok .v{color:var(--ok)}
+.kpi.bad{border-color:#f0b9c3;background:var(--bad-soft)}.kpi.bad .v{color:var(--bad)}
+.kpi.warn{border-color:#efd9ad;background:var(--warn-soft)}.kpi.warn .v{color:var(--warn)}
+
+.alerts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.alert{border-radius:6px;padding:8px 12px;font-size:13px;font-weight:500;display:flex;gap:8px;align-items:center}
+.alert.bad{background:var(--bad-soft);color:var(--red-dark)}
+.alert.ok{background:var(--ok-soft);color:var(--ok)}
+.alert.warn{background:var(--warn-soft);color:#7a5210}
+
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;padding:7px 8px;border-bottom:1px solid var(--line);background:#fafafa;position:sticky;top:0}
+table.t td{padding:7px 8px;border-bottom:1px solid #efeff1}
+table.t td.r,table.t th.r{text-align:right}
+table.t td.num{font-family:var(--mono);white-space:nowrap}
+table.t tr.sum td{font-weight:600;border-top:2px solid var(--ink);border-bottom:none}
+table.t tr.sub td{color:var(--muted)}
+table.t tr.hl td{background:#fafafa;font-weight:600}
+table.t tbody tr:hover td{background:#fcfcfd}
+.neg{color:var(--bad)}.pos{color:var(--ok)}
+.scroll{max-height:620px;overflow:auto}
+
+.stack{display:flex;height:26px;border-radius:5px;overflow:hidden;border:1px solid var(--line);margin:6px 0 8px}
+.stack div{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-family:var(--mono);white-space:nowrap;overflow:hidden}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+.big{font-family:var(--mono);font-size:30px;font-weight:600}
+.big small{font-size:14px;color:var(--muted);font-weight:400}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.note b{color:var(--ink)}
+.src{font-size:11px;color:var(--muted)}
+.leg-assume{display:inline-block;width:12px;height:12px;background:#fffaf0;border:1px solid #efd9ad;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:14px 0 8px}
+.section-title:first-child{margin-top:0}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar .inp{min-width:240px}
+a.lnk{color:var(--red);text-decoration:none;font-weight:500}
+a.lnk:hover{text-decoration:underline}
+
+/* Angebote */
+.angbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+.angbar .nr{font-family:var(--mono);font-size:16px;font-weight:600}
+.angbar .meta{font-size:12px;color:var(--muted)}
+.angbar .btns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dot{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot:before{content:"";width:8px;height:8px;border-radius:50%;background:#bbb}
+.dot.on:before{background:var(--ok)}.dot.off:before{background:var(--red)}
+.modal.wide{max-width:1100px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--black);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:60}
+.toast.show{opacity:1}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.del{color:var(--red)}
+
+/* Einstellungen */
+.modal-bg{position:fixed;inset:0;background:rgba(20,20,20,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:60px 16px;overflow:auto}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:520px;border-top:4px solid var(--red);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal .card-h{border-bottom:1px solid var(--line)}
+.modal .x{margin-left:auto;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
+.tg-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tg{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+.tg:last-child{border-bottom:none}
+.tg>span:first-child{flex:1}.tg small{color:var(--muted)}
+.tg.locked{opacity:.55;cursor:default}
+.switch{position:relative;width:38px;height:22px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.switch i{position:absolute;inset:0;background:#cfcfd4;border-radius:22px;transition:.15s}
+.switch i:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.switch input:checked+i{background:var(--red)}
+.switch input:checked+i:before{transform:translateX(16px)}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.err{color:var(--red);font-size:12px;min-height:16px;margin-top:6px}
+
+/* Druck – A4 quer */
+#print-sheet{display:none}
+@media print{
+  @page{size:A4 landscape;margin:9mm}
+  html,body{background:#fff!important;font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  header.top,nav.tabs,main,.modal-bg{display:none!important}
+  body:not(.print-sorten) #print-sheet{display:block!important}
+  body.print-sorten main{display:block!important;padding:0;max-width:none}
+  body.print-sorten .view:not(#v-sorten),body.print-sorten .toolbar{display:none!important}
+  body.print-sorten #v-sorten{display:block!important}
+  body.print-sorten .scroll{max-height:none;overflow:visible}
+  body.print-sorten table.t{font-size:9px}
+  body.print-sorten table.t td,body.print-sorten table.t th{padding:3px 5px}
+  body.print-sorten table.t th{position:static}
+  body.print-sorten tr{break-inside:avoid}
+  body.print-sorten .card{border:none}
+}
+.ps{font-family:var(--sans);color:#111}
+.ps-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid var(--red);padding-bottom:6px;margin-bottom:8px}
+.ps-head h1{font-size:17px;margin:0}
+.ps-head .sub{font-size:10px;color:#555}
+.ps-grid{display:grid;grid-template-columns:1fr 1.15fr 1.15fr;gap:10px}
+.ps-box{border:1px solid #bbb;border-radius:4px;padding:6px 8px;break-inside:avoid}
+.ps-box h3{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;color:var(--red-dark);border-bottom:1px solid #ddd;padding-bottom:3px}
+.ps table{width:100%;border-collapse:collapse;font-size:10px}
+.ps td,.ps th{padding:2px 3px;border-bottom:1px solid #eee;vertical-align:top}
+.ps th{text-align:left;font-size:8.5px;text-transform:uppercase;color:#666;font-weight:600}
+.ps .r{text-align:right;white-space:nowrap}
+.ps .m{font-family:var(--mono)}
+.ps tr.b td{font-weight:700;border-top:1.5px solid #111;border-bottom:none}
+.ps tr.h td{background:#f3f3f3;font-weight:600}
+.ps-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.ps-kpi{border:1px solid #bbb;border-radius:4px;padding:4px 6px}
+.ps-kpi .l{font-size:8.5px;text-transform:uppercase;color:#666}
+.ps-kpi .v{font-family:var(--mono);font-size:15px;font-weight:700}
+.ps-kpi.ok{background:#e6f4ec;border-color:#9fd0b3}.ps-kpi.ok .v{color:#1f8a4c}
+.ps-kpi.bad{background:#fbe9ec;border-color:#eba6b2}.ps-kpi.bad .v{color:#c8102e}
+.ps-alert{font-size:10px;font-weight:600;padding:4px 6px;border-radius:3px;margin-top:4px}
+.ps-alert.bad{background:#fbe9ec;color:#9e0c24}.ps-alert.ok{background:#e6f4ec;color:#1f8a4c}.ps-alert.warn{background:#fdf3e1;color:#7a5210}
+.ps-sign{display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;margin-top:auto;padding-top:22mm}
+.ps-sign .sl{font-family:var(--mono);font-size:11px;min-height:15px;padding-left:2px}
+.ps-sign .sb{border-top:1px solid #000;padding-top:3px;font-size:9.5px}
+@media print{.ps{display:flex;flex-direction:column;min-height:186mm}}
+.ps-foot{margin-top:6px;font-size:8.5px;color:#777}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div><h1>Beton-Kalkulation 2026</h1><small>RH Hellefeld · Straßenbaustoffe &amp; Transportbeton</small></div>
+    </div>
+    <div class="top-meta">
+      <span class="pill" data-pill>LKW-Stundensatz <b id="hdr-std">–</b></span>
+      <span class="pill" data-pill>Mischkosten <b id="hdr-misch">–</b></span>
+      <span class="pill" data-pill>EK-Index <b id="hdr-ek">–</b></span>
+      <button class="btn ghost-dark" id="btn-print">Drucken / PDF</button>
+      <button class="btn ghost-dark" id="btn-settings" title="Einstellungen">⚙ Einstellungen</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab active" data-v="kalk">Angebotskalkulation</button>
+    <button class="tab" data-v="sorten">Sortenübersicht</button>
+    <button class="tab" data-v="lkw">Fahrmischer HSK-RH 775</button>
+    <button class="tab" data-v="anlage">Mischanlage</button>
+    <button class="tab" data-v="rohstoffe">Rohstoffe &amp; EK</button>
+    <button class="tab" data-v="param">Zuschläge &amp; Grenzen</button>
+    <button class="tab" data-v="quellen">Datenquellen</button>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============ KALKULATION ============ -->
+<section class="view active" id="v-kalk">
+  <div class="angbar">
+    <div><div class="nr" id="ang-nr">Neues Angebot</div><div class="meta" id="ang-meta">noch nicht gespeichert</div></div>
+    <div class="btns">
+      <span class="dot" id="fb-status">Datenbank verbindet …</span>
+      <button class="btn" id="ang-neu">Neu</button>
+      <button class="btn" id="ang-liste">Angebote öffnen</button>
+      <button class="btn" id="ang-kopie">Als neues speichern</button>
+      <button class="btn red" id="ang-save">Speichern</button>
+    </div>
+  </div>
+  <div class="grid g-calc">
+    <div class="grid" style="gap:16px">
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Auftrag</h2></div>
+        <div class="card-b">
+          <div class="form">
+            <label class="f">Kunde<div class="inp"><input id="kunde" type="text" placeholder="z. B. WBU"></div></label>
+            <label class="f">Kundenkategorie<div class="inp"><select id="kat"><option>A-Kunde</option><option>B-Kunde</option><option>C-Kunde</option><option>Neukunde</option><option>Privat</option></select></div></label>
+            <label class="f full">Bauvorhaben / Lieferort<div class="inp"><input id="bv" type="text" placeholder="z. B. Herscheid"></div>
+              <span class="hint"><a class="lnk" id="route" href="#" target="_blank" rel="noopener">Route ab Werk prüfen ↗</a></span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Sorte &amp; Preis</h2>
+          <div class="right no-print"><span class="seg" id="seg-pl"><button data-pl="0107">Preisliste 01.07.2026</button><button data-pl="0101">01.01.2026</button></span></div></div>
+        <div class="card-b">
+          <div class="form">
+            <label class="f full">Betonsorte<div class="inp"><select id="sorte"></select></div>
+              <div class="sorte-info" id="sorte-info"></div></label>
+            <label class="f">Auftragsvolumen<div class="inp"><input id="vol" type="number" step="0.5" min="0.5"><span class="u">m³ je Sorte</span></div></label>
+            <label class="f">Nachlass
+              <div style="display:flex;gap:6px">
+                <div class="inp" style="flex:1"><input id="nl" type="number" step="0.1"><span class="u" id="nl-u">€/m³</span></div>
+                <span class="seg no-print" id="seg-nl"><button data-m="eur">€</button><button data-m="pct">%</button></span>
+              </div></label>
+          </div>
+          <table class="t" style="margin-top:12px">
+            <tr><td>Sortenpreis lt. Preisliste</td><td class="r num" id="o-lp"></td></tr>
+            <tr><td>− Nachlass</td><td class="r num" id="o-nl"></td></tr>
+            <tr class="hl"><td>Angebotspreis (netto)</td><td class="r num" id="o-ap"></td></tr>
+            <tr class="sub"><td>zzgl. Zuschläge je m³</td><td class="r num" id="o-zm"></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Lieferung</h2>
+          <div class="right no-print"><span class="seg" id="seg-lief"><button data-l="0">Lieferung frei Baustelle</button><button data-l="1">Selbstabholung</button></span></div></div>
+        <div class="card-b">
+          <div class="form" id="lief-form">
+            <label class="f">Fahrstrecke einfach<div class="inp"><input id="km" type="number" step="1" min="0"><span class="u">km</span></div></label>
+            <label class="f">Ladung je Fahrzeug<div class="inp"><input id="ladung" type="number" step="0.5" min="1"><span class="u">m³</span></div><span class="hint">Stetter AM 9/8: 9 m³ Nennvolumen</span></label>
+            <label class="f">Ø Geschwindigkeit<div class="inp"><input id="speed" type="number" step="1" min="10"><span class="u">km/h</span></div></label>
+            <label class="f">Standzeit je Fahrt<div class="inp"><input id="stand" type="number" step="5" min="0"><span class="u">min</span></div><span class="hint">Beladen, Entladen, Waschen</span></label>
+            <label class="f">Umlaufzeit hin &amp; zurück
+              <div class="inp"><input id="umlauf" type="number" step="5" min="0"><span class="u">min</span></div>
+              <span class="hint"><label style="display:inline-flex;gap:5px;align-items:center"><input type="checkbox" id="umlaufManual"> manuell überschreiben</label></span></label>
+            <label class="f">Entladezeit-Überschreitung<div class="inp"><input id="entlade" type="number" step="5" min="0"><span class="u">min gesamt</span></div><span class="hint">über 6 min/m³ frei</span></label>
+          </div>
+          <div class="section-title" style="margin-top:14px">Zusatzleistungen</div>
+          <div class="checks">
+            <label><input type="checkbox" id="vz"> Verzögerer (bis 3 h)</label>
+            <label><input type="checkbox" id="warm"> Warmbeton (&lt; 0 °C)</label>
+          </div>
+          <div class="form" style="margin-top:10px">
+            <label class="f">Fließmittel<div class="inp"><input id="fm" type="number" step="0.1" min="0"><span class="u">kg/m³</span></div></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="gap:16px;align-content:start">
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Ergebnis</h2><div class="right" id="o-sortname"></div></div>
+        <div class="card-b">
+          <div class="kpis">
+            <div class="kpi" id="k-ap"><div class="l">Angebotspreis</div><div class="v" id="k-ap-v"></div><div class="s">€/m³ netto</div></div>
+            <div class="kpi" id="k-re"><div class="l">Roherlös</div><div class="v" id="k-re-v"></div><div class="s" id="k-re-s"></div></div>
+            <div class="kpi" id="k-db"><div class="l">DB 1</div><div class="v" id="k-db-v"></div><div class="s" id="k-db-s"></div></div>
+            <div class="kpi" id="k-ug"><div class="l">Max. Nachlass</div><div class="v" id="k-ug-v"></div><div class="s" id="k-ug-s"></div></div>
+          </div>
+          <div class="alerts" id="alerts"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Nettobetrag laut Gesamtmenge</h2></div>
+        <div class="card-b" style="padding-top:4px">
+          <table class="t">
+            <thead><tr><th>Position</th><th class="r">€/m³</th><th class="r">Menge</th><th class="r">Betrag €</th></tr></thead>
+            <tbody id="o-netto"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Kosten &amp; Deckungsbeitrag</h2></div>
+        <div class="card-b" style="padding-top:4px">
+          <table class="t">
+            <thead><tr><th>Position</th><th class="r">€/m³</th><th class="r">Gesamt €</th></tr></thead>
+            <tbody id="o-kosten"></tbody>
+          </table>
+          <div class="note" id="o-transport-note"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============ SORTENÜBERSICHT ============ -->
+<section class="view" id="v-sorten">
+  <div class="card">
+    <div class="card-h"><span class="bar"></span><h2>Sortenübersicht – Marge zum Listenpreis</h2><div class="right" id="sort-scen"></div></div>
+    <div class="card-b">
+      <div class="toolbar">
+        <div class="inp"><input id="sort-q" type="text" placeholder="Suchen: Sorte, C30/37, XF4, Bohrpfahl …"></div>
+        <label class="checks"><label><input type="checkbox" id="sort-crit"> nur kritische Sorten</label></label>
+        <button class="btn" id="btn-print-sorten">Liste drucken (quer)</button>
+        <span class="note" style="margin:0">Szenario = Liefer- und Mengenparameter aus der Angebotskalkulation, ohne Nachlass.</span>
+      </div>
+      <div class="scroll">
+        <table class="t" id="sort-table">
+          <thead><tr><th>Sorte</th><th>Festigkeit</th><th>Kons.</th><th class="r">Dmax</th><th>Exposition / Anwendung</th><th class="r">Listenpreis</th><th class="r">EK</th><th class="r">Roherlös</th><th class="r">DB 1 €/m³</th><th class="r">DB %</th><th class="r">Max. Nachlass</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LKW ============ -->
+<section class="view" id="v-lkw">
+  <div class="grid g2">
+    <div class="card">
+      <div class="card-h"><span class="bar"></span><h2>Anschaffung &amp; Abschreibung</h2><div class="right">MB Arocs 3243 B 8x4 · Stetter AM 9/8 FHC</div></div>
+      <div class="card-b">
+        <div class="form">
+          <label class="f">Fahrgestell MB Arocs (netto)<div class="inp"><input id="l_ak_fg" type="number" step="100"><span class="u">€</span></div><span class="hint">Gesamtanschaffungspreis lt. Ratenplan DTFS</span></label>
+          <label class="f">Mischeraufbau Stetter (netto)<div class="inp"><input id="l_ak_auf" type="number" step="100"><span class="u">€</span></div><span class="hint">RE 61682327 vom 18.05.2026</span></label>
+          <label class="f">Nutzungsdauer<div class="inp"><input id="l_nd" type="number" step="1" min="1"><span class="u">Jahre</span></div></label>
+          <label class="f">Restwert nach ND<div class="inp assume"><input id="l_rest" type="number" step="500"><span class="u">€</span></div></label>
+          <label class="f">Kalk. Zinssatz<div class="inp assume"><input id="l_zins" type="number" step="0.1"><span class="u">% p. a.</span></div><span class="hint">Mietkauf faktisch zinsfrei (Zinsen gesamt −27,70 €)</span></label>
+          <label class="f">Einsatzstunden<div class="inp assume"><input id="l_std" type="number" step="50"><span class="u">h / Jahr</span></div></label>
+        </div>
+        <table class="t" style="margin-top:14px">
+          <tr><td>Anschaffungskosten gesamt</td><td class="r num" id="l-o-ak"></td></tr>
+          <tr><td>AfA linear p. a.</td><td class="r num" id="l-o-afa"></td></tr>
+          <tr class="sub"><td>AfA je Monat</td><td class="r num" id="l-o-afam"></td></tr>
+          <tr class="sub"><td>Abschreibungszeitraum</td><td class="r num" id="l-o-zeit"></td></tr>
+          <tr><td>Kalk. Zinsen p. a.</td><td class="r num" id="l-o-zins"></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><span class="bar"></span><h2>Betriebskosten</h2></div>
+      <div class="card-b">
+        <div class="form">
+          <label class="f">Fahrerlohn brutto<div class="inp assume"><input id="l_lohn" type="number" step="0.25"><span class="u">€/h</span></div></label>
+          <label class="f">Lohnnebenkosten<div class="inp assume"><input id="l_lnk" type="number" step="1"><span class="u">%</span></div></label>
+          <label class="f">Dieselverbrauch<div class="inp assume"><input id="l_diesel" type="number" step="0.5"><span class="u">l/h</span></div><span class="hint">Mix aus Fahrt, Trommel, Standzeit</span></label>
+          <label class="f">Dieselpreis netto<div class="inp assume"><input id="l_dpreis" type="number" step="0.01"><span class="u">€/l</span></div></label>
+          <label class="f">Kfz-Steuer + Versicherung<div class="inp assume"><input id="l_vers" type="number" step="100"><span class="u">€ / Jahr</span></div></label>
+          <label class="f">Wartung, Reparatur, Reifen<div class="inp assume"><input id="l_rep" type="number" step="100"><span class="u">€ / Jahr</span></div></label>
+          <label class="f">Gemeinkostenzuschlag<div class="inp assume"><input id="l_gk" type="number" step="1"><span class="u">%</span></div><span class="hint">Verwaltung, Disposition, Werkstatt</span></label>
+        </div>
+        <p class="note"><span class="leg-assume"></span>Gelbe Felder = Annahmen (keine Belege im Ordner) – bitte mit Lohnbuchhaltung/Fuhrpark abgleichen.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-h"><span class="bar"></span><h2>Maschinenstundensatz Fahrmischer</h2><div class="right">bisher in Excel: <span class="mono">94,65 €/h</span></div></div>
+    <div class="card-b">
+      <div class="big" id="l-o-satz"></div>
+      <div class="stack" id="l-stack"></div>
+      <div class="legend" id="l-legend"></div>
+      <table class="t" style="margin-top:12px">
+        <thead><tr><th>Kostenart</th><th class="r">€ / Jahr</th><th class="r">€ / h</th><th class="r">Anteil</th></tr></thead>
+        <tbody id="l-tab"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ANLAGE ============ -->
+<section class="view" id="v-anlage">
+  <div class="grid g2">
+    <div class="card">
+      <div class="card-h"><span class="bar"></span><h2>Kosten Betonmischanlage „Stetter“</h2></div>
+      <div class="card-b">
+        <div class="section-title">Abschreibung (Konto 0619)</div>
+        <div class="form">
+          <label class="f">AfA Bestand p. a.<div class="inp"><input id="a_afa" type="number" step="1"><span class="u">€</span></div><span class="hint">742,33 €/Monat lt. Konto 0619</span></label>
+          <label class="f">Investitionen 2026<div class="inp"><input id="a_inv" type="number" step="100"><span class="u">€</span></div><span class="hint">Steuerung, Dosieranlage, Schaltschrank</span></label>
+          <label class="f">ND Investitionen 2026<div class="inp assume"><input id="a_invnd" type="number" step="1"><span class="u">Jahre</span></div></label>
+        </div>
+        <div class="section-title">Laufende Kosten 2026 (Ist bis Stichtag)</div>
+        <div class="form">
+          <label class="f">Instandhaltung (Konto 6234)<div class="inp"><input id="a_inst" type="number" step="1"><span class="u">€ Ist</span></div></label>
+          <label class="f">Heizöl (Konto 6233)<div class="inp"><input id="a_heiz" type="number" step="1"><span class="u">€ Ist</span></div></label>
+          <label class="f">Stichtag Ist-Werte<div class="inp"><input id="a_stich" type="date"></div><span class="hint">Hochrechnung auf 12 Monate</span></label>
+        </div>
+        <div class="section-title">Weitere Kosten (Jahreswerte)</div>
+        <div class="form">
+          <label class="f">Strom Anlage<div class="inp assume"><input id="a_strom" type="number" step="500"><span class="u">€ / Jahr</span></div></label>
+          <label class="f">Personal Anlage / Mischmeister<div class="inp assume"><input id="a_pers" type="number" step="1000"><span class="u">€ / Jahr</span></div></label>
+          <label class="f">Radlader Beschickung<div class="inp assume"><input id="a_rad" type="number" step="1000"><span class="u">€ / Jahr</span></div></label>
+          <label class="f">Labor / Güteüberwachung<div class="inp assume"><input id="a_lab" type="number" step="500"><span class="u">€ / Jahr</span></div></label>
+        </div>
+        <div class="section-title">Produktion</div>
+        <div class="form">
+          <label class="f">Jahresmenge Beton<div class="inp assume"><input id="a_menge" type="number" step="500"><span class="u">m³ / Jahr</span></div><span class="hint" id="a-menge-hint"></span></label>
+          <label class="f">Ø Zementgehalt (für Schätzung)<div class="inp assume"><input id="a_zgeh" type="number" step="5"><span class="u">kg/m³</span></div></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="gap:16px;align-content:start">
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Mischkosten je m³</h2><div class="right">bisher in Excel: <span class="mono">10,80 €/m³</span></div></div>
+        <div class="card-b">
+          <div class="big" id="a-o-misch"></div>
+          <table class="t" style="margin-top:10px">
+            <thead><tr><th>Kostenart</th><th class="r">€ / Jahr</th><th class="r">€ / m³</th></tr></thead>
+            <tbody id="a-tab"></tbody>
+          </table>
+          <div class="section-title" style="margin-top:16px">Wert für die Kalkulation</div>
+          <div class="checks"><label><input type="checkbox" id="a_manual"> Mischkosten manuell festlegen</label></div>
+          <div class="form" style="margin-top:8px"><label class="f">Manueller Wert<div class="inp"><input id="a_manwert" type="number" step="0.1"><span class="u">€/m³</span></div></label></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Hinweis</h2></div>
+        <div class="card-b note" style="margin:0">
+          Konto <b>6229 „Beton Anl. So.“</b> (390.946 €) enthält überwiegend <b>Zukauf-Beton</b> (ca. 2.100 m³ à 131–158 €/m³) und Pumpen-/Mietleistungen. Diese Kosten sind keine Mischkosten der eigenen Anlage und fließen deshalb nicht in den m³-Satz ein.
+          <br><br>Konto <b>6232 Zusatzmittel</b> ist im Material-EK je Sorte enthalten und wird hier ebenfalls nicht zusätzlich angesetzt.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROHSTOFFE ============ -->
+<section class="view" id="v-rohstoffe">
+  <div class="grid g2">
+    <div class="card">
+      <div class="card-h"><span class="bar"></span><h2>Rohstoffpreise 2026 aus der Buchhaltung</h2></div>
+      <div class="card-b">
+        <table class="t">
+          <thead><tr><th>Rohstoff</th><th class="r">Preis Jan/Feb</th><th class="r">Preis aktuell</th><th class="r">Δ</th><th class="r">Anteil am EK</th></tr></thead>
+          <tbody id="r-tab"></tbody>
+          <tfoot><tr class="sum"><td colspan="3">EK-Index (gewichtete Teuerung ggü. Preisstand 01.01.2026)</td><td class="r num" id="r-idx"></td><td class="r num" id="r-wsum"></td></tr></tfoot>
+        </table>
+        <div class="checks" style="margin-top:12px"><label><input type="checkbox" id="ekAdj"> Material-EK je Sorte mit EK-Index hochrechnen</label></div>
+        <div class="form" style="margin-top:10px">
+          <label class="f">Zusätzlicher manueller EK-Aufschlag<div class="inp"><input id="ekExtra" type="number" step="0.5"><span class="u">%</span></div></label>
+        </div>
+        <p class="note">Die Material-EK je Sorte stammen aus dem Blatt „EK“ der Excel-Kalkulation (Preisstand 01.01.2026). Die Anteile am EK sind Richtwerte für eine typische Rezeptur und können angepasst werden.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="bar"></span><h2>Einkaufsmengen 2026 (bis 09/2026)</h2></div>
+      <div class="card-b">
+        <table class="t">
+          <thead><tr><th>Konto</th><th>Rohstoff</th><th class="r">Menge</th><th class="r">Betrag €</th><th class="r">Ø €/t</th></tr></thead>
+          <tbody id="r-mengen"></tbody>
+        </table>
+        <p class="note">Mengen aus den Buchungstexten ausgelesen; Gutschriften/Stornos saldiert im Betrag.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PARAMETER ============ -->
+<section class="view" id="v-param">
+  <div class="grid g2">
+    <div class="card">
+      <div class="card-h"><span class="bar"></span><h2>Zuschläge lt. Preisliste 2026 (gültig ab 01.07.2026)</h2></div>
+      <div class="card-b">
+        <div class="form">
+          <label class="f">Energiekostenzuschlag<div class="inp"><input id="z_energie" type="number" step="0.1"><span class="u">€/m³</span></div></label>
+          <label class="f">Maut (pauschal, bei Lieferung)<div class="inp"><input id="z_maut" type="number" step="0.1"><span class="u">€/m³</span></div></label>
+          <label class="f">Selbstabholer-Vergütung<div class="inp"><input id="z_abhol" type="number" step="0.1"><span class="u">€/m³</span></div></label>
+          <label class="f">Werk-Service (bei Abholung)<div class="inp"><input id="z_werk" type="number" step="0.1"><span class="u">€/m³</span></div><span class="hint">aus Excel übernommen</span></label>
+          <label class="f">Verzögerer bis 3 h<div class="inp"><input id="z_vz" type="number" step="0.1"><span class="u">€/m³</span></div></label>
+          <label class="f">Warmbeton &lt; 0 °C<div class="inp"><input id="z_warm" type="number" step="0.1"><span class="u">€/m³</span></div></label>
+          <label class="f">Fließmittel<div class="inp"><input id="z_fm" type="number" step="0.1"><span class="u">€/kg</span></div></label>
+          <label class="f">Frachtausgleich Mindermenge<div class="inp"><input id="z_minder" type="number" step="0.5"><span class="u">€ je fehl. m³</span></div><span class="hint">Excel alt: 18 €</span></label>
+          <label class="f">Mindestmenge je Lieferung<div class="inp"><input id="z_minmenge" type="number" step="0.5"><span class="u">m³</span></div></label>
+          <label class="f">Entladezeit-Überschreitung<div class="inp"><input id="z_entl" type="number" step="0.5"><span class="u">€ je 15 min</span></div></label>
+        </div>
+      </div>
+    </div>
+    <div class="grid" style="gap:16px;align-content:start">
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Freigabegrenzen</h2></div>
+        <div class="card-b">
+          <div class="form">
+            <label class="f">Mindest-Roherlös<div class="inp"><input id="g_re" type="number" step="1"><span class="u">% vom Netto</span></div></label>
+            <label class="f">Mindest-Deckungsbeitrag 1<div class="inp"><input id="g_db" type="number" step="1"><span class="u">% vom Netto</span></div></label>
+          </div>
+          <p class="note">Wie in der Excel-Vorlage: Roherlös = Netto − Material-EK; DB 1 = Roherlös − Selbstkosten I (Transport + Mischen). Unterschreitung ⇒ Genehmigung GL.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="bar"></span><h2>Daten</h2></div>
+        <div class="card-b">
+          <p class="note" style="margin-top:0">Alle Eingaben werden lokal in diesem Browser gespeichert.</p>
+          <button class="btn" id="btn-reset">Alle Parameter auf Standard zurücksetzen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUELLEN ============ -->
+<section class="view" id="v-quellen">
+  <div class="card">
+    <div class="card-h"><span class="bar"></span><h2>Verwendete Unterlagen · Ordner „Beton Kalkulation/2026“</h2></div>
+    <div class="card-b">
+      <table class="t">
+        <thead><tr><th>Dokument</th><th>Inhalt</th><th>Übernommen in</th></tr></thead>
+        <tbody>
+          <tr><td>11.05 Kalkulation für den Angebotsersteller.xlsx</td><td>Kalkulationslogik, Preise 2026 (01.01. / 15.06.), Material-EK je Sorte</td><td>Rechenlogik, Sortenstamm, EK</td></tr>
+          <tr><td>Preisliste 2026 01.07.2026.pdf / Preisliste_Beton_2026 versendet D.M..pdf</td><td>76 Sorten mit Exposition, Anwendung, Preis; Zuschläge &amp; Sonderleistungen</td><td>Sortenpreise, Zuschläge</td></tr>
+          <tr><td>Ratenplan MB RH-775.pdf</td><td>MB Arocs 3243 B 8x4, Gesamtanschaffungspreis 109.000 €, Laufzeit 23.07.2026–22.01.2029, Zinsen −27,70 €</td><td>LKW-Anschaffung</td></tr>
+          <tr><td>RE-MB Kauf-RH-775.pdf</td><td>Mietkaufrechnung IAB26/2636, Nettomietkaufpreis 108.972,30 €</td><td>Kontrolle LKW</td></tr>
+          <tr><td>RE-Stetter-RH-775.pdf</td><td>Stetter Transportbetonmischer AM 9/8 FHC UltraLife, 40.500 € netto</td><td>LKW-Anschaffung</td></tr>
+          <tr><td>4040-775 Mischer-2026.pdf</td><td>Raten DTFS (Tilgung) 5.883,19 € bis 09/2026</td><td>nur Info – Kosten über AfA</td></tr>
+          <tr><td>0619-Anlage Stetter-2025/2026.pdf</td><td>AfA Mischanlage 742,33 €/Monat; Invest 2026: 13.200 + 113.400 + 12.800 − 256 €</td><td>Mischanlage</td></tr>
+          <tr><td>6234-Instandhaltung-2026.pdf</td><td>48.382,88 € bis 16.09.2026</td><td>Mischanlage</td></tr>
+          <tr><td>6233-Heizöl-2026.pdf</td><td>3.234,57 €</td><td>Mischanlage</td></tr>
+          <tr><td>6230-Zement / 6225-Füller / 6226-Lippesand / 6227-Rheinsand / 6228-Splitte / 6232-Zusatzmittel</td><td>Einkaufspreise und -mengen 2026</td><td>EK-Index, Mengenschätzung</td></tr>
+          <tr><td>6229-Beton Anl. So.-2026.pdf</td><td>Zukauf Beton, Pumpe, Miete Fahrmischer</td><td>nicht angesetzt (siehe Mischanlage)</td></tr>
+          <tr><td>Preisliste 2026 15.05./22.05.2026 (docx/pdf)</td><td>Vorversionen der Preisliste</td><td>nicht verwendet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="modal-bg" id="settings">
+  <div class="modal">
+    <div class="card-h"><span class="bar"></span><h2>Einstellungen</h2><button class="x" id="set-close" aria-label="Schließen">×</button></div>
+    <div class="card-b">
+      <div id="set-login">
+        <p class="note" style="margin-top:0">Die Sichtbarkeit der Reiter kann nur mit dem Admin-Passwort geändert werden.</p>
+        <label class="f">Admin-Passwort<div class="inp"><input type="password" id="set-pw" autocomplete="current-password"></div></label>
+        <div class="err" id="set-err"></div>
+        <div class="row-btns"><button class="btn red" id="set-login-btn">Entsperren</button></div>
+      </div>
+      <div id="set-panel" style="display:none">
+        <div class="section-title">Sichtbare Reiter</div>
+        <div class="tg-list" id="set-tabs"></div>
+        <div class="section-title" style="margin-top:16px">Kopfzeile</div>
+        <div class="tg-list"><label class="tg"><span>Kostensätze im Kopf anzeigen <small>(Stundensatz, Mischkosten, EK-Index)</small></span><span class="switch"><input type="checkbox" id="set-pills"><i></i></span></label></div>
+        <p class="note">Gilt sofort für diesen Browser. Damit die Einstellung <b>für alle</b> gilt, die Datei mit diesen Einstellungen herunterladen und im Cockpit / GitHub-Repo ersetzen.</p>
+        <div class="row-btns">
+          <button class="btn red" id="set-download">Datei mit diesen Einstellungen herunterladen</button>
+          <button class="btn" id="set-default">Auf Datei-Standard zurücksetzen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="ang-modal">
+  <div class="modal wide">
+    <div class="card-h"><span class="bar"></span><h2>Gespeicherte Angebote</h2><span class="right" id="ang-count"></span><button class="x" id="ang-close" aria-label="Schließen">×</button></div>
+    <div class="card-b">
+      <div class="toolbar"><div class="inp"><input id="ang-q" type="text" placeholder="Suchen: Nr., Kunde, Bauvorhaben, Sorte …"></div></div>
+      <div class="scroll" style="max-height:60vh">
+        <table class="t"><thead><tr><th>Nr.</th><th>Datum</th><th>Kunde</th><th>Bauvorhaben</th><th>Sorte</th><th class="r">m³</th><th class="r">Preis €/m³</th><th class="r">DB 1</th><th></th></tr></thead><tbody id="ang-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div id="print-sheet"></div>
+
+<!-- Firebase (Projekt betonpruefung-7c1f6) – Angebote unter /betonangebote -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, get, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZGoetCYrmQotXxVIduNTa6Ze-35WCQF8",
+    authDomain: "betonpruefung-7c1f6.firebaseapp.com",
+    databaseURL: "https://betonpruefung-7c1f6-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "betonpruefung-7c1f6",
+    storageBucket: "betonpruefung-7c1f6.firebasestorage.app",
+    messagingSenderId: "460492054217",
+    appId: "1:460492054217:web:fe9e9a8b526952c084b718"
+  };
+  const app = initializeApp(firebaseConfig, "betonangebote");
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+  const BASIS = "betonangebote";
+  const key = nr => BASIS + "/" + String(nr).replace(/[.#$\/\[\]]/g,"_");
+  window.fbAng = {
+    bereit:false,
+    speichern:(nr,data)=>set(ref(db,key(nr)),data),
+    loeschen:(nr)=>remove(ref(db,key(nr))),
+    laden:(nr)=>get(ref(db,key(nr))).then(s=>s.exists()?s.val():null),
+    live:(cb)=>onValue(ref(db,BASIS),s=>cb(s.exists()?s.val():{}),err=>window.dispatchEvent(new CustomEvent("fb-fehler",{detail:err.message})))
+  };
+  onAuthStateChanged(auth,u=>{ if(u){ window.fbAng.bereit=true; window.dispatchEvent(new Event("fb-bereit")); } });
+  signInAnonymously(auth).catch(err=>window.dispatchEvent(new CustomEvent("fb-fehler",{detail:err.message})));
+</script>
+
+<script>
+/* ================= SICHTBARKEIT (Standard für alle Nutzer) ================= */
+const TAB_CONFIG = {"kalk":true,"sorten":true,"lkw":true,"anlage":true,"rohstoffe":true,"param":true,"quellen":true,"pills":true}; /*TAB_CONFIG*/
+const ADMIN_PW = "Albufeira1!";
+const SRC_HTML = "<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+const TAB_NAMES={kalk:"Angebotskalkulation",sorten:"Sortenübersicht",lkw:"Fahrmischer HSK-RH 775",anlage:"Mischanlage",rohstoffe:"Rohstoffe & EK",param:"Zuschläge & Grenzen",quellen:"Datenquellen"};
+const VIS_KEY="rh-beton-kalkulation-2026-sichtbar";
+let VIS=Object.assign({},TAB_CONFIG);
+try{const v=JSON.parse(localStorage.getItem(VIS_KEY)||"null"); if(v) VIS=Object.assign({},TAB_CONFIG,v);}catch(e){}
+
+/* ================= STAMMDATEN ================= */
+// Preise: [Preisstand 01.01.2026, Preisliste ab 01.07.2026]  – Quelle: Excel "Preise 2026" / Preisliste PDF
+const PRICES={"110164":[153.5,156.6],"110364":[156.3,159.5],"120154":[162.4,165.7],"120164":[157.4,160.6],"120354":[166.9,170.3],"120364":[161.9,165.2],"120384":[158.5,161.7],"131354":[169.5,172.9],"131364":[164.5,167.8],"131384":[161.5,164.8],"140154":[164.6,167.9],"140164":[159.6,162.8],"140184":[156.6,159.8],"142354":[171.2,174.7],"142364":[166.2,169.6],"142384":[163.2,166.5],"153354":[175.1,178.7],"153364":[170.1,173.6],"153384":[167.1,170.5],"153464":[175.8,179.4],"153484":[172.8,176.3],"153564":[172,175.5],"153584":[169,172.4],"156364":[176.4,180],"156384":[173.4,176.9],"163354":[179.2,182.8],"163364":[174.2,177.7],"163384":[171.2,174.7],"165354":[183.4,187.1],"165364":[178.4,182],"165384":[175.4,179],"165464":[179.3,182.9],"165484":[176.3,179.9],"167564":[180.9,184.6],"167584":[177.9,181.5],"173354":[187.4,191.2],"173364":[182.4,186.1],"173384":[179.4,183],"177354":[185.3,189.1],"177364":[180.3,184],"177384":[177.3,180.9],"178354":[186.9,190.7],"178364":[181.9,185.6],"178384":[178.9,182.5],"179568":[185.7,189.5],"179588":[182.7,186.4],"253354":[178.6,182.2],"253364":[173.6,177.1],"253384":[170.6,174.1],"263354":[185.8,189.6],"263364":[180.8,184.5],"263384":[177.8,181.4],"266364":[177.6,181.2],"266384":[174.6,178.1],"365364":[189.1,192.9],"365384":[186.1,189.9],"366364":[190.2,194.1],"366384":[187.2,191],"379364":[192.5,196.4],"379384":[189.5,193.3],"159364":[174.4,177.9],"159384":[171.4,174.9],"169364":[178.6,182.2],"169384":[175.6,179.2],"179364":[183.4,187.1],"179384":[180.4,184.1],"249364":[182.5,186.2],"249384":[179.5,183.1],"453367":[179.2,182.8],"453387":[176.2,179.8],"454367":[168.9,172.3],"454387":[165.9,169.3],"469367":[183.3,187],"469387":[180.3,184],"479367":[187.8,191.6],"479387":[184.8,188.5],
+"100500":[190.6,194.5],"100504":[195,198.9],"100600":[127.5,130.1],"100702":[145.9,148.9],"100708":[160,163.2],"100900":[155.5,158.7],"120054":[153.9,157],"142366":[166.2,169.6],"142386":[163.2,166.5],"165467":[168.8,172.2],"165487":[176.3,179.9],"167366":[179.8,183.4],"169367":[178.6,182.2],"169586":[177.9,181.5],"175364":[181.9,185.6],"177357":[185.3,189.1],"177367":[180.3,184],"198354":[194.5,198.4],"267367":[177.6,181.2],"269364":[181.2,184.9],"16344410":[193.5,197.4],"18334410":[219.5,223.9]};
+// Material-EK €/m³, Preisstand 01.01.2026 – Quelle: Excel Blatt "EK"
+const EK={"110164":72.0861,"110364":74.1647,"120164":72.1949,"120154":76.4459,"120384":77.9686,"120364":79.3171,"120354":81.1058,"140184":79.4257,"140164":80.7217,"140154":83.8284,"131384":79.2835,"131364":80.5682,"131354":82.4105,"142384":82.531,"142364":84.0975,"142354":87.1102,"153384":87.3693,"153364":90.1635,"153354":93.4603,"163384":93.4592,"163364":94.8055,"163354":97.3698,"173384":96.578,"173364":98.1648,"173354":101.4693,"253384":90.6377,"253364":92.2231,"253354":94.7322,"263384":94.5315,"263364":96.7191,"263354":97.6011,"156384":91.3453,"156364":92.3861,"266384":94.0195,"266364":96.1833,"165384":96.6815,"165364":98.1304,"165354":100.2236,"177384":96.7289,"177364":98.2558,"177354":100.0667,"178384":98.2272,"178364":101.2014,"178354":103.0828,"153584":89.4396,"153564":94.1396,"167584":91.8801,"167564":96.7846,"179588":99.223,"179568":101.8743,"153484":92.823,"153464":98.3735,"165484":97.0203,"165464":95.7493,"365384":94.772,"365364":98.5784,"366384":93.7178,"366364":96.1833,"379384":98.2272,"379364":102.0876,"159384":94.7597,"159364":96.1048,"169384":99.9119,"169364":97.5391,"179384":99.0037,"179364":100.8354,"249384":95.7947,"249364":98.5304,"453387":100.6936,"453367":88.193,"454387":92.1226,"454367":90.0399,"469387":94.6328,"469367":96.8999,"479387":101.6665,"479367":93.3424};
+// Sortenstamm lt. Preisliste 2026: [Gruppe, Exposition, [[Nr, Festigkeit, Konsistenz, Dmax, Betonklasse]]]
+const GROUPS=[
+ ["Unbewehrte Bauteile ohne Frost/Verschleiß/chem. Angriff","X0",[["110164","C8/10","C1",16,"N"],["110364","C8/10","F3",16,"N"],["120164","C12/15","C1",16,"N"],["120154","C12/15","C1",8,"N"],["120384","C12/15","F3",32,"N"],["120364","C12/15","F3",16,"N"],["120354","C12/15","F3",8,"N"],["140184","C20/25","C1",32,"N"],["140164","C20/25","C1",16,"N"],["140154","C20/25","C1",8,"N"]]],
+ ["Innenbauteile trocken oder ständig nass","XC1/XC2",[["131384","C16/20","F3",32,"N"],["131364","C16/20","F3",16,"N"],["131354","C16/20","F3",8,"N"]]],
+ ["Offene Gebäude, Feuchträume, mäßige Feuchte","XC3",[["142384","C20/25","F3",32,"N"],["142364","C20/25","F3",16,"N"],["142354","C20/25","F3",8,"N"]]],
+ ["Bewitterte Außenbauteile, Frost ohne Taumittel","XC4 XF1 XA1",[["153384","C25/30","F3",32,"N"],["153364","C25/30","F3",16,"N"],["153354","C25/30","F3",8,"N"],["163384","C30/37","F3",32,"N"],["163364","C30/37","F3",16,"N"],["163354","C30/37","F3",8,"N"]]],
+ ["Bewitterte Außenbauteile, erhöhte Anforderungen","XC4 XD2 XS2 XF2 XF3 XA2",[["173384","C35/45","F3",32,"N"],["173364","C35/45","F3",16,"N"],["173354","C35/45","F3",8,"N"]]],
+ ["WU-Beton, erhöhter Wassereindringwiderstand","XC4 XF1 XA1",[["253384","C25/30","F3",32,"N"],["253364","C25/30","F3",16,"N"],["253354","C25/30","F3",8,"N"]]],
+ ["WU-Beton, Außen- und Kellerwände","XC4 XD1 XM1 XF1 XA1",[["263384","C30/37","F3",32,"N"],["263364","C30/37","F3",16,"N"],["263354","C30/37","F3",8,"N"]]],
+ ["Frost mit Taumittel, mäßige Wassersättigung","XC4/XD1 XF2(LP)/XF3(LP)",[["156384","C25/30","F3",32,"E"],["156364","C25/30","F3",16,"E"]]],
+ ["Frost mit Taumittel, hohe Wassersättigung","XC4/XD2 XF4(LP)",[["266384","C30/37","F3",32,"E"],["266364","C30/37","F3",16,"E"]]],
+ ["Chloride, mäßiger Verschleiß u. Feuchte","XC4 XD1 XM1/XM2*",[["165384","C30/37","F3",32,"N"],["165364","C30/37","F3",16,"N"],["165354","C30/37","F3",8,"N"]]],
+ ["Chem. mäßig angreifende Umgebung","XC4/XD2 XA2** XF3",[["177384","C35/45","F3",32,"N"],["177364","C35/45","F3",16,"N"],["177354","C35/45","F3",8,"N"]]],
+ ["Starker chem. Angriff","XC4/XF3 XA2*** XM2/XM3**",[["178384","C35/45","F3",32,"N"],["178364","C35/45","F3",16,"N"],["178354","C35/45","F3",8,"N"]]],
+ ["Bohrpfahlbeton, schwacher chem. Angriff","XC4/XF1/XA1",[["153584","C25/30","F5",32,"N"],["153564","C25/30","F5",16,"N"]]],
+ ["Bohrpfahlbeton","XC4/XF1 XA1/XD1",[["167584","C30/37","F5",32,"N"],["167564","C30/37","F5",16,"N"]]],
+ ["Bohrpfahlbeton, hoher Sulfatwiderstand","XC4/XD3 XF3/XA2***",[["179588","C35/45","F5",32,"N"],["179568","C35/45","F5",16,"N"]]],
+ ["Industrieböden außen, chem. schwach","XC4/XF1 XA1",[["153484","C25/30","F4",32,"N"],["153464","C25/30","F4",16,"N"]]],
+ ["Industrieböden, mech. Angriff","XC4/XD1 XM1/XM2*",[["165484","C30/37","F4",32,"N"],["165464","C30/37","F4",16,"N"]]],
+ ["FD-Beton gem. DAfStB","XC4/XD1 XM1/XM2*",[["365384","C30/37","F3",32,"E"],["365364","C30/37","F3",16,"E"]]],
+ ["Flüssigkeitsdicht gem. DAfStB","XC4/XD2/XM1 XM2*/XF4(LP)",[["366384","C30/37","F3",32,"E"],["366364","C30/37","F3",16,"E"]]],
+ ["Flüssigkeitsdicht gem. DAfStB","XC4/XD3/XA2*** XM2/XM3**",[["379384","C35/45","F3",32,"E"],["379364","C35/45","F3",16,"E"]]],
+ ["Ingenieurbau ZTV-ING","XC4 XF1 XA1",[["159384","C25/30","F3",32,"S"],["159364","C25/30","F3",16,"S"]]],
+ ["Ingenieurbau ZTV-ING","XC4 XD2 XF2 XF3 XA2",[["169384","C30/37","F3",32,"S"],["169364","C30/37","F3",16,"S"],["179384","C35/45","F3",32,"S"],["179364","C35/45","F3",16,"S"]]],
+ ["Kappenbeton","XC4 XD3 XF4 LP",[["249384","C25/30","F2",32,"S"],["249364","C25/30","F2",16,"S"]]],
+ ["Landwirtschaftsbau","XC4 XF1 XA1",[["453387","C25/30","F3",32,"N"],["453367","C25/30","F3",16,"N"]]],
+ ["Landwirtschaftsbau (Biogas, Güllebehälter)","XC4 XF3 LP",[["454387","C25/30","F3",32,"E"],["454367","C25/30","F3",16,"E"]]],
+ ["Landwirtschaftsbau (Fahrsilos)","XC4 XF4 XA1 XM2 LP",[["469387","C30/37","F3",32,"N"],["469367","C30/37","F3",16,"N"]]],
+ ["Landwirtschaftsbau, starker Angriff","XC4 XD3 XF3 XA3 XM2",[["479387","C35/45*","F3",32,"N"],["479367","C35/45*","F3",16,"N"]]]
+];
+const SORTS=[];
+GROUPS.forEach(([g,x,list])=>list.forEach(([nr,fk,ko,dm,kl])=>SORTS.push({nr,fk,ko,dm,kl,grp:g,expo:x,sonder:false})));
+Object.keys(PRICES).forEach(nr=>{ if(!SORTS.find(s=>s.nr===nr)) SORTS.push({nr,fk:"",ko:"",dm:"",kl:"",grp:"Sondersorte (nur interne Liste)",expo:"",sonder:true}); });
+
+// Rohstoffe (Konten 6225–6232): Preis Jan/Feb → letzter Preis
+const RAW=[
+ {k:"cem", n:"Zement CEM II/III 42,5", kto:"6230", p0:150.00, p1:153.75, u:"€/t", w:55},
+ {k:"sand",n:"Sand 0/2 (Rhein/Lippe)", kto:"6226/6227", p0:20.15, p1:21.84, u:"€/t", w:18},
+ {k:"spl", n:"Splitt 8/16 · 16/22", kto:"6228", p0:13.00, p1:13.00, u:"€/t", w:15},
+ {k:"fue", n:"Füller D4", kto:"6225", p0:60.00, p1:69.00, u:"€/t", w:3},
+ {k:"zm",  n:"Zusatzmittel (Isoflow)", kto:"6232", p0:1.00, p1:1.00, u:"€/kg", w:9}
+];
+const MENGEN=[
+ ["6230","Zement CEM II / CEM III","4.890 t","721.459,83","≈ 152"],
+ ["6227","Rheinsand 0/2 (+ Mauersand)","9.027 t","189.979,53","≈ 21"],
+ ["6226","Lippesand 0/2 / Mauersand","3.609 t","62.916,34","≈ 17"],
+ ["6228","Splitte 8/16, 11/16, 16/22, 22/32","9.335 t","128.668,78","≈ 14"],
+ ["6225","Füller D4","247 t","19.057,32","≈ 63"],
+ ["6232","Zusatzmittel","≈ 21 t","28.253,00","–"]
+];
+const CEM_T_YTD=4890;
+
+/* ================= PARAMETER ================= */
+const DEF={
+  kunde:"",kat:"A-Kunde",bv:"",sorte:"153364",vol:20,nl:0,nlMode:"eur",pl:"0107",
+  abhol:false,km:30,ladung:8,speed:45,stand:60,umlaufManual:false,umlauf:150,entlade:0,vz:false,warm:false,fm:0,
+  l_ak_fg:109000,l_ak_auf:40500,l_nd:6,l_rest:0,l_zins:0,l_std:1600,l_lohn:21,l_lnk:75,l_diesel:14,l_dpreis:1.45,l_vers:6000,l_rep:12000,l_gk:10,
+  a_afa:8908,a_inv:139144,a_invnd:10,a_inst:48382.88,a_heiz:3234.57,a_stich:"2026-09-16",a_strom:25000,a_pers:60000,a_rad:20000,a_lab:8000,a_menge:20000,a_zgeh:310,a_manual:false,a_manwert:10.8,
+  ekAdj:true,ekExtra:0,w_cem:55,w_sand:18,w_spl:15,w_fue:3,w_zm:9,
+  z_energie:9,z_maut:4.5,z_abhol:-6,z_werk:4.5,z_vz:4,z_warm:12,z_fm:2.5,z_minder:25,z_minmenge:6,z_entl:25,
+  g_re:35,g_db:12,
+  angNr:"",angErstellt:""
+};
+const KEY="rh-beton-kalkulation-2026";
+let S=Object.assign({},DEF);
+try{const saved=JSON.parse(localStorage.getItem(KEY)||"null"); if(saved) S=Object.assign({},DEF,saved);}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+/* ================= FORMAT ================= */
+const nf2=new Intl.NumberFormat("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});
+const nf0=new Intl.NumberFormat("de-DE",{maximumFractionDigits:0});
+const nf1=new Intl.NumberFormat("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1});
+const e2=v=>nf2.format(v);
+const eur=v=>nf2.format(v)+" €";
+const pct=v=>nf1.format(v*100)+" %";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ================= BERECHNUNG ================= */
+function lkw(){
+  const ak=S.l_ak_fg+S.l_ak_auf;
+  const afa=(ak-S.l_rest)/Math.max(S.l_nd,0.1);
+  const zins=(ak+S.l_rest)/2*S.l_zins/100;
+  const h=Math.max(S.l_std,1);
+  const fahrer=S.l_lohn*(1+S.l_lnk/100)*h;
+  const diesel=S.l_diesel*S.l_dpreis*h;
+  const base=afa+zins+S.l_vers+S.l_rep+fahrer+diesel;
+  const gk=base*S.l_gk/100;
+  const parts=[
+    {n:"AfA Fahrzeug ("+nf0.format(S.l_nd)+" J.)",v:afa,c:"#c8102e"},
+    {n:"Kalk. Zinsen",v:zins,c:"#e0677b"},
+    {n:"Steuer + Versicherung",v:S.l_vers,c:"#7a7a80"},
+    {n:"Wartung / Reparatur / Reifen",v:S.l_rep,c:"#a6a6ab"},
+    {n:"Fahrer inkl. LNK",v:fahrer,c:"#141414"},
+    {n:"Diesel",v:diesel,c:"#4a4a4f"},
+    {n:"Gemeinkosten",v:gk,c:"#d4b27a"}
+  ];
+  return {ak,afa,zins,h,parts,total:base+gk,satz:(base+gk)/h};
+}
+function hochFaktor(){
+  const d=new Date(S.a_stich); if(isNaN(d)) return 1;
+  const start=new Date(d.getFullYear(),0,1);
+  const days=Math.max(1,Math.round((d-start)/86400000)+1);
+  return 365/days;
+}
+function anlage(){
+  const f=hochFaktor();
+  const rows=[
+    ["AfA Mischanlage Bestand",S.a_afa],
+    ["AfA Investitionen 2026 ("+nf0.format(S.a_invnd)+" J.)",S.a_inv/Math.max(S.a_invnd,0.1)],
+    ["Instandhaltung (hochgerechnet ×"+nf2.format(f)+")",S.a_inst*f],
+    ["Heizöl (hochgerechnet)",S.a_heiz*f],
+    ["Strom",S.a_strom],["Personal Anlage",S.a_pers],["Radlader Beschickung",S.a_rad],["Labor / Güteüberwachung",S.a_lab]
+  ];
+  const total=rows.reduce((a,r)=>a+r[1],0);
+  const m=Math.max(S.a_menge,1);
+  const calc=total/m;
+  return {rows,total,calc,f,wert:S.a_manual?S.a_manwert:calc};
+}
+function ekIndex(){
+  let w=0,s=0;
+  RAW.forEach(r=>{const wi=S["w_"+r.k]||0; w+=wi; s+=wi*(r.p1/r.p0-1);});
+  return {idx:w?s/w:0,wsum:w};
+}
+function ekFaktor(){const i=ekIndex().idx; return (S.ekAdj?1+i:1)*(1+S.ekExtra/100);}
+
+function calcFor(nr,opt){
+  opt=opt||{};
+  const p=PRICES[nr]||[0,0];
+  const lp=S.pl==="0107"?p[1]:p[0];
+  const ek0=EK[nr];
+  const ek=(ek0==null?0:ek0)*ekFaktor();
+  const vol=Math.max(S.vol,0.1);
+  const nl=opt.noNl?0:(S.nlMode==="pct"?lp*S.nl/100:S.nl);
+  const ap=lp-nl;
+  const L=opt.L||lkw(), A=opt.A||anlage();
+  const auto=S.km*2/Math.max(S.speed,1)*60+S.stand;
+  const uml=S.umlaufManual?S.umlauf:auto;
+  const trips=S.abhol?0:Math.ceil(vol/Math.max(S.ladung,0.5));
+  const trTot=trips*uml/60*L.satz;
+  const trM=trTot/vol;
+  const misch=A.wert;
+  const sk=trM+misch;
+  const z=[];
+  z.push(["Energiekostenzuschlag",S.z_energie]);
+  if(!S.abhol) z.push(["Maut (pauschal)",S.z_maut]);
+  if(S.abhol){ z.push(["Werk-Service",S.z_werk]); z.push(["Selbstabholer-Vergütung",S.z_abhol]); }
+  if(S.vz) z.push(["Verzögerer",S.z_vz]);
+  if(S.warm) z.push(["Warmbeton",S.z_warm]);
+  if(S.fm>0) z.push(["Fließmittel "+nf1.format(S.fm)+" kg/m³",S.fm*S.z_fm]);
+  const zM=z.reduce((a,r)=>a+r[1],0);
+  const minder=(!S.abhol && vol<S.z_minmenge)?(S.z_minmenge-vol)*S.z_minder:0;
+  const entl=S.entlade>0?Math.ceil(S.entlade/15)*S.z_entl:0;
+  const netto=ap*vol+zM*vol+minder+entl;
+  const mat=ek*vol;
+  const roh=netto-mat;
+  const db=roh-sk*vol;
+  const rePct=netto?roh/netto:0, dbPct=netto?db/netto:0;
+  const zEff=(netto-ap*vol)/vol;
+  const r=S.g_re/100,d=S.g_db/100;
+  const minP=Math.max(ek/(1-r),(ek+sk)/(1-d))-zEff;
+  const maxNl=lp-minP;
+  return {nr,lp,ek,ek0,vol,nl,ap,trips,uml,auto,trTot,trM,misch,sk,z,zM,minder,entl,netto,mat,roh,db,rePct,dbPct,minP,maxNl,L,A};
+}
+
+/* ================= UI ================= */
+function sortLabel(s){return s.nr+" · "+(s.fk?(s.fk+" "+s.ko+" Dmax "+s.dm):"")+(s.expo?" · "+s.expo:"")+(s.sonder?" · Sondersorte":"");}
+function fillSorten(){
+  const sel=$("sorte"); sel.innerHTML="";
+  let cur=null,og=null;
+  SORTS.forEach(s=>{
+    if(s.grp!==cur){cur=s.grp;og=document.createElement("optgroup");og.label=s.grp;sel.appendChild(og);}
+    const o=document.createElement("option");o.value=s.nr;o.textContent=sortLabel(s);og.appendChild(o);
+  });
+}
+function bind(){
+  document.querySelectorAll("input[id],select[id]").forEach(el=>{
+    const k=el.id; if(!(k in S)) return;
+    if(el.type==="checkbox") el.checked=!!S[k]; else el.value=S[k];
+    el.addEventListener("input",()=>{
+      if(el.type==="checkbox") S[k]=el.checked;
+      else if(el.type==="number") S[k]=el.value===""?0:parseFloat(el.value);
+      else S[k]=el.value;
+      save(); render();
+    });
+  });
+  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===t));
+    document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id==="v-"+t.dataset.v));
+    try{localStorage.setItem(KEY+"-tab",t.dataset.v);}catch(e){}
+  }));
+  try{const tb=localStorage.getItem(KEY+"-tab"); if(tb&&VIS[tb]){const t=document.querySelector('.tab[data-v="'+tb+'"]'); if(t) t.click();}}catch(e){}
+  applyVis();
+  $("btn-print").addEventListener("click",()=>{document.body.classList.remove("print-sorten");renderPrint();window.print();});
+  $("btn-print-sorten").addEventListener("click",()=>{document.body.classList.add("print-sorten");window.print();});
+  window.addEventListener("afterprint",()=>document.body.classList.remove("print-sorten"));
+  window.addEventListener("beforeprint",renderPrint);
+  initSettings();
+  segs();
+  $("btn-reset").addEventListener("click",()=>{ if(confirm("Alle Parameter auf Standard zurücksetzen?")){S=Object.assign({},DEF);save();location.reload();} });
+  $("sort-q").addEventListener("input",renderSorten);
+  $("sort-crit").addEventListener("change",renderSorten);
+  $("sort-table").addEventListener("click",e=>{
+    const tr=e.target.closest("tr[data-nr]"); if(!tr) return;
+    S.sorte=tr.dataset.nr; $("sorte").value=S.sorte; save(); render();
+    document.querySelector('.tab[data-v="kalk"]').click();
+  });
+}
+function segs(){
+  const set=(id,attr,key,conv)=>{
+    document.querySelectorAll("#"+id+" button").forEach(b=>{
+      b.classList.toggle("on",String(S[key])===String(conv?conv(b.dataset[attr]):b.dataset[attr]));
+      b.onclick=()=>{S[key]=conv?conv(b.dataset[attr]):b.dataset[attr];save();segs();render();};
+    });
+  };
+  set("seg-pl","pl","pl");
+  set("seg-nl","m","nlMode");
+  set("seg-lief","l","abhol",v=>v==="1");
+}
+
+function render(){
+  const L=lkw(), A=anlage(), I=ekIndex();
+  const c=calcFor(S.sorte,{L,A});
+  const s=SORTS.find(x=>x.nr===S.sorte)||{};
+
+  $("hdr-std").textContent=e2(L.satz)+" €/h";
+  $("hdr-misch").textContent=e2(A.wert)+" €/m³";
+  $("hdr-ek").textContent=(S.ekAdj?"+":"±")+nf1.format((ekFaktor()-1)*100)+" %";
+
+  // Route
+  const bv=(S.bv||"").trim();
+  $("route").href="https://www.google.com/maps/dir/"+encodeURIComponent("Osterfeld 1, 59846 Sundern")+"/"+encodeURIComponent(bv);
+
+  // Sorteninfo
+  $("sorte-info").innerHTML=(s.fk?'<span class="tag red">'+esc(s.fk)+'</span><span class="tag">'+esc(s.ko)+'</span><span class="tag">Dmax '+s.dm+'</span><span class="tag">Klasse '+esc(s.kl)+'</span>':'')+
+    (s.expo?'<span class="tag">'+esc(s.expo)+'</span>':'')+'<span class="tag">'+esc(s.grp||"")+'</span>'+
+    (c.ek0==null?'<span class="tag red">Kein Material-EK hinterlegt</span>':'<span class="tag">EK '+e2(c.ek)+' €/m³</span>');
+  $("o-sortname").textContent=(s.fk?s.fk+" "+s.ko+" Dmax "+s.dm:"Sorte "+S.sorte);
+  $("nl-u").textContent=S.nlMode==="pct"?"%":"€/m³";
+
+  $("o-lp").textContent=eur(c.lp);
+  $("o-nl").textContent="− "+eur(c.nl);
+  $("o-ap").textContent=eur(c.ap);
+  $("o-zm").textContent=eur(c.zM);
+
+  // Lieferung
+  document.querySelectorAll("#lief-form input").forEach(i=>{ if(i.id!=="umlaufManual") i.disabled=S.abhol; });
+  $("umlauf").disabled=S.abhol||!S.umlaufManual;
+  if(!S.umlaufManual) $("umlauf").value=Math.round(c.auto);
+
+  // KPIs
+  const setK=(id,v,cls)=>{$(id).className="kpi "+(cls||"");$(id+"-v").textContent=v;};
+  setK("k-ap",e2(c.ap));
+  const reOk=c.rePct>=S.g_re/100, dbOk=c.dbPct>=S.g_db/100;
+  setK("k-re",pct(c.rePct),reOk?"ok":"bad"); $("k-re-s").textContent=e2(c.roh/c.vol)+" €/m³ · min. "+S.g_re+" %";
+  setK("k-db",pct(c.dbPct),dbOk?"ok":(c.db<0?"bad":"warn")); $("k-db-s").textContent=e2(c.db/c.vol)+" €/m³ · min. "+S.g_db+" %";
+  const nlMax=c.maxNl;
+  setK("k-ug",e2(Math.max(nlMax,0)),nlMax<0?"bad":(c.nl>nlMax?"warn":""));
+  $("k-ug-s").textContent="€/m³ · Untergrenze "+e2(c.minP)+" €";
+
+  const al=[];
+  if(c.roh<0) al.push(["bad","Roherlös negativ!"]);
+  if(!reOk) al.push(["bad","Mindestroherlös ("+S.g_re+" %) unterschritten – Genehmigung GL erforderlich."]);
+  if(!dbOk) al.push(["bad","Mindest-Deckungsbeitrag ("+S.g_db+" %) unterschritten – Genehmigung GL erforderlich."]);
+  if(c.ek0==null) al.push(["warn","Für diese Sorte ist kein Material-EK hinterlegt – Roherlös/DB nicht aussagekräftig."]);
+  if(c.minder>0) al.push(["warn","Mindermenge: Frachtausgleich "+eur(c.minder)+" wird berechnet."]);
+  if(reOk&&dbOk&&c.ek0!=null) al.push(["ok","Freigabe durch Vertrieb möglich – alle Grenzen eingehalten."]);
+  $("alerts").innerHTML=al.map(a=>'<div class="alert '+a[0]+'">'+esc(a[1])+'</div>').join("");
+
+  // Netto-Tabelle
+  let h='<tr><td>Sorte '+esc(S.sorte)+'</td><td class="r num">'+e2(c.ap)+'</td><td class="r num">'+nf1.format(c.vol)+'</td><td class="r num">'+e2(c.ap*c.vol)+'</td></tr>';
+  c.z.forEach(z=>{h+='<tr><td>'+esc(z[0])+'</td><td class="r num">'+e2(z[1])+'</td><td class="r num">'+nf1.format(c.vol)+'</td><td class="r num'+(z[1]<0?' neg':'')+'">'+e2(z[1]*c.vol)+'</td></tr>';});
+  if(c.minder>0) h+='<tr><td>Frachtausgleich Mindermenge</td><td class="r num">'+e2(S.z_minder)+'</td><td class="r num">'+nf1.format(S.z_minmenge-c.vol)+'</td><td class="r num">'+e2(c.minder)+'</td></tr>';
+  if(c.entl>0) h+='<tr><td>Entladezeit-Überschreitung</td><td class="r num">–</td><td class="r num">'+Math.ceil(S.entlade/15)+' × 15 min</td><td class="r num">'+e2(c.entl)+'</td></tr>';
+  h+='<tr class="sum"><td>Nettobetrag</td><td class="r num">'+e2(c.netto/c.vol)+'</td><td></td><td class="r num">'+e2(c.netto)+'</td></tr>';
+  $("o-netto").innerHTML=h;
+
+  // Kosten-Tabelle
+  const row=(n,m,t,cls)=>'<tr class="'+(cls||"")+'"><td>'+n+'</td><td class="r num'+(m<0?' neg':'')+'">'+e2(m)+'</td><td class="r num'+(t<0?' neg':'')+'">'+e2(t)+'</td></tr>';
+  let k=row("Nettoerlös",c.netto/c.vol,c.netto);
+  k+=row("− Material-EK"+(S.ekAdj||S.ekExtra?' <span class="src">(inkl. Index '+nf1.format((ekFaktor()-1)*100)+' %)</span>':''),-c.ek,-c.mat);
+  k+=row("Roherlös · "+pct(c.rePct),c.roh/c.vol,c.roh,"hl");
+  k+=row("− Transport ("+(S.abhol?"Selbstabholung":c.trips+" Fahrten × "+nf0.format(c.uml)+" min")+")",-c.trM,-c.trTot,"sub");
+  k+=row("− Mischen",-c.misch,-c.misch*c.vol,"sub");
+  k+=row("Selbstkosten I",c.sk,c.sk*c.vol);
+  k+=row("Deckungsbeitrag 1 · "+pct(c.dbPct),c.db/c.vol,c.db,"sum");
+  $("o-kosten").innerHTML=k;
+  $("o-transport-note").innerHTML=S.abhol?"Selbstabholung: keine Transportkosten.":
+    "Transport: "+c.trips+" Fahrt(en) à "+nf0.format(c.uml)+" min × <b>"+e2(c.L.satz)+" €/h</b> (Stundensatz HSK-RH 775) = "+eur(c.trTot)+". Umlaufzeit "+(S.umlaufManual?"manuell":"auto: 2 × "+S.km+" km / "+S.speed+" km/h + "+S.stand+" min Standzeit")+".";
+
+  renderLkw(L); renderAnlage(A); renderRoh(I); renderSorten();
+}
+
+function renderLkw(L){
+  $("l-o-ak").textContent=eur(L.ak);
+  $("l-o-afa").textContent=eur(L.afa);
+  $("l-o-afam").textContent=eur(L.afa/12);
+  const y0=2026, y1=y0+Math.round(S.l_nd);
+  $("l-o-zeit").textContent="07/"+y0+" – 06/"+y1;
+  $("l-o-zins").textContent=eur(L.zins);
+  $("l-o-satz").innerHTML=e2(L.satz)+' <small>€ je Einsatzstunde</small> <small style="margin-left:12px">'+(L.satz>=94.65?"+":"")+e2(L.satz-94.65)+" € ggü. Excel</small>";
+  const tot=L.total||1;
+  $("l-stack").innerHTML=L.parts.filter(p=>p.v>0).map(p=>'<div style="width:'+(p.v/tot*100)+'%;background:'+p.c+'" title="'+esc(p.n)+'">'+(p.v/tot>0.07?e2(p.v/L.h):"")+'</div>').join("");
+  $("l-legend").innerHTML=L.parts.filter(p=>p.v>0).map(p=>'<span><i style="background:'+p.c+'"></i>'+esc(p.n)+'</span>').join("");
+  $("l-tab").innerHTML=L.parts.map(p=>'<tr><td>'+esc(p.n)+'</td><td class="r num">'+e2(p.v)+'</td><td class="r num">'+e2(p.v/L.h)+'</td><td class="r num">'+pct(p.v/tot)+'</td></tr>').join("")+
+    '<tr class="sum"><td>Summe</td><td class="r num">'+e2(L.total)+'</td><td class="r num">'+e2(L.satz)+'</td><td class="r num">100,0 %</td></tr>';
+}
+function renderAnlage(A){
+  $("a-o-misch").innerHTML=e2(A.calc)+' <small>€/m³ berechnet</small>'+(S.a_manual?' <small style="margin-left:10px;color:var(--red)">→ verwendet: '+e2(A.wert)+' € (manuell)</small>':'');
+  $("a-tab").innerHTML=A.rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td class="r num">'+e2(r[1])+'</td><td class="r num">'+e2(r[1]/Math.max(S.a_menge,1))+'</td></tr>').join("")+
+    '<tr class="sum"><td>Summe · '+nf0.format(S.a_menge)+' m³</td><td class="r num">'+e2(A.total)+'</td><td class="r num">'+e2(A.calc)+'</td></tr>';
+  const est=CEM_T_YTD*1000/Math.max(S.a_zgeh,1);
+  $("a-menge-hint").textContent="Schätzung aus Zementeinkauf: "+nf0.format(CEM_T_YTD)+" t ÷ "+S.a_zgeh+" kg/m³ ≈ "+nf0.format(est)+" m³ bis Stichtag, hochgerechnet ≈ "+nf0.format(est*A.f)+" m³";
+  $("a_manwert").disabled=!S.a_manual;
+}
+function renderRoh(I){
+  $("r-tab").innerHTML=RAW.map(r=>{
+    const d=r.p1/r.p0-1;
+    return '<tr><td>'+esc(r.n)+' <span class="src">Kto '+r.kto+'</span></td><td class="r num">'+e2(r.p0)+' '+r.u+'</td><td class="r num">'+e2(r.p1)+' '+r.u+'</td><td class="r num '+(d>0?'neg':'')+'">'+(d>0?'+':'')+nf1.format(d*100)+' %</td>'+
+      '<td class="r"><div class="inp" style="max-width:110px;margin-left:auto"><input type="number" step="1" data-w="'+r.k+'" value="'+(S["w_"+r.k]||0)+'"><span class="u">%</span></div></td></tr>';
+  }).join("");
+  $("r-tab").querySelectorAll("input[data-w]").forEach(i=>i.addEventListener("change",()=>{S["w_"+i.dataset.w]=parseFloat(i.value)||0;save();render();}));
+  $("r-idx").textContent="+"+nf2.format(I.idx*100)+" %";
+  $("r-wsum").textContent=nf0.format(I.wsum)+" %";
+  $("r-mengen").innerHTML=MENGEN.map(m=>'<tr><td class="num">'+m[0]+'</td><td>'+m[1]+'</td><td class="r num">'+m[2]+'</td><td class="r num">'+m[3]+'</td><td class="r num">'+m[4]+'</td></tr>').join("");
+}
+function renderSorten(){
+  const q=($("sort-q").value||"").toLowerCase().trim();
+  const crit=$("sort-crit").checked;
+  const L=lkw(),A=anlage();
+  $("sort-scen").textContent=nf1.format(S.vol)+" m³ · "+(S.abhol?"Selbstabholung":S.km+" km")+" · Preisliste "+(S.pl==="0107"?"01.07.2026":"01.01.2026");
+  let h="";
+  SORTS.forEach(s=>{
+    const hay=(s.nr+" "+s.fk+" "+s.ko+" "+s.expo+" "+s.grp+" dmax "+s.dm).toLowerCase();
+    if(q && !q.split(/\s+/).every(t=>hay.includes(t.replace(/\s/g,"")))) return;
+    const c=calcFor(s.nr,{noNl:true,L,A});
+    const noEk=c.ek0==null;
+    const bad=!noEk&&(c.rePct<S.g_re/100||c.dbPct<S.g_db/100);
+    if(crit && !bad) return;
+    h+='<tr data-nr="'+s.nr+'" style="cursor:pointer"><td class="num"><b>'+s.nr+'</b></td><td>'+esc(s.fk)+'</td><td>'+esc(s.ko)+'</td><td class="r num">'+s.dm+'</td><td>'+esc(s.expo)+' <span class="src">'+esc(s.grp)+'</span></td>'+
+      '<td class="r num">'+e2(c.lp)+'</td><td class="r num">'+(noEk?'–':e2(c.ek))+'</td>'+
+      (noEk?'<td class="r" colspan="4"><span class="src">kein EK hinterlegt</span></td>':
+      '<td class="r num '+(c.rePct<S.g_re/100?'neg':'')+'">'+pct(c.rePct)+'</td><td class="r num '+(c.db<0?'neg':'')+'">'+e2(c.db/c.vol)+'</td><td class="r num '+(c.dbPct<S.g_db/100?'neg':'pos')+'">'+pct(c.dbPct)+'</td><td class="r num '+(c.maxNl<0?'neg':'')+'">'+e2(c.maxNl)+'</td>')+'</tr>';
+  });
+  $("sort-table").querySelector("tbody").innerHTML=h||'<tr><td colspan="11" class="src">Keine Sorten gefunden.</td></tr>';
+}
+
+/* ================= EINSTELLUNGEN ================= */
+function applyVis(){
+  const keys=Object.keys(TAB_NAMES);
+  if(!keys.some(k=>VIS[k])) VIS.kalk=true;
+  keys.forEach(k=>{const t=document.querySelector('.tab[data-v="'+k+'"]'); t.style.display=VIS[k]?"":"none";});
+  document.querySelectorAll("[data-pill]").forEach(p=>p.style.display=VIS.pills?"":"none");
+  const act=document.querySelector(".tab.active");
+  if(!act||!VIS[act.dataset.v]){const first=keys.find(k=>VIS[k]); document.querySelector('.tab[data-v="'+first+'"]').click();}
+  document.querySelector("nav.tabs").style.display=keys.filter(k=>VIS[k]).length>1?"":"none";
+}
+function initSettings(){
+  const bg=$("settings");
+  const open=()=>{bg.classList.add("open");$("set-err").textContent="";$("set-pw").value="";setTimeout(()=>$("set-pw").focus(),50);};
+  const close=()=>{bg.classList.remove("open");$("set-login").style.display="";$("set-panel").style.display="none";};
+  $("btn-settings").onclick=open;
+  $("set-close").onclick=close;
+  bg.addEventListener("click",e=>{if(e.target===bg) close();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape") close();});
+  const login=()=>{
+    if($("set-pw").value===ADMIN_PW){$("set-login").style.display="none";$("set-panel").style.display="";drawToggles();}
+    else $("set-err").textContent="Passwort falsch.";
+  };
+  $("set-login-btn").onclick=login;
+  $("set-pw").addEventListener("keydown",e=>{if(e.key==="Enter") login();});
+  $("set-pills").addEventListener("change",e=>{VIS.pills=e.target.checked;storeVis();});
+  $("set-default").onclick=()=>{VIS=Object.assign({},TAB_CONFIG);try{localStorage.removeItem(VIS_KEY);}catch(e){}applyVis();drawToggles();};
+  $("set-download").onclick=()=>{
+    const cfg=JSON.stringify(VIS);
+    const out=SRC_HTML.replace(/const TAB_CONFIG = \{[^}]*\}; \/\*TAB_CONFIG\*\//,"const TAB_CONFIG = "+cfg+"; /*TAB_CONFIG*/");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([out],{type:"text/html"}));
+    a.download="Beton-Kalkulation-2026.html"; document.body.appendChild(a); a.click(); a.remove();
+  };
+}
+function storeVis(){try{localStorage.setItem(VIS_KEY,JSON.stringify(VIS));}catch(e){} applyVis();}
+function drawToggles(){
+  $("set-tabs").innerHTML=Object.keys(TAB_NAMES).map(k=>'<label class="tg"><span>'+esc(TAB_NAMES[k])+'</span><span class="switch"><input type="checkbox" data-tab="'+k+'"'+(VIS[k]?" checked":"")+'><i></i></span></label>').join("");
+  $("set-tabs").querySelectorAll("input").forEach(i=>i.addEventListener("change",()=>{
+    VIS[i.dataset.tab]=i.checked;
+    if(!Object.keys(TAB_NAMES).some(k=>VIS[k])){VIS[i.dataset.tab]=true;i.checked=true;}
+    storeVis();
+  }));
+  $("set-pills").checked=!!VIS.pills;
+}
+
+/* ================= DRUCK (A4 quer) ================= */
+function renderPrint(){
+  const c=calcFor(S.sorte), s=SORTS.find(x=>x.nr===S.sorte)||{};
+  const r=(a,b)=>'<tr><td>'+a+'</td><td class="r">'+b+'</td></tr>';
+  const m=v=>'<span class="m">'+e2(v)+'</span>';
+  const reOk=c.rePct>=S.g_re/100, dbOk=c.dbPct>=S.g_db/100;
+  let auftrag=r("Kunde",esc(S.kunde||"–"))+r("Kundenkategorie",esc(S.kat))+r("Bauvorhaben",esc(S.bv||"–"))+
+    r("Sorte",'<b>'+esc(S.sorte)+'</b>')+r("Festigkeit / Konsistenz",esc((s.fk||"–")+" "+(s.ko||"")+(s.dm?" · Dmax "+s.dm:"")))+
+    r("Exposition",esc(s.expo||"–"))+r("Anwendung",esc(s.grp||"–"))+
+    r("Preisliste",S.pl==="0107"?"ab 01.07.2026":"Stand 01.01.2026")+r("Auftragsvolumen",'<span class="m">'+nf1.format(c.vol)+'</span> m³');
+  let lief=S.abhol?r("Lieferart","Selbstabholung"):
+    r("Lieferart","frei Baustelle")+r("Fahrstrecke einfach",'<span class="m">'+S.km+'</span> km')+r("Ladung je Fahrzeug",'<span class="m">'+nf1.format(S.ladung)+'</span> m³')+
+    r("Umlaufzeit",'<span class="m">'+nf0.format(c.uml)+'</span> min'+(S.umlaufManual?" (manuell)":""))+r("Fahrten",'<span class="m">'+c.trips+'</span>')+
+    (S.entlade>0?r("Entladezeit-Überschr.",'<span class="m">'+S.entlade+'</span> min'):"");
+  const extras=[S.vz?"Verzögerer":"",S.warm?"Warmbeton":"",S.fm>0?"Fließmittel "+nf1.format(S.fm)+" kg/m³":""].filter(Boolean).join(", ")||"–";
+  lief+=r("Zusatzleistungen",esc(extras));
+
+  let netto='<tr><th>Position</th><th class="r">€/m³</th><th class="r">Menge</th><th class="r">Betrag €</th></tr>'+
+    '<tr><td>Sortenpreis lt. Liste</td><td class="r m">'+e2(c.lp)+'</td><td class="r m">'+nf1.format(c.vol)+'</td><td class="r m">'+e2(c.lp*c.vol)+'</td></tr>'+
+    (c.nl?'<tr><td>− Nachlass'+(S.nlMode==="pct"?" ("+nf1.format(S.nl)+" %)":"")+'</td><td class="r m">'+e2(-c.nl)+'</td><td class="r m">'+nf1.format(c.vol)+'</td><td class="r m">'+e2(-c.nl*c.vol)+'</td></tr>':'')+
+    '<tr class="h"><td>Angebotspreis</td><td class="r m">'+e2(c.ap)+'</td><td></td><td class="r m">'+e2(c.ap*c.vol)+'</td></tr>';
+  c.z.forEach(z=>netto+='<tr><td>'+esc(z[0])+'</td><td class="r m">'+e2(z[1])+'</td><td class="r m">'+nf1.format(c.vol)+'</td><td class="r m">'+e2(z[1]*c.vol)+'</td></tr>');
+  if(c.minder>0) netto+='<tr><td>Frachtausgleich Mindermenge</td><td class="r m">'+e2(S.z_minder)+'</td><td class="r m">'+nf1.format(S.z_minmenge-c.vol)+'</td><td class="r m">'+e2(c.minder)+'</td></tr>';
+  if(c.entl>0) netto+='<tr><td>Entladezeit-Überschreitung</td><td></td><td class="r m">'+Math.ceil(S.entlade/15)+'×15 min</td><td class="r m">'+e2(c.entl)+'</td></tr>';
+  netto+='<tr class="b"><td>Nettobetrag</td><td class="r m">'+e2(c.netto/c.vol)+'</td><td></td><td class="r m">'+e2(c.netto)+'</td></tr>';
+
+  const kr=(n,a,b,cl)=>'<tr class="'+(cl||"")+'"><td>'+n+'</td><td class="r m">'+e2(a)+'</td><td class="r m">'+e2(b)+'</td></tr>';
+  let kosten='<tr><th>Position</th><th class="r">€/m³</th><th class="r">Gesamt €</th></tr>'+
+    kr("Nettoerlös",c.netto/c.vol,c.netto)+kr("− Material-EK"+((ekFaktor()-1)?" (Index "+nf1.format((ekFaktor()-1)*100)+" %)":""),-c.ek,-c.mat)+
+    kr("Roherlös ("+pct(c.rePct)+")",c.roh/c.vol,c.roh,"h")+
+    kr("− Transport"+(S.abhol?"":" ("+c.trips+" × "+nf0.format(c.uml)+" min à "+e2(c.L.satz)+" €/h)"),-c.trM,-c.trTot)+
+    kr("− Mischen",-c.misch,-c.misch*c.vol)+kr("Selbstkosten I",c.sk,c.sk*c.vol)+
+    kr("Deckungsbeitrag 1 ("+pct(c.dbPct)+")",c.db/c.vol,c.db,"b");
+
+  const al=[];
+  if(c.roh<0) al.push(["bad","Roherlös negativ!"]);
+  if(!reOk) al.push(["bad","Mindestroherlös ("+S.g_re+" %) unterschritten – Genehmigung GL erforderlich"]);
+  if(!dbOk) al.push(["bad","Mindest-DB ("+S.g_db+" %) unterschritten – Genehmigung GL erforderlich"]);
+  if(c.ek0==null) al.push(["warn","Kein Material-EK hinterlegt"]);
+  if(reOk&&dbOk&&c.ek0!=null) al.push(["ok","Alle Freigabegrenzen eingehalten"]);
+
+  $("print-sheet").innerHTML='<div class="ps">'+
+   '<div class="ps-head"><div><h1>Kalkulationsblatt Transportbeton</h1><div class="sub">Rudolf Hilgenroth GmbH &amp; Co. KG · Osterfeld 1 · 59846 Sundern-Hellefeld</div></div>'+
+   '<div class="sub" style="text-align:right">'+(S.angNr?'Angebot <b class="m">'+esc(S.angNr)+'</b> · ':'')+'Datum: <b>'+heute()+'</b><br>'+esc(S.kunde||"")+(S.bv?" · "+esc(S.bv):"")+'</div></div>'+
+   '<div class="ps-kpis">'+
+     '<div class="ps-kpi"><div class="l">Angebotspreis</div><div class="v">'+e2(c.ap)+' €/m³</div></div>'+
+     '<div class="ps-kpi '+(reOk?"ok":"bad")+'"><div class="l">Roherlös (min. '+S.g_re+' %)</div><div class="v">'+pct(c.rePct)+'</div></div>'+
+     '<div class="ps-kpi '+(dbOk?"ok":"bad")+'"><div class="l">DB 1 (min. '+S.g_db+' %)</div><div class="v">'+pct(c.dbPct)+' · '+e2(c.db/c.vol)+' €/m³</div></div>'+
+     '<div class="ps-kpi"><div class="l">Max. Nachlass / Untergrenze</div><div class="v">'+e2(Math.max(c.maxNl,0))+' / '+e2(c.minP)+' €</div></div>'+
+   '</div>'+
+   '<div class="ps-grid">'+
+     '<div><div class="ps-box"><h3>Auftrag &amp; Sorte</h3><table>'+auftrag+'</table></div>'+
+       '<div class="ps-box" style="margin-top:8px"><h3>Lieferung</h3><table>'+lief+'</table></div></div>'+
+     '<div class="ps-box"><h3>Nettobetrag laut Gesamtmenge</h3><table>'+netto+'</table></div>'+
+     '<div><div class="ps-box"><h3>Kosten &amp; Deckungsbeitrag</h3><table>'+kosten+'</table></div>'+
+       al.map(a=>'<div class="ps-alert '+a[0]+'">'+esc(a[1])+'</div>').join("")+'</div>'+
+   '</div>'+
+   '<div class="ps-sign"><div><div class="sl">'+heute()+'</div><div class="sb">Datum, Unterschrift Vertrieb</div></div><div><div class="sl"></div><div class="sb">Datum, Genehmigung GL</div></div><div><div class="sl"></div><div class="sb">Bemerkung</div></div></div>'+
+   '<div class="ps-foot">Kalkulationsgrundlage: Preisliste 2026, Material-EK Stand 01.01.2026'+(S.ekAdj?" inkl. Rohstoffindex":"")+', Fahrmischer HSK-RH 775 (AfA '+nf0.format(S.l_nd)+' J.), Mischkosten '+e2(c.misch)+' €/m³.</div>'+
+  '</div>';
+}
+
+/* ================= ANGEBOTE (Firebase) ================= */
+const ANG_FIELDS=["kunde","kat","bv","sorte","vol","nl","nlMode","pl","abhol","km","ladung","speed","stand","umlaufManual","umlauf","entlade","vz","warm","fm"];
+let ANGEBOTE={};
+function heute(){return new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});}
+function fmtTs(ts){if(!ts) return "–"; const d=new Date(ts); return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove("show"),2600);}
+function nextNr(){
+  const y=new Date().getFullYear(), pre="BA-"+y+"-";
+  let max=0; Object.values(ANGEBOTE).forEach(a=>{ if(a&&a.nr&&a.nr.startsWith(pre)) max=Math.max(max,parseInt(a.nr.slice(pre.length),10)||0); });
+  return pre+String(max+1).padStart(4,"0");
+}
+function angInfo(){
+  const a=S.angNr?ANGEBOTE[S.angNr.replace(/[.#$\/\[\]]/g,"_")]:null;
+  $("ang-nr").textContent=S.angNr||"Neues Angebot";
+  $("ang-meta").textContent=S.angNr?("erstellt "+fmtTs(a?a.erstellt:S.angErstellt)+(a&&a.geaendert&&a.geaendert!==a.erstellt?" · geändert "+fmtTs(a.geaendert):"")):"noch nicht gespeichert";
+}
+function fbOk(){ if(!window.fbAng||!window.fbAng.bereit){ toast("Keine Verbindung zur Datenbank."); return false;} return true; }
+async function angSpeichern(alsNeu){
+  if(!fbOk()) return;
+  if(!S.kunde.trim()){ toast("Bitte zuerst einen Kunden eintragen."); $("kunde").focus(); return; }
+  const neu=alsNeu||!S.angNr;
+  const nr=neu?nextNr():S.angNr;
+  const now=Date.now();
+  const c=calcFor(S.sorte), s=SORTS.find(x=>x.nr===S.sorte)||{};
+  const eingaben={}; ANG_FIELDS.forEach(k=>eingaben[k]=S[k]);
+  const alt=neu?null:ANGEBOTE[nr.replace(/[.#$\/\[\]]/g,"_")];
+  const data={nr,erstellt:alt&&alt.erstellt?alt.erstellt:now,geaendert:now,eingaben,
+    ergebnis:{sorteText:(s.fk?s.fk+" "+s.ko+" Dmax "+s.dm:""),listenpreis:+c.lp.toFixed(2),angebotspreis:+c.ap.toFixed(2),netto:+c.netto.toFixed(2),
+      roherloesPct:+(c.rePct*100).toFixed(2),dbProM3:+(c.db/c.vol).toFixed(2),dbPct:+(c.dbPct*100).toFixed(2),
+      stundensatz:+c.L.satz.toFixed(2),mischkosten:+c.misch.toFixed(2),ekFaktor:+ekFaktor().toFixed(4)}};
+  try{ await window.fbAng.speichern(nr,data); S.angNr=nr; S.angErstellt=data.erstellt; save(); angInfo(); toast("Angebot "+nr+" gespeichert."); }
+  catch(e){ toast("Speichern fehlgeschlagen: "+e.message); }
+}
+function angLaden(k){
+  const a=ANGEBOTE[k]; if(!a) return;
+  ANG_FIELDS.forEach(f=>{ if(a.eingaben&&f in a.eingaben) S[f]=a.eingaben[f]; });
+  S.angNr=a.nr; S.angErstellt=a.erstellt; save();
+  syncInputs(); segs(); render(); angInfo();
+  $("ang-modal").classList.remove("open");
+  toast("Angebot "+a.nr+" geladen.");
+}
+async function angLoeschen(k){
+  const a=ANGEBOTE[k]; if(!a) return;
+  const pw=prompt("Angebot "+a.nr+" löschen?\nBitte Admin-Passwort eingeben:");
+  if(pw===null) return;
+  if(pw!==ADMIN_PW){ toast("Passwort falsch."); return; }
+  try{ await window.fbAng.loeschen(a.nr); if(S.angNr===a.nr){S.angNr="";save();angInfo();} toast("Angebot "+a.nr+" gelöscht."); }
+  catch(e){ toast("Löschen fehlgeschlagen: "+e.message); }
+}
+function angNeu(){
+  ANG_FIELDS.forEach(f=>S[f]=DEF[f]); S.angNr=""; S.angErstellt=""; save();
+  syncInputs(); segs(); render(); angInfo(); toast("Neues Angebot.");
+}
+function syncInputs(){
+  document.querySelectorAll("input[id],select[id]").forEach(el=>{
+    const k=el.id; if(!(k in S)) return;
+    if(el.type==="checkbox") el.checked=!!S[k]; else el.value=S[k];
+  });
+}
+function renderAngListe(){
+  const q=($("ang-q").value||"").toLowerCase().trim();
+  const list=Object.entries(ANGEBOTE).filter(([k,a])=>a&&a.nr).sort((x,y)=>(y[1].nr>x[1].nr?1:-1));
+  $("ang-count").textContent=list.length+" Angebote";
+  const rows=list.filter(([k,a])=>{ if(!q) return true; const e=a.eingaben||{}; return (a.nr+" "+(e.kunde||"")+" "+(e.bv||"")+" "+(e.sorte||"")+" "+((a.ergebnis||{}).sorteText||"")).toLowerCase().includes(q); })
+   .map(([k,a])=>{const e=a.eingaben||{},r=a.ergebnis||{}; const ok=r.dbPct>=S.g_db&&r.roherloesPct>=S.g_re;
+     return '<tr><td class="num"><b>'+esc(a.nr)+'</b></td><td class="num">'+fmtTs(a.geaendert||a.erstellt)+'</td><td>'+esc(e.kunde||"")+'</td><td>'+esc(e.bv||"")+'</td><td>'+esc(e.sorte||"")+' <span class="src">'+esc(r.sorteText||"")+'</span></td><td class="r num">'+nf1.format(e.vol||0)+'</td><td class="r num">'+e2(r.angebotspreis||0)+'</td><td class="r num '+(ok?'pos':'neg')+'">'+nf1.format(r.dbPct||0)+' %</td>'+
+       '<td class="r" style="white-space:nowrap"><button class="btn sm" data-open="'+esc(k)+'">Öffnen</button> <button class="btn sm del" data-del="'+esc(k)+'">Löschen</button></td></tr>';}).join("");
+  $("ang-tbody").innerHTML=rows||'<tr><td colspan="9" class="src">Keine Angebote gefunden.</td></tr>';
+}
+function initAngebote(){
+  $("ang-save").onclick=()=>angSpeichern(false);
+  $("ang-kopie").onclick=()=>angSpeichern(true);
+  $("ang-neu").onclick=angNeu;
+  $("ang-liste").onclick=()=>{ if(!fbOk()) return; renderAngListe(); $("ang-modal").classList.add("open"); setTimeout(()=>$("ang-q").focus(),50); };
+  $("ang-close").onclick=()=>$("ang-modal").classList.remove("open");
+  $("ang-modal").addEventListener("click",e=>{ if(e.target.id==="ang-modal") e.target.classList.remove("open"); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") $("ang-modal").classList.remove("open"); });
+  $("ang-q").addEventListener("input",renderAngListe);
+  $("ang-tbody").addEventListener("click",e=>{ const o=e.target.closest("[data-open]"), d=e.target.closest("[data-del]"); if(o) angLaden(o.dataset.open); if(d) angLoeschen(d.dataset.del); });
+  const verbinden=()=>{ $("fb-status").className="dot on"; $("fb-status").textContent="Datenbank verbunden";
+    window.fbAng.live(v=>{ ANGEBOTE=v||{}; angInfo(); if($("ang-modal").classList.contains("open")) renderAngListe(); }); };
+  if(window.fbAng&&window.fbAng.bereit) verbinden(); else window.addEventListener("fb-bereit",verbinden,{once:true});
+  window.addEventListener("fb-fehler",e=>{ $("fb-status").className="dot off"; $("fb-status").textContent="Datenbank nicht erreichbar"; console.error(e.detail); });
+  angInfo();
+}
+
+fillSorten(); bind(); render(); initAngebote();
+</script>
+</body>
+</html>
