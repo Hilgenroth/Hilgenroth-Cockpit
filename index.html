@@ -323,6 +323,8 @@ const SUBS_BY_TOOL = {
 };
 // Aktuell aktives Sub-Dict (wird bei Tool-Wechsel gesetzt)
 let SUB = SUBS_BY_TOOL['he-labor'];
+// Alle Subs aller Tools zusammen - fuer den Frame-Aufbau
+const ALL_SUBS = Object.assign({}, ...Object.values(SUBS_BY_TOOL));
 
 
 const loaded = new Set();
@@ -333,10 +335,10 @@ function buildFrames(){
   stage.innerHTML = '';
   // Nur erlaubte Tool-IDs als iframes anlegen
   const perms = currentUser ? (currentUser.perms||[]) : null;
-  const subIds = Object.keys(SUB);
+  const subIds = Object.keys(ALL_SUBS);
   const all = [];
   for(const tools of Object.values(TOOLS)) for(const t of tools) if(!t.sub) all.push(t);
-  for(const [id,s] of Object.entries(SUB)) all.push({id, label:s.label, file:s.file});
+  for(const [id,s] of Object.entries(ALL_SUBS)) all.push({id, label:s.label, file:s.file});
   for(const t of all){
     // Nicht erlaubte Tools überspringen (Sub-Tools immer bauen)
     if(perms && !subIds.includes(t.id) && !perms.includes(t.id)) continue;
