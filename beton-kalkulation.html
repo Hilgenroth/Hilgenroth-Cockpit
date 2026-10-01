@@ -164,7 +164,7 @@ a.lnk:hover{text-decoration:underline}
 @media print{
   @page{size:A4 landscape;margin:9mm}
   html,body{background:#fff!important;font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  header.top,nav.tabs,main,.modal-bg{display:none!important}
+  header.top,nav.tabs,main,.modal-bg,.toast{display:none!important}
   body:not(.print-sorten) #print-sheet{display:block!important}
   body.print-sorten main{display:block!important;padding:0;max-width:none}
   body.print-sorten .view:not(#v-sorten),body.print-sorten .toolbar{display:none!important}
@@ -279,8 +279,9 @@ a.lnk:hover{text-decoration:underline}
           <table class="t" style="margin-top:12px">
             <tr><td>Sortenpreis lt. Preisliste</td><td class="r num" id="o-lp"></td></tr>
             <tr><td>− Nachlass</td><td class="r num" id="o-nl"></td></tr>
-            <tr class="hl"><td>Angebotspreis (netto)</td><td class="r num" id="o-ap"></td></tr>
-            <tr class="sub"><td>zzgl. Zuschläge je m³</td><td class="r num" id="o-zm"></td></tr>
+            <tr><td>Sortenpreis nach Nachlass</td><td class="r num" id="o-ap"></td></tr>
+            <tr><td>+ Zuschläge je m³ <span class="src" id="o-zm-info"></span></td><td class="r num" id="o-zm"></td></tr>
+            <tr class="hl"><td>Angebotspreis inkl. Zuschläge (netto)</td><td class="r num" id="o-api"></td></tr>
           </table>
         </div>
       </div>
@@ -316,7 +317,7 @@ a.lnk:hover{text-decoration:underline}
         <div class="card-h"><span class="bar"></span><h2>Ergebnis</h2><div class="right" id="o-sortname"></div></div>
         <div class="card-b">
           <div class="kpis">
-            <div class="kpi" id="k-ap"><div class="l">Angebotspreis</div><div class="v" id="k-ap-v"></div><div class="s">€/m³ netto</div></div>
+            <div class="kpi" id="k-ap"><div class="l">Angebotspreis</div><div class="v" id="k-ap-v"></div><div class="s" id="k-ap-s"></div></div>
             <div class="kpi" id="k-re"><div class="l">Roherlös</div><div class="v" id="k-re-v"></div><div class="s" id="k-re-s"></div></div>
             <div class="kpi" id="k-db"><div class="l">DB 1</div><div class="v" id="k-db-v"></div><div class="s" id="k-db-s"></div></div>
             <div class="kpi" id="k-ug"><div class="l">Max. Nachlass</div><div class="v" id="k-ug-v"></div><div class="s" id="k-ug-s"></div></div>
@@ -616,7 +617,7 @@ a.lnk:hover{text-decoration:underline}
     <div class="card-b">
       <div class="toolbar"><div class="inp"><input id="ang-q" type="text" placeholder="Suchen: Nr., Kunde, Bauvorhaben, Sorte …"></div></div>
       <div class="scroll" style="max-height:60vh">
-        <table class="t"><thead><tr><th>Nr.</th><th>Datum</th><th>Kunde</th><th>Bauvorhaben</th><th>Sorte</th><th class="r">m³</th><th class="r">Preis €/m³</th><th class="r">DB 1</th><th></th></tr></thead><tbody id="ang-tbody"></tbody></table>
+        <table class="t"><thead><tr><th>Nr.</th><th>Datum</th><th>Kunde</th><th>Bauvorhaben</th><th>Sorte</th><th class="r">m³</th><th class="r">Preis inkl. Zuschl.</th><th class="r">DB 1</th><th></th></tr></thead><tbody id="ang-tbody"></tbody></table>
       </div>
     </div>
   </div>
@@ -833,7 +834,8 @@ function calcFor(nr,opt){
   const r=S.g_re/100,d=S.g_db/100;
   const minP=Math.max(ek/(1-r),(ek+sk)/(1-d))-zEff;
   const maxNl=lp-minP;
-  return {nr,lp,ek,ek0,vol,nl,ap,trips,uml,auto,trTot,trM,misch,sk,z,zM,minder,entl,netto,mat,roh,db,rePct,dbPct,minP,maxNl,L,A};
+  const apInkl=netto/vol, minInkl=minP+zEff;
+  return {apInkl,minInkl,zEff,nr,lp,ek,ek0,vol,nl,ap,trips,uml,auto,trTot,trM,misch,sk,z,zM,minder,entl,netto,mat,roh,db,rePct,dbPct,minP,maxNl,L,A};
 }
 
 /* ================= UI ================= */
@@ -914,7 +916,9 @@ function render(){
   $("o-lp").textContent=eur(c.lp);
   $("o-nl").textContent="− "+eur(c.nl);
   $("o-ap").textContent=eur(c.ap);
-  $("o-zm").textContent=eur(c.zM);
+  $("o-zm").textContent=eur(c.zEff);
+  $("o-api").textContent=eur(c.apInkl);
+  $("o-zm-info").textContent=c.z.map(z=>z[0].split(" ")[0]).concat(c.minder>0?["Mindermenge"]:[],c.entl>0?["Entladezeit"]:[]).join(", ");
 
   // Lieferung
   document.querySelectorAll("#lief-form input").forEach(i=>{ if(i.id!=="umlaufManual") i.disabled=S.abhol; });
@@ -923,13 +927,13 @@ function render(){
 
   // KPIs
   const setK=(id,v,cls)=>{$(id).className="kpi "+(cls||"");$(id+"-v").textContent=v;};
-  setK("k-ap",e2(c.ap));
+  setK("k-ap",e2(c.apInkl)); $("k-ap-s").textContent="€/m³ netto inkl. Zuschläge · Sorte "+e2(c.ap)+" + "+e2(c.zEff);
   const reOk=c.rePct>=S.g_re/100, dbOk=c.dbPct>=S.g_db/100;
   setK("k-re",pct(c.rePct),reOk?"ok":"bad"); $("k-re-s").textContent=e2(c.roh/c.vol)+" €/m³ · min. "+S.g_re+" %";
   setK("k-db",pct(c.dbPct),dbOk?"ok":(c.db<0?"bad":"warn")); $("k-db-s").textContent=e2(c.db/c.vol)+" €/m³ · min. "+S.g_db+" %";
   const nlMax=c.maxNl;
   setK("k-ug",e2(Math.max(nlMax,0)),nlMax<0?"bad":(c.nl>nlMax?"warn":""));
-  $("k-ug-s").textContent="€/m³ · Untergrenze "+e2(c.minP)+" €";
+  $("k-ug-s").textContent="€/m³ · Untergrenze "+e2(c.minInkl)+" € inkl. Zuschläge";
 
   const al=[];
   if(c.roh<0) al.push(["bad","Roherlös negativ!"]);
@@ -941,11 +945,11 @@ function render(){
   $("alerts").innerHTML=al.map(a=>'<div class="alert '+a[0]+'">'+esc(a[1])+'</div>').join("");
 
   // Netto-Tabelle
-  let h='<tr><td>Sorte '+esc(S.sorte)+'</td><td class="r num">'+e2(c.ap)+'</td><td class="r num">'+nf1.format(c.vol)+'</td><td class="r num">'+e2(c.ap*c.vol)+'</td></tr>';
+  let h='<tr><td>Sorte '+esc(S.sorte)+' (nach Nachlass)</td><td class="r num">'+e2(c.ap)+'</td><td class="r num">'+nf1.format(c.vol)+'</td><td class="r num">'+e2(c.ap*c.vol)+'</td></tr>';
   c.z.forEach(z=>{h+='<tr><td>'+esc(z[0])+'</td><td class="r num">'+e2(z[1])+'</td><td class="r num">'+nf1.format(c.vol)+'</td><td class="r num'+(z[1]<0?' neg':'')+'">'+e2(z[1]*c.vol)+'</td></tr>';});
   if(c.minder>0) h+='<tr><td>Frachtausgleich Mindermenge</td><td class="r num">'+e2(S.z_minder)+'</td><td class="r num">'+nf1.format(S.z_minmenge-c.vol)+'</td><td class="r num">'+e2(c.minder)+'</td></tr>';
   if(c.entl>0) h+='<tr><td>Entladezeit-Überschreitung</td><td class="r num">–</td><td class="r num">'+Math.ceil(S.entlade/15)+' × 15 min</td><td class="r num">'+e2(c.entl)+'</td></tr>';
-  h+='<tr class="sum"><td>Nettobetrag</td><td class="r num">'+e2(c.netto/c.vol)+'</td><td></td><td class="r num">'+e2(c.netto)+'</td></tr>';
+  h+='<tr class="sum"><td>Nettobetrag · Angebotspreis inkl. Zuschläge</td><td class="r num">'+e2(c.netto/c.vol)+'</td><td></td><td class="r num">'+e2(c.netto)+'</td></tr>';
   $("o-netto").innerHTML=h;
 
   // Kosten-Tabelle
@@ -1083,11 +1087,11 @@ function renderPrint(){
   let netto='<tr><th>Position</th><th class="r">€/m³</th><th class="r">Menge</th><th class="r">Betrag €</th></tr>'+
     '<tr><td>Sortenpreis lt. Liste</td><td class="r m">'+e2(c.lp)+'</td><td class="r m">'+nf1.format(c.vol)+'</td><td class="r m">'+e2(c.lp*c.vol)+'</td></tr>'+
     (c.nl?'<tr><td>− Nachlass'+(S.nlMode==="pct"?" ("+nf1.format(S.nl)+" %)":"")+'</td><td class="r m">'+e2(-c.nl)+'</td><td class="r m">'+nf1.format(c.vol)+'</td><td class="r m">'+e2(-c.nl*c.vol)+'</td></tr>':'')+
-    '<tr class="h"><td>Angebotspreis</td><td class="r m">'+e2(c.ap)+'</td><td></td><td class="r m">'+e2(c.ap*c.vol)+'</td></tr>';
+    '<tr class="h"><td>Sortenpreis nach Nachlass</td><td class="r m">'+e2(c.ap)+'</td><td></td><td class="r m">'+e2(c.ap*c.vol)+'</td></tr>';
   c.z.forEach(z=>netto+='<tr><td>'+esc(z[0])+'</td><td class="r m">'+e2(z[1])+'</td><td class="r m">'+nf1.format(c.vol)+'</td><td class="r m">'+e2(z[1]*c.vol)+'</td></tr>');
   if(c.minder>0) netto+='<tr><td>Frachtausgleich Mindermenge</td><td class="r m">'+e2(S.z_minder)+'</td><td class="r m">'+nf1.format(S.z_minmenge-c.vol)+'</td><td class="r m">'+e2(c.minder)+'</td></tr>';
   if(c.entl>0) netto+='<tr><td>Entladezeit-Überschreitung</td><td></td><td class="r m">'+Math.ceil(S.entlade/15)+'×15 min</td><td class="r m">'+e2(c.entl)+'</td></tr>';
-  netto+='<tr class="b"><td>Nettobetrag</td><td class="r m">'+e2(c.netto/c.vol)+'</td><td></td><td class="r m">'+e2(c.netto)+'</td></tr>';
+  netto+='<tr class="b"><td>Angebotspreis inkl. Zuschläge</td><td class="r m">'+e2(c.netto/c.vol)+'</td><td></td><td class="r m">'+e2(c.netto)+'</td></tr>';
 
   const kr=(n,a,b,cl)=>'<tr class="'+(cl||"")+'"><td>'+n+'</td><td class="r m">'+e2(a)+'</td><td class="r m">'+e2(b)+'</td></tr>';
   let kosten='<tr><th>Position</th><th class="r">€/m³</th><th class="r">Gesamt €</th></tr>'+
@@ -1108,10 +1112,10 @@ function renderPrint(){
    '<div class="ps-head"><div><h1>Kalkulationsblatt Transportbeton</h1><div class="sub">Rudolf Hilgenroth GmbH &amp; Co. KG · Osterfeld 1 · 59846 Sundern-Hellefeld</div></div>'+
    '<div class="sub" style="text-align:right">'+(S.angNr?'Angebot <b class="m">'+esc(S.angNr)+'</b> · ':'')+'Datum: <b>'+heute()+'</b><br>'+esc(S.kunde||"")+(S.bv?" · "+esc(S.bv):"")+'</div></div>'+
    '<div class="ps-kpis">'+
-     '<div class="ps-kpi"><div class="l">Angebotspreis</div><div class="v">'+e2(c.ap)+' €/m³</div></div>'+
+     '<div class="ps-kpi"><div class="l">Angebotspreis inkl. Zuschläge</div><div class="v">'+e2(c.apInkl)+' €/m³</div></div>'+
      '<div class="ps-kpi '+(reOk?"ok":"bad")+'"><div class="l">Roherlös (min. '+S.g_re+' %)</div><div class="v">'+pct(c.rePct)+'</div></div>'+
      '<div class="ps-kpi '+(dbOk?"ok":"bad")+'"><div class="l">DB 1 (min. '+S.g_db+' %)</div><div class="v">'+pct(c.dbPct)+' · '+e2(c.db/c.vol)+' €/m³</div></div>'+
-     '<div class="ps-kpi"><div class="l">Max. Nachlass / Untergrenze</div><div class="v">'+e2(Math.max(c.maxNl,0))+' / '+e2(c.minP)+' €</div></div>'+
+     '<div class="ps-kpi"><div class="l">Max. Nachlass / Untergrenze</div><div class="v">'+e2(Math.max(c.maxNl,0))+' / '+e2(c.minInkl)+' €</div></div>'+
    '</div>'+
    '<div class="ps-grid">'+
      '<div><div class="ps-box"><h3>Auftrag &amp; Sorte</h3><table>'+auftrag+'</table></div>'+
@@ -1152,7 +1156,7 @@ async function angSpeichern(alsNeu){
   const eingaben={}; ANG_FIELDS.forEach(k=>eingaben[k]=S[k]);
   const alt=neu?null:ANGEBOTE[nr.replace(/[.#$\/\[\]]/g,"_")];
   const data={nr,erstellt:alt&&alt.erstellt?alt.erstellt:now,geaendert:now,eingaben,
-    ergebnis:{sorteText:(s.fk?s.fk+" "+s.ko+" Dmax "+s.dm:""),listenpreis:+c.lp.toFixed(2),angebotspreis:+c.ap.toFixed(2),netto:+c.netto.toFixed(2),
+    ergebnis:{sorteText:(s.fk?s.fk+" "+s.ko+" Dmax "+s.dm:""),listenpreis:+c.lp.toFixed(2),angebotspreis:+c.ap.toFixed(2),angebotspreisInkl:+c.apInkl.toFixed(2),netto:+c.netto.toFixed(2),
       roherloesPct:+(c.rePct*100).toFixed(2),dbProM3:+(c.db/c.vol).toFixed(2),dbPct:+(c.dbPct*100).toFixed(2),
       stundensatz:+c.L.satz.toFixed(2),mischkosten:+c.misch.toFixed(2),ekFaktor:+ekFaktor().toFixed(4)}};
   try{ await window.fbAng.speichern(nr,data); S.angNr=nr; S.angErstellt=data.erstellt; save(); angInfo(); toast("Angebot "+nr+" gespeichert."); }
@@ -1190,7 +1194,7 @@ function renderAngListe(){
   $("ang-count").textContent=list.length+" Angebote";
   const rows=list.filter(([k,a])=>{ if(!q) return true; const e=a.eingaben||{}; return (a.nr+" "+(e.kunde||"")+" "+(e.bv||"")+" "+(e.sorte||"")+" "+((a.ergebnis||{}).sorteText||"")).toLowerCase().includes(q); })
    .map(([k,a])=>{const e=a.eingaben||{},r=a.ergebnis||{}; const ok=r.dbPct>=S.g_db&&r.roherloesPct>=S.g_re;
-     return '<tr><td class="num"><b>'+esc(a.nr)+'</b></td><td class="num">'+fmtTs(a.geaendert||a.erstellt)+'</td><td>'+esc(e.kunde||"")+'</td><td>'+esc(e.bv||"")+'</td><td>'+esc(e.sorte||"")+' <span class="src">'+esc(r.sorteText||"")+'</span></td><td class="r num">'+nf1.format(e.vol||0)+'</td><td class="r num">'+e2(r.angebotspreis||0)+'</td><td class="r num '+(ok?'pos':'neg')+'">'+nf1.format(r.dbPct||0)+' %</td>'+
+     return '<tr><td class="num"><b>'+esc(a.nr)+'</b></td><td class="num">'+fmtTs(a.geaendert||a.erstellt)+'</td><td>'+esc(e.kunde||"")+'</td><td>'+esc(e.bv||"")+'</td><td>'+esc(e.sorte||"")+' <span class="src">'+esc(r.sorteText||"")+'</span></td><td class="r num">'+nf1.format(e.vol||0)+'</td><td class="r num">'+e2(r.angebotspreisInkl||r.angebotspreis||0)+'</td><td class="r num '+(ok?'pos':'neg')+'">'+nf1.format(r.dbPct||0)+' %</td>'+
        '<td class="r" style="white-space:nowrap"><button class="btn sm" data-open="'+esc(k)+'">Öffnen</button> <button class="btn sm del" data-del="'+esc(k)+'">Löschen</button></td></tr>';}).join("");
   $("ang-tbody").innerHTML=rows||'<tr><td colspan="9" class="src">Keine Angebote gefunden.</td></tr>';
 }
