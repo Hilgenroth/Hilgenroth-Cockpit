@@ -257,7 +257,12 @@ a.lnk:hover{text-decoration:underline}
             <label class="f">Kunde<div class="inp"><input id="kunde" type="text" placeholder="z. B. WBU"></div></label>
             <label class="f">Kundenkategorie<div class="inp"><select id="kat"><option>A-Kunde</option><option>B-Kunde</option><option>C-Kunde</option><option>Neukunde</option><option>Privat</option></select></div></label>
             <label class="f full">Bauvorhaben / Lieferort<div class="inp"><input id="bv" type="text" placeholder="z. B. Herscheid"></div>
-              <span class="hint"><a class="lnk" id="route" href="#" target="_blank" rel="noopener">Route ab Werk prüfen ↗</a></span></label>
+              <span class="hint" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+                <a class="lnk" id="route-calc" href="#">Entfernung automatisch berechnen</a>
+                <a class="lnk" id="route" href="#" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>
+                <a class="lnk" id="route-osm" href="#" target="_blank" rel="noopener noreferrer">OpenStreetMap ↗</a>
+              </span>
+              <span class="hint" id="route-info"></span></label>
           </div>
         </div>
       </div>
@@ -550,7 +555,8 @@ a.lnk:hover{text-decoration:underline}
       <div class="card">
         <div class="card-h"><span class="bar"></span><h2>Daten</h2></div>
         <div class="card-b">
-          <p class="note" style="margin-top:0">Alle Eingaben werden lokal in diesem Browser gespeichert.</p>
+          <p class="note" style="margin-top:0">Stammdaten (Fahrmischer, Mischanlage, Rohstoffe, Zuschläge, Grenzen) werden nach jeder Eingabe automatisch zentral in der Datenbank gespeichert und gelten für alle Nutzer.</p>
+          <p class="note" id="stamm-status">Stammdaten: –</p>
           <button class="btn" id="btn-reset">Alle Parameter auf Standard zurücksetzen</button>
         </div>
       </div>
@@ -650,7 +656,9 @@ a.lnk:hover{text-decoration:underline}
     speichern:(nr,data)=>set(ref(db,key(nr)),data),
     loeschen:(nr)=>remove(ref(db,key(nr))),
     laden:(nr)=>get(ref(db,key(nr))).then(s=>s.exists()?s.val():null),
-    live:(cb)=>onValue(ref(db,BASIS),s=>cb(s.exists()?s.val():{}),err=>window.dispatchEvent(new CustomEvent("fb-fehler",{detail:err.message})))
+    live:(cb)=>onValue(ref(db,BASIS),s=>cb(s.exists()?s.val():{}),err=>window.dispatchEvent(new CustomEvent("fb-fehler",{detail:err.message}))),
+    stammSpeichern:(data)=>set(ref(db,"betonkalkulation/stammdaten"),data),
+    stammLive:(cb)=>onValue(ref(db,"betonkalkulation/stammdaten"),s=>cb(s.exists()?s.val():null),err=>window.dispatchEvent(new CustomEvent("fb-fehler",{detail:err.message})))
   };
   onAuthStateChanged(auth,u=>{ if(u){ window.fbAng.bereit=true; window.dispatchEvent(new Event("fb-bereit")); } });
   signInAnonymously(auth).catch(err=>window.dispatchEvent(new CustomEvent("fb-fehler",{detail:err.message})));
@@ -856,7 +864,7 @@ function bind(){
       if(el.type==="checkbox") S[k]=el.checked;
       else if(el.type==="number") S[k]=el.value===""?0:parseFloat(el.value);
       else S[k]=el.value;
-      save(); render();
+      save(); render(); stammChanged(k);
     });
   });
   document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
@@ -872,7 +880,7 @@ function bind(){
   window.addEventListener("beforeprint",renderPrint);
   initSettings();
   segs();
-  $("btn-reset").addEventListener("click",()=>{ if(confirm("Alle Parameter auf Standard zurücksetzen?")){S=Object.assign({},DEF);save();location.reload();} });
+  $("btn-reset").addEventListener("click",()=>{ if(confirm("Alle Stammdaten auf Standard zurücksetzen? Das gilt für alle Nutzer.")){stammKeys().forEach(k=>S[k]=DEF[k]);save();syncInputs();render();stammChanged("reset",true);} });
   $("sort-q").addEventListener("input",renderSorten);
   $("sort-crit").addEventListener("change",renderSorten);
   $("sort-table").addEventListener("click",e=>{
@@ -904,7 +912,8 @@ function render(){
 
   // Route
   const bv=(S.bv||"").trim();
-  $("route").href="https://www.google.com/maps/dir/"+encodeURIComponent("Osterfeld 1, 59846 Sundern")+"/"+encodeURIComponent(bv);
+  $("route").href="https://www.google.com/maps/dir/?api=1&travelmode=driving&origin="+encodeURIComponent(WERK_ADR)+"&destination="+encodeURIComponent(bv);
+  $("route-osm").href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route="+(ROUTE_CACHE.werk&&ROUTE_CACHE.ziel?ROUTE_CACHE.werk.lat+"%2C"+ROUTE_CACHE.werk.lon+"%3B"+ROUTE_CACHE.ziel.lat+"%2C"+ROUTE_CACHE.ziel.lon:"")+"&from="+encodeURIComponent(WERK_ADR)+"&to="+encodeURIComponent(bv);
 
   // Sorteninfo
   $("sorte-info").innerHTML=(s.fk?'<span class="tag red">'+esc(s.fk)+'</span><span class="tag">'+esc(s.ko)+'</span><span class="tag">Dmax '+s.dm+'</span><span class="tag">Klasse '+esc(s.kl)+'</span>':'')+
@@ -927,7 +936,7 @@ function render(){
 
   // KPIs
   const setK=(id,v,cls)=>{$(id).className="kpi "+(cls||"");$(id+"-v").textContent=v;};
-  setK("k-ap",e2(c.apInkl)); $("k-ap-s").textContent="€/m³ netto inkl. Zuschläge · Sorte "+e2(c.ap)+" + "+e2(c.zEff);
+  setK("k-ap",e2(c.apInkl)); $("k-ap-s").textContent="€/m³ inkl. Zuschläge ("+e2(c.ap)+" + "+e2(c.zEff)+")";
   const reOk=c.rePct>=S.g_re/100, dbOk=c.dbPct>=S.g_db/100;
   setK("k-re",pct(c.rePct),reOk?"ok":"bad"); $("k-re-s").textContent=e2(c.roh/c.vol)+" €/m³ · min. "+S.g_re+" %";
   setK("k-db",pct(c.dbPct),dbOk?"ok":(c.db<0?"bad":"warn")); $("k-db-s").textContent=e2(c.db/c.vol)+" €/m³ · min. "+S.g_db+" %";
@@ -996,7 +1005,7 @@ function renderRoh(I){
     return '<tr><td>'+esc(r.n)+' <span class="src">Kto '+r.kto+'</span></td><td class="r num">'+e2(r.p0)+' '+r.u+'</td><td class="r num">'+e2(r.p1)+' '+r.u+'</td><td class="r num '+(d>0?'neg':'')+'">'+(d>0?'+':'')+nf1.format(d*100)+' %</td>'+
       '<td class="r"><div class="inp" style="max-width:110px;margin-left:auto"><input type="number" step="1" data-w="'+r.k+'" value="'+(S["w_"+r.k]||0)+'"><span class="u">%</span></div></td></tr>';
   }).join("");
-  $("r-tab").querySelectorAll("input[data-w]").forEach(i=>i.addEventListener("change",()=>{S["w_"+i.dataset.w]=parseFloat(i.value)||0;save();render();}));
+  $("r-tab").querySelectorAll("input[data-w]").forEach(i=>i.addEventListener("change",()=>{S["w_"+i.dataset.w]=parseFloat(i.value)||0;save();render();stammChanged("w_"+i.dataset.w);}));
   $("r-idx").textContent="+"+nf2.format(I.idx*100)+" %";
   $("r-wsum").textContent=nf0.format(I.wsum)+" %";
   $("r-mengen").innerHTML=MENGEN.map(m=>'<tr><td class="num">'+m[0]+'</td><td>'+m[1]+'</td><td class="r num">'+m[2]+'</td><td class="r num">'+m[3]+'</td><td class="r num">'+m[4]+'</td></tr>').join("");
@@ -1208,14 +1217,92 @@ function initAngebote(){
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") $("ang-modal").classList.remove("open"); });
   $("ang-q").addEventListener("input",renderAngListe);
   $("ang-tbody").addEventListener("click",e=>{ const o=e.target.closest("[data-open]"), d=e.target.closest("[data-del]"); if(o) angLaden(o.dataset.open); if(d) angLoeschen(d.dataset.del); });
-  const verbinden=()=>{ $("fb-status").className="dot on"; $("fb-status").textContent="Datenbank verbunden";
+  const verbinden=()=>{ $("fb-status").className="dot on"; $("fb-status").textContent="Datenbank verbunden"; initStamm();
     window.fbAng.live(v=>{ ANGEBOTE=v||{}; angInfo(); if($("ang-modal").classList.contains("open")) renderAngListe(); }); };
   if(window.fbAng&&window.fbAng.bereit) verbinden(); else window.addEventListener("fb-bereit",verbinden,{once:true});
   window.addEventListener("fb-fehler",e=>{ $("fb-status").className="dot off"; $("fb-status").textContent="Datenbank nicht erreichbar"; console.error(e.detail); });
   angInfo();
 }
 
-fillSorten(); bind(); render(); initAngebote();
+/* ================= STAMMDATEN (Firebase) ================= */
+const STAMM_LOCAL_EXCL=["angNr","angErstellt"];
+function stammKeys(){return Object.keys(DEF).filter(k=>!ANG_FIELDS.includes(k)&&!STAMM_LOCAL_EXCL.includes(k));}
+let stammReady=false, stammTimer=null;
+function stammStatus(t,cls){const el=$("stamm-status"); if(el){el.textContent="Stammdaten: "+t; el.style.color=cls==="bad"?"var(--red)":(cls==="ok"?"var(--ok)":"");}}
+function stammChanged(k,force){
+  if(!force && !stammKeys().includes(k)) return;
+  if(!window.fbAng||!window.fbAng.bereit||!stammReady){ stammStatus("nur lokal gespeichert – keine Datenbankverbindung","bad"); return; }
+  stammStatus("wird gespeichert …");
+  clearTimeout(stammTimer);
+  stammTimer=setTimeout(async()=>{
+    stammTimer=null;
+    const data={}; stammKeys().forEach(k=>data[k]=S[k]); data._geaendert=Date.now();
+    try{ await window.fbAng.stammSpeichern(data); stammStatus("zentral gespeichert "+fmtTs(data._geaendert),"ok"); toast("Stammdaten gespeichert."); }
+    catch(e){ stammStatus("Speichern fehlgeschlagen: "+e.message,"bad"); }
+  },900);
+}
+function initStamm(){
+  window.fbAng.stammLive(v=>{
+    if(!v){ // noch keine zentralen Stammdaten -> aktuelle Werte hochladen
+      stammReady=true;
+      if(stammKeys().some(k=>S[k]!==DEF[k])) stammChanged("init",true); else stammStatus("Standardwerte (noch nichts zentral gespeichert)");
+      return;
+    }
+    stammReady=true;
+    if(stammTimer) return; // eigene Eingabe läuft noch
+    let changed=false;
+    stammKeys().forEach(k=>{ if(k in v && v[k]!==S[k]){ S[k]=v[k]; changed=true; } });
+    if(changed){
+      save();
+      document.querySelectorAll("input[id],select[id]").forEach(el=>{
+        const k=el.id; if(!stammKeys().includes(k)||el===document.activeElement) return;
+        if(el.type==="checkbox") el.checked=!!S[k]; else el.value=S[k];
+      });
+      render();
+    }
+    stammStatus("zentral gespeichert "+fmtTs(v._geaendert),"ok");
+  });
+}
+
+/* ================= ROUTE (OpenStreetMap, ohne Google) ================= */
+const WERK_ADR="Osterfeld 1, 59846 Sundern";
+const ROUTE_CACHE={werk:null,ziel:null};
+async function geocode(q){
+  const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=de&accept-language=de&q="+encodeURIComponent(q));
+  if(!r.ok) throw new Error("Adresssuche nicht erreichbar ("+r.status+")");
+  const j=await r.json(); if(!j.length) throw new Error("Ort „"+q+"“ nicht gefunden");
+  return {lat:+j[0].lat,lon:+j[0].lon,name:j[0].display_name};
+}
+async function routeBerechnen(){
+  const bv=(S.bv||"").trim();
+  if(!bv){ toast("Bitte zuerst Bauvorhaben / Lieferort eintragen."); $("bv").focus(); return; }
+  if(S.abhol){ toast("Bei Selbstabholung ist keine Entfernung nötig."); return; }
+  $("route-info").textContent="Route wird berechnet …";
+  try{
+    if(!ROUTE_CACHE.werk) ROUTE_CACHE.werk=await geocode(WERK_ADR);
+    const z=await geocode(bv); ROUTE_CACHE.ziel=z;
+    const w=ROUTE_CACHE.werk;
+    const r=await fetch("https://router.project-osrm.org/route/v1/driving/"+w.lon+","+w.lat+";"+z.lon+","+z.lat+"?overview=false");
+    if(!r.ok) throw new Error("Routenserver nicht erreichbar ("+r.status+")");
+    const j=await r.json(); if(!j.routes||!j.routes.length) throw new Error("Keine Route gefunden");
+    const km=Math.round(j.routes[0].distance/1000), min=Math.round(j.routes[0].duration/60);
+    S.km=km; $("km").value=km; save(); render();
+    $("route-info").textContent="≈ "+km+" km einfach · ca. "+min+" min Pkw-Fahrzeit · Ziel: "+z.name.split(",").slice(0,3).join(",");
+    toast("Fahrstrecke "+km+" km übernommen.");
+  }catch(e){ $("route-info").textContent="Automatische Berechnung fehlgeschlagen: "+e.message+" – bitte km manuell eintragen."; }
+}
+function initRoute(){
+  $("route-calc").addEventListener("click",e=>{e.preventDefault();routeBerechnen();});
+  $("bv").addEventListener("input",()=>{ROUTE_CACHE.ziel=null;$("route-info").textContent="";});
+  // Links immer in neuem Fenster öffnen (verhindert Blockade, wenn das Tool im Cockpit eingebettet ist)
+  ["route","route-osm"].forEach(id=>$(id).addEventListener("click",e=>{
+    e.preventDefault(); const url=$(id).href;
+    const w=window.open(url,"_blank","noopener");
+    if(!w){ try{ navigator.clipboard.writeText(url); toast("Popup blockiert – Link wurde in die Zwischenablage kopiert."); }catch(_){ toast("Popup blockiert – bitte Popups für diese Seite erlauben."); } }
+  }));
+}
+
+fillSorten(); bind(); render(); initAngebote(); initRoute();
 </script>
 </body>
 </html>
