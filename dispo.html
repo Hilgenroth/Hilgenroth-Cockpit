@@ -1126,6 +1126,7 @@ td strong{color:var(--ink);font-weight:700}
       <button class="nb nb-i" onclick="navOv(1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       <input type="date" class="ndp" id="ovDp">
       <button class="nb" onclick="window.print()">🖨 Drucken</button>
+      <button class="nb" onclick="ovVortag()" title="Alle Sundern-Aufträge vom Vortag auf dieses Datum kopieren" style="background:var(--grn-s);color:var(--grn);border-color:var(--grn)">📋 Vortag übernehmen</button>
     </div>
   </div>
   <div class="ov-panel">
@@ -1963,7 +1964,13 @@ authReady.then(()=>{
 
   smRef.on('value',s=>{
     const v=s.val();
-    if(v&&Array.isArray(v)&&v.length){schachtmeister=v;}
+    if(v&&Array.isArray(v)&&v.length){
+      schachtmeister=v.map(sm=>({
+        ...sm,
+        baustellen:Array.isArray(sm.baustellen)?sm.baustellen:
+          (sm.baustellen&&typeof sm.baustellen==='object'?Object.values(sm.baustellen):[])
+      }));
+    }
     else if(!s.val()){smRef.set(DFLT_SM);}
     rebuildSMSelect();
     renderSMModal();
@@ -2207,25 +2214,33 @@ function addSM(){
   schachtmeister=[...schachtmeister,{name:n,phone:p,pin:pin}];
   smRef.set(schachtmeister).then(()=>{document.getElementById('newSMName').value='';document.getElementById('newSMPhone').value='';document.getElementById('newSMPin').value='';renderSMModal();rebuildSMSelect();showToast('Schachtmeister hinzugefügt','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
 }
+function smClean(arr){
+  // Firebase-safe: leere Arrays als null speichern, beim Lesen wiederherstellen
+  return arr.map(s=>({
+    name:s.name||'',
+    phone:s.phone||'',
+    pin:s.pin||'',
+    ...(Array.isArray(s.baustellen)&&s.baustellen.length?{baustellen:s.baustellen}:{})
+  }));
+}
 window.addSmBst=function(i){
   const sel=document.getElementById('smBstSel_'+i);
   if(!sel||!sel.value)return;
   const nr=sel.value;
-  const sm={...schachtmeister[i]};
-  const arr=Array.isArray(sm.baustellen)?[...sm.baustellen]:[];
+  const arr=Array.isArray(schachtmeister[i].baustellen)?[...schachtmeister[i].baustellen]:[];
   if(arr.includes(nr)){showToast('Bereits zugeordnet','amber');return;}
   arr.push(nr);
-  sm.baustellen=arr;
-  schachtmeister=[...schachtmeister];
-  schachtmeister[i]=sm;
-  smRef.set(schachtmeister).then(()=>{renderSMModal();showToast('Baustelle '+nr+' zugeordnet','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
+  schachtmeister[i]={...schachtmeister[i],baustellen:arr};
+  smRef.set(smClean(schachtmeister))
+    .then(()=>showToast('Baustelle '+nr+' zugeordnet','success'))
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
 window.removeSmBst=function(i,nr){
-  const sm={...schachtmeister[i]};
-  sm.baustellen=(Array.isArray(sm.baustellen)?sm.baustellen:[]).filter(b=>b!==nr);
-  schachtmeister=[...schachtmeister];
-  schachtmeister[i]=sm;
-  smRef.set(schachtmeister).then(()=>{renderSMModal();showToast('Baustelle entfernt','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
+  const arr=(Array.isArray(schachtmeister[i].baustellen)?schachtmeister[i].baustellen:[]).filter(b=>b!==nr);
+  schachtmeister[i]={...schachtmeister[i],baustellen:arr};
+  smRef.set(smClean(schachtmeister))
+    .then(()=>showToast('Baustelle entfernt','success'))
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
 
 function renderFFModal(){
@@ -2812,7 +2827,7 @@ function getFilt(type){
 const iEdit='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
 const iDel='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
 const iMail='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
-function ra(type,id){return`<div class="row-a"><button class="bi mail" onclick="sendMail('${type}','${id}')">${iMail}</button><button class="bi edit" onclick="startEdit('${type}','${id}')">${iEdit}</button><button class="bi del" onclick="del('${type}','${id}')">${iDel}</button></div>`}
+function ra(type,id){return`<div class="row-a"><button class="bi mail" onclick="sendMail('${type}','${id}')">${iMail}</button><button class="bi edit" onclick="startEdit('${type}','${id}')" title="Vollständig bearbeiten">${iEdit}</button><button class="bi" onclick="ovInlineEdit('${id}','${type}')" title="Schnellbearbeitung" style="color:var(--grn)">✏</button><button class="bi del" onclick="del('${type}','${id}')">${iDel}</button></div>`}
 function pills(arr){if(!arr||!arr.length)return'';return`<div class="pill-list">${arr.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>`}
 
 function renderF(){
@@ -2852,6 +2867,306 @@ window.navOv=function(d){
 document.getElementById('ovDp').addEventListener('change',e=>{ovDate=e.target.value;renderOv()});
 
 function pTime(s){if(!s)return 9999;const m=String(s).match(/(\d{1,2})[:.]?(\d{2})?/);if(!m)return 9999;return parseInt(m[1])*60+(m[2]?parseInt(m[2]):0)}
+
+// ===== VORTAG ÜBERNEHMEN =====
+window.ovVortag=function(){
+  const prev=new Date(ovDate);
+  prev.setDate(prev.getDate()-1);
+  const prevDate=prev.toISOString().split('T')[0];
+  const vortagAuftraege=data.sundern.filter(o=>o.datum===prevDate);
+  if(!vortagAuftraege.length){showToast('Keine Sundern-Aufträge am Vortag','amber');return;}
+  const bereits=data.sundern.filter(o=>o.datum===ovDate).length;
+  const msg=`${vortagAuftraege.length} Auftrag/Aufträge vom ${prev.getDate()}.${prev.getMonth()+1}. übernehmen?`
+    +(bereits?` (Es gibt bereits ${bereits} Auftrag/Aufträge für heute)`:'');
+  if(!confirm(msg))return;
+  const batch=vortagAuftraege.map(o=>{
+    const {id,...rest}=o;
+    return {...rest,datum:ovDate,_kopiert:true};
+  });
+  let done=0;
+  batch.forEach(o=>{
+    sundernRef.child(Date.now().toString()+Math.random().toString(36).slice(2)).set(o)
+      .then(()=>{done++;if(done===batch.length)showToast(done+' Aufträge übernommen','success');})
+      .catch(e=>showToast('Fehler: '+e.message,'amber'));
+  });
+};
+
+// ===== INLINE-EDIT IN TAGESÜBERSICHT =====
+// Hilfsfunktion: Suchfeld + Chip wie in Hauptformular
+function oeSearchField(inputId,boxId,hiddenId,curVal,label){
+  return `<div class="fg" style="margin-bottom:10px"><label>${label}</label>
+    <div style="position:relative">
+      <input type="text" id="${inputId}" placeholder="${label} suchen…" autocomplete="off"
+        style="width:100%;box-sizing:border-box">
+      <div id="${boxId}" style="display:none;position:absolute;z-index:60;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:180px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+      <div id="${hiddenId}_chip" style="display:${curVal?'flex':'none'};position:absolute;top:0;left:0;right:0;bottom:0;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between;z-index:2">
+        <span id="${hiddenId}_chip_txt">${curVal||''}</span>
+        <button type="button" onclick="document.getElementById('${hiddenId}').value='';document.getElementById('${hiddenId}_chip').style.display='none';document.getElementById('${inputId}').value=''" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+      </div>
+    </div>
+    <input type="hidden" id="${hiddenId}" value="${curVal||''}">
+  </div>`;
+}
+
+window.ovInlineEdit=function(id,type){
+  const o=type==='sundern'?data.sundern.find(x=>x.id===id):data.fremd.find(x=>x.id===id);
+  if(!o)return;
+  const ref=type==='sundern'?sundernRef:fremdRef;
+  const modal=document.createElement('div');
+  modal.id='oe-modal';
+  modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;overflow-y:auto;padding:20px;box-sizing:border-box';
+  const FZG=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
+  const smOpts=schachtmeister.map(s=>`<option value="${esc(s.name)}"${s.name===o.schachtmeister?' selected':''}>${esc(s.name)}</option>`).join('');
+  const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`).join('');
+  const matOpts=['Asphalt','Strassenbaustoffe','Beton'].map(m=>`<label><input type="radio" name="oe_material" value="${m}"${(o.material||'')===''+m?' checked':''}> ${m==='Strassenbaustoffe'?'Straßenbaustoffe':m}</label>`).join('');
+
+  modal.innerHTML=`<div style="background:var(--bg-e);border-radius:var(--rl);padding:0;max-width:520px;width:100%;box-shadow:var(--sh-md);margin:0 auto;position:relative">
+    <div style="padding:20px 24px 0">
+    <div style="font-weight:800;font-size:16px;margin-bottom:16px">✏️ Schnellbearbeitung</div>
+
+    <div class="fg" style="margin-bottom:10px"><label>Uhrzeit</label>
+      <div style="display:flex;gap:4px">
+        <select id="oe_uhrzeitSel" style="width:110px;flex-shrink:0">${timeOpts()}</select>
+        <input id="oe_uhrzeit" type="text" value="${esc(o.uhrzeit||'')}" placeholder="oder tippen…" style="flex:1">
+      </div>
+    </div>
+
+    ${type==='sundern'?`
+    <div class="fg" style="margin-bottom:10px"><label>Schachtmeister</label>
+      <select id="oe_sm" onchange="oeSmChange(this.value)"><option value="">-- wählen --</option>${smOpts}</select>
+    </div>
+    <div class="fg" style="margin-bottom:10px"><label>Baustellennummer</label>
+      <div style="position:relative">
+        <select id="oe_bstnrSel" style="width:100%" onchange="if(this.value){document.getElementById('oe_bstnr').value=this.value;document.getElementById('oe_baustelle').value=baustellen.find(b=>String(b.nr)===this.value)?.name||document.getElementById('oe_baustelle').value;}">
+          <option value="">— Baustelle wählen —</option>
+          <option disabled>── Alle ──</option>
+          ${bstOpts}
+        </select>
+      </div>
+      <input id="oe_bstnr" type="text" value="${esc(o.baustellennummer||'')}" placeholder="Nr. direkt eingeben" style="margin-top:4px">
+    </div>
+    <div class="fg" style="margin-bottom:10px"><label>Auftragsnummer</label><input id="oe_auftrnr" type="text" value="${esc(o.auftragsnummer||'')}"></div>
+    `:''}
+
+    <div class="fg" style="margin-bottom:10px"><label>Baustelle (Name)</label>
+      <div style="position:relative">
+        <input id="oe_bst_inp" type="text" value="${esc(o.baustelle||'')}" placeholder="Baustellenname" autocomplete="off"
+          oninput="oeFilterBst(this.value)" style="width:100%;box-sizing:border-box">
+        <div id="oe_bst_box" style="display:none;position:absolute;z-index:60;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:160px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+      </div>
+      <input type="hidden" id="oe_baustelle" value="${esc(o.baustelle||'')}">
+    </div>
+
+    <div class="fg" style="margin-bottom:10px"><label>Material</label>
+      <div class="rg" id="oe_mat" onchange="oeMatChange()">${matOpts}</div>
+    </div>
+
+    <div class="fg" style="margin-bottom:10px"><label>Sorte</label>
+      <div style="position:relative">
+        <input id="oe_sorte_inp" type="text" placeholder="Sorte suchen…" autocomplete="off"
+          oninput="oeFilterSorte(this.value)" onfocus="oeFilterSorte(this.value)"
+          style="width:100%;box-sizing:border-box">
+        <div id="oe_sorte_chip" style="display:${o.sorte?'flex':'none'};position:absolute;top:0;left:0;right:0;bottom:0;background:var(--blu-s);color:var(--blu);font-weight:700;font-size:13px;padding:7px 12px;border-radius:var(--rs);align-items:center;justify-content:space-between;z-index:2">
+          <span id="oe_sorte_chip_txt">${esc(o.sorte||'')}</span>
+          <button type="button" onclick="oeClrSorte()" style="background:none;border:none;color:var(--blu);font-size:18px;cursor:pointer;line-height:1;padding:0">×</button>
+        </div>
+        <div id="oe_sorte_box" style="display:none;position:absolute;z-index:60;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:180px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+      </div>
+      <input type="hidden" id="oe_sorte" value="${esc(o.sorte||'')}">
+    </div>
+
+    <div class="fg" style="margin-bottom:10px"><label>Menge</label><input id="oe_menge" type="text" value="${esc(o.menge||'')}"></div>
+
+    ${type==='sundern'?`
+    <div class="fg" style="margin-bottom:10px">
+      <label>Fahrzeuge <span style="font-weight:400;color:var(--ink3);font-size:11px">(mehrere möglich)</span></label>
+      <div id="oe_fzg_chips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px"></div>
+      <select id="oe_fzg_sel" style="width:100%" onchange="oeAddChip('fzg',this.value);this.value=''">
+        <option value="">+ Kennzeichen/Fahrzeug…</option>
+        ${fleet.vehicles.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg" style="margin-bottom:10px">
+      <label>Fahrer <span style="font-weight:400;color:var(--ink3);font-size:11px">(mehrere möglich)</span></label>
+      <div id="oe_drv_chips" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px"></div>
+      <div style="position:relative">
+        <input id="oe_drv_inp" type="text" placeholder="Fahrer suchen…" autocomplete="off"
+          oninput="oeFilterFahrer(this.value)" onfocus="oeFilterFahrer(this.value)" style="width:100%;box-sizing:border-box">
+        <div id="oe_drv_box" style="display:none;position:absolute;z-index:60;left:0;right:0;top:100%;border:1px solid var(--line);border-radius:var(--rs);max-height:150px;overflow-y:auto;background:var(--bg-e);box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+      </div>
+    </div>
+    `:''}
+
+    <div class="fg" style="margin-bottom:16px"><label>Bemerkung</label><textarea id="oe_bemerkung" rows="2">${esc(o.bemerkung||'')}</textarea></div>
+    </div>
+    <div style="padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end">
+      <button type="button" class="btn-p" onclick="ovInlineSave('${id}','${type}')">Speichern</button>
+      <button type="button" class="btn-c" style="display:block" onclick="document.getElementById('oe-modal')?.remove()">Abbrechen</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  // Uhrzeit-Sync
+  const sel=modal.querySelector('#oe_uhrzeitSel');
+  const inp=modal.querySelector('#oe_uhrzeit');
+  if(sel&&inp){sel.value=inp.value||'';sel.addEventListener('change',()=>{if(sel.value){inp.value=sel.value;setTimeout(()=>sel.value='',50);}});}
+
+  // Baustellen-Suche
+  window.oeFilterBst=function(q){
+    const box=document.getElementById('oe_bst_box');
+    if(!box)return;
+    const inp2=document.getElementById('oe_bst_inp');
+    document.getElementById('oe_baustelle').value=inp2.value;
+    const filtered=q.trim()?baustellen.filter(b=>(b.name||b.addr||'').toLowerCase().includes(q.toLowerCase())):baustellen.slice(0,20);
+    box.innerHTML='';
+    filtered.forEach(b=>{
+      const d=document.createElement('div');
+      d.style.cssText='padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer';
+      d.textContent=(b.nr?b.nr+' – ':'')+(b.name||b.addr||'');
+      d.addEventListener('pointerdown',e=>{e.preventDefault();
+        document.getElementById('oe_bst_inp').value=b.name||b.addr||'';
+        document.getElementById('oe_baustelle').value=b.name||b.addr||'';
+        if(document.getElementById('oe_bstnr'))document.getElementById('oe_bstnr').value=String(b.nr||'');
+        if(document.getElementById('oe_bstnrSel'))document.getElementById('oe_bstnrSel').value=String(b.nr||'');
+        box.style.display='none';
+      });
+      box.appendChild(d);
+    });
+    box.style.display=filtered.length?'block':'none';
+  };
+
+  // Schachtmeister → Baustelle auto
+  window.oeSmChange=function(smName){
+    const sm=schachtmeister.find(s=>s.name===smName);
+    if(!sm||!Array.isArray(sm.baustellen)||!sm.baustellen.length)return;
+    const firstBst=baustellen.find(b=>String(b.nr)===String(sm.baustellen[0]));
+    if(document.getElementById('oe_bstnr'))document.getElementById('oe_bstnr').value=String(sm.baustellen[0]);
+    if(document.getElementById('oe_bstnrSel'))document.getElementById('oe_bstnrSel').value=String(sm.baustellen[0]);
+    if(firstBst){
+      document.getElementById('oe_bst_inp').value=firstBst.name||firstBst.addr||'';
+      document.getElementById('oe_baustelle').value=firstBst.name||firstBst.addr||'';
+    }
+  };
+
+  // Sorte-Suche
+  function oeGetMat(){const m=document.querySelector('[name="oe_material"]:checked');return m?m.value:'Asphalt';}
+  window.oeClrSorte=function(){
+    document.getElementById('oe_sorte').value='';
+    document.getElementById('oe_sorte_chip').style.display='none';
+    document.getElementById('oe_sorte_inp').value='';
+  };
+  window.oeFilterSorte=function(q){
+    const box=document.getElementById('oe_sorte_box');if(!box)return;
+    const mat=oeGetMat();
+    const key=mat==='Strassenbaustoffe'?'strasse':mat==='Beton'?'beton':'asphalt';
+    const liste=auftragssorten[key]||[];
+    const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste;
+    box.innerHTML='';
+    const mk=s=>q.trim()?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\$&')+')','gi'),'<mark style="background:var(--blu-s);color:var(--blu)">$1</mark>'):s;
+    filtered.forEach(val=>{
+      const d=document.createElement('div');
+      d.style.cssText='padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer';
+      d.innerHTML=mk(val);
+      d.addEventListener('pointerdown',e=>{e.preventDefault();
+        document.getElementById('oe_sorte').value=val;
+        document.getElementById('oe_sorte_chip_txt').textContent=val;
+        document.getElementById('oe_sorte_chip').style.display='flex';
+        box.style.display='none';
+      });
+      box.appendChild(d);
+    });
+    if(q.trim()){
+      const d=document.createElement('div');
+      d.style.cssText='padding:9px 12px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)';
+      d.textContent='✎ „'+q.trim()+'" direkt verwenden';
+      d.addEventListener('pointerdown',e=>{e.preventDefault();
+        document.getElementById('oe_sorte').value=q.trim();
+        document.getElementById('oe_sorte_chip_txt').textContent=q.trim();
+        document.getElementById('oe_sorte_chip').style.display='flex';
+        box.style.display='none';
+      });
+      box.appendChild(d);
+    }
+    box.style.display=filtered.length||q.trim()?'block':'none';
+  };
+  window.oeMatChange=function(){oeClrSorte();};
+
+  // Fahrzeuge + Fahrer Chips
+  if(type==='sundern'){
+    let oeVehicles=[...(o.vehicles||[])];
+    let oeDrivers=[...(o.drivers||[])];
+
+    function oeRenderChips(){
+      const vc=document.getElementById('oe_fzg_chips');
+      const dc=document.getElementById('oe_drv_chips');
+      if(vc)vc.innerHTML=oeVehicles.map((v,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px">${esc(v)}<button type="button" onclick="oeRemChip('fzg',${i})" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;line-height:1;padding:0">×</button></span>`).join('');
+      if(dc)dc.innerHTML=oeDrivers.map((d,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--brand);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px">${esc(d)}<button type="button" onclick="oeRemChip('drv',${i})" style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;line-height:1;padding:0">×</button></span>`).join('');
+    }
+    oeRenderChips();
+
+    window.oeAddChip=function(typ,val){
+      if(!val)return;
+      if(typ==='fzg'&&!oeVehicles.includes(val))oeVehicles.push(val);
+      if(typ==='drv'&&!oeDrivers.includes(val))oeDrivers.push(val);
+      oeRenderChips();
+    };
+    window.oeRemChip=function(typ,i){
+      if(typ==='fzg')oeVehicles.splice(i,1);
+      else oeDrivers.splice(i,1);
+      oeRenderChips();
+    };
+    window._oeGetVehicles=()=>oeVehicles;
+    window._oeGetDrivers=()=>oeDrivers;
+
+    window.oeFilterFahrer=function(q){
+      const box=document.getElementById('oe_drv_box');if(!box)return;
+      const filtered=q.trim()?fleet.drivers.filter(d=>d.toLowerCase().includes(q.toLowerCase())):fleet.drivers;
+      box.innerHTML='';
+      filtered.forEach(val=>{
+        const d=document.createElement('div');
+        d.style.cssText='padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer';
+        d.textContent=val;
+        d.addEventListener('pointerdown',e=>{e.preventDefault();oeAddChip('drv',val);document.getElementById('oe_drv_inp').value='';box.style.display='none';});
+        box.appendChild(d);
+      });
+      box.style.display=filtered.length?'block':'none';
+    };
+  }
+
+  // Dropdowns bei Klick außerhalb schließen
+  modal.addEventListener('pointerdown',e=>{
+    ['oe_sorte_box','oe_bst_box','oe_drv_box'].forEach(bid=>{
+      const box=document.getElementById(bid);
+      const inpId=bid==='oe_drv_box'?'oe_drv_inp':bid.replace('_box','_inp');
+      if(box&&!box.contains(e.target)&&e.target.id!==inpId)box.style.display='none';
+    });
+  });
+};
+
+window.ovInlineSave=function(id,type){
+  const o=type==='sundern'?data.sundern.find(x=>x.id===id):data.fremd.find(x=>x.id===id);
+  if(!o)return;
+  const ref=type==='sundern'?sundernRef:fremdRef;
+  const matEl=document.querySelector('[name="oe_material"]:checked');
+  const updates={
+    uhrzeit:document.getElementById('oe_uhrzeit')?.value.trim()||'',
+    baustelle:document.getElementById('oe_baustelle')?.value||document.getElementById('oe_bst_inp')?.value.trim()||o.baustelle||'',
+    material:matEl?matEl.value:o.material||'',
+    sorte:document.getElementById('oe_sorte')?.value||'',
+    menge:document.getElementById('oe_menge')?.value.trim()||'',
+    bemerkung:document.getElementById('oe_bemerkung')?.value.trim()||'',
+  };
+  if(type==='sundern'){
+    updates.schachtmeister=document.getElementById('oe_sm')?.value||o.schachtmeister||'';
+    updates.baustellennummer=document.getElementById('oe_bstnr')?.value.trim()||'';
+    updates.auftragsnummer=document.getElementById('oe_auftrnr')?.value.trim()||'';
+    if(typeof window._oeGetVehicles==='function')updates.vehicles=window._oeGetVehicles();
+    if(typeof window._oeGetDrivers==='function')updates.drivers=window._oeGetDrivers();
+  }
+  ref.child(id).update(updates)
+    .then(()=>{document.getElementById('oe-modal')?.remove();showToast('Gespeichert','success');})
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
 
 function renderOv(){
   const d=new Date(ovDate);
