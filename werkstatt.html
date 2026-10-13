@@ -234,6 +234,28 @@ tr:hover .ra{opacity:1;}
 @media (max-width:420px){
   .stat-row{grid-template-columns:1fr;}
 }
+
+/* ── Anhänge ── */
+.anh-btns{display:flex;gap:7px;flex-wrap:wrap;}
+.upload-btn.gross{height:40px;padding:0 14px;font-size:12px;border-radius:8px;}
+.anh-status{font-size:11px;color:var(--muted);margin-top:6px;min-height:0;}
+.anh-status.fehler{color:var(--red-warn);font-weight:600;}
+.pdf-liste{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.pdf-zeile{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:8px;background:var(--bg);}
+.pdf-zeile .pz-icon{width:28px;height:28px;border-radius:6px;background:var(--red-l);color:var(--red);
+  display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.pdf-zeile .pz-name{flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pdf-zeile .pz-auf{font-size:11px;font-weight:600;color:var(--red);text-decoration:none;
+  padding:6px 10px;border-radius:6px;background:var(--red-l);flex-shrink:0;}
+.pdf-zeile .pz-del{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);
+  background:var(--white);color:var(--muted);cursor:pointer;flex-shrink:0;font-size:15px;line-height:1;}
+.pdf-zeile .pz-del:hover{border-color:var(--red);color:var(--red);}
+/* Anhänge in der Auftragskarte */
+.t-anh{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center;}
+.t-pdf{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--red);
+  text-decoration:none;padding:7px 11px;border-radius:7px;background:var(--red-l);border:1px solid #F7C9D1;}
 </style>
 </head>
 <body>
@@ -340,6 +362,33 @@ tr:hover .ra{opacity:1;}
     <div class="fr"><label>Beschreibung / Schaden</label>
       <textarea class="fi" id="au-beschr" style="height:70px;padding:8px 10px;resize:vertical" placeholder="z.B. Hydraulikschlauch undicht, Kabinenschaden durch Steinschlag …"></textarea>
     </div>
+    <div class="fr"><label>Anhänge &ndash; Fotos &amp; Dokumente</label>
+      <div class="anh-btns">
+        <label class="upload-btn gross" for="au-foto-cam">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Foto aufnehmen
+        </label>
+        <label class="upload-btn gross" for="au-foto-gal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Aus Galerie
+        </label>
+        <label class="upload-btn gross" for="au-pdf-inp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF hinzufügen
+        </label>
+      </div>
+      <input type="file" id="au-foto-cam" accept="image/*" capture="environment" style="display:none" onchange="handleAuFotos(this)">
+      <input type="file" id="au-foto-gal" accept="image/*" multiple style="display:none" onchange="handleAuFotos(this)">
+      <input type="file" id="au-pdf-inp" accept="application/pdf,.pdf" multiple style="display:none" onchange="handleAuPDF(this)">
+      <div class="prog-wrap" id="au-foto-prog-wrap"><div class="prog-bar" id="au-foto-prog-bar" style="width:0"></div></div>
+      <div class="prog-wrap" id="au-prog-wrap"><div class="prog-bar" id="au-prog-bar" style="width:0"></div></div>
+      <div class="anh-status" id="au-anh-status"></div>
+      <div class="foto-grid" id="au-foto-grid"></div>
+      <div class="pdf-liste" id="au-pdf-liste"></div>
+      <span class="foto-cnt" id="au-foto-cnt"></span>
+      <input type="hidden" id="au-pdf-url">
+      <input type="hidden" id="au-pdf-name">
+    </div>
     <div class="div"></div>
     <div class="sec">Kosten</div>
     <div class="fr3">
@@ -361,34 +410,6 @@ tr:hover .ra{opacity:1;}
     </div>
     <div class="fr"><label>Km-Stand / Betriebsstunden bei Auftrag</label>
       <input class="fi" id="au-km" placeholder="z.B. 125000 km oder 4500 h">
-    </div>
-    <div class="fr"><label>Rechnung / Dokument (PDF)</label>
-      <label class="upload-btn" for="au-pdf-inp">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        PDF hochladen
-      </label>
-      <input type="file" id="au-pdf-inp" accept="application/pdf" style="display:none" onchange="handleAuPDF(this)">
-      <div class="prog-wrap" id="au-prog-wrap"><div class="prog-bar" id="au-prog-bar" style="width:0"></div></div>
-      <div id="au-pdf-prev" style="margin-top:5px"></div>
-      <input type="hidden" id="au-pdf-url">
-      <input type="hidden" id="au-pdf-name">
-    </div>
-    <div class="fr"><label>Fotos zum Auftrag</label>
-      <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <label class="upload-btn" for="au-foto-cam">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Foto aufnehmen
-        </label>
-        <label class="upload-btn" for="au-foto-gal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Aus Galerie
-        </label>
-        <span class="foto-cnt" id="au-foto-cnt"></span>
-      </div>
-      <input type="file" id="au-foto-cam" accept="image/*" capture="environment" style="display:none" onchange="handleAuFotos(this)">
-      <input type="file" id="au-foto-gal" accept="image/*" multiple style="display:none" onchange="handleAuFotos(this)">
-      <div class="prog-wrap" id="au-foto-prog-wrap"><div class="prog-bar" id="au-foto-prog-bar" style="width:0"></div></div>
-      <div class="foto-grid" id="au-foto-grid"></div>
     </div>
     <div class="fr"><label>Notiz</label>
       <input class="fi" id="au-notiz" placeholder="z.B. Nächste Inspektion in 6 Monaten …">
@@ -557,6 +578,7 @@ let curTab='auftraege', curFZ=null, subTab='verlauf', etFzFilter='';
 let auKey=null, etKey=null, liefKey=null, fzKey=null;
 let selETs={}, sq='', etSq='';
 let auFotos={};
+let auPdfs={};
 let lbList=[], lbIdx=0;
 
 // ── Helpers ──
@@ -725,9 +747,8 @@ function drawAuftraege(){
             ${v.mkosten?`<span>🔧 Material: ${fmtEur(v.mkosten)}</span>`:''}
             ${etList.length?`<span>📦 ${etList.join(', ')}</span>`:''}
             ${v.notiz?`<span>📝 ${esc(v.notiz)}</span>`:''}
-            ${v.pdfUrl?`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 ${esc(v.pdfName||'PDF')}</a>`:''}
           </div>
-          ${fotoStrip(v.fotos)}
+          ${anhangStreifen(v)}
         </div>
       </div>`;
     });
@@ -856,8 +877,8 @@ function openAuftrag(key){
   document.getElementById('au-status').value='Offen';
   document.getElementById('au-pdf-url').value='';
   document.getElementById('au-pdf-name').value='';
-  document.getElementById('au-pdf-prev').innerHTML='';
   auFotos={};
+  auPdfs={};
   if(key&&auftraege[key]){
     const v=auftraege[key];
     document.getElementById('au-fz').value=v.fzId||'';
@@ -875,11 +896,17 @@ function openAuftrag(key){
     document.getElementById('au-pdf-url').value=v.pdfUrl||'';
     document.getElementById('au-pdf-name').value=v.pdfName||'';
     auFotos=v.fotos?JSON.parse(JSON.stringify(v.fotos)):{};
-    if(v.pdfUrl) document.getElementById('au-pdf-prev').innerHTML=`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 ${esc(v.pdfName||'PDF')}</a>`;
+    auPdfs=v.pdfs?JSON.parse(JSON.stringify(v.pdfs)):{};
+    // Fr\u00fcher gab es nur ein einzelnes PDF je Auftrag - das uebernehmen
+    if(!Object.keys(auPdfs).length && v.pdfUrl){
+      auPdfs['alt']={url:v.pdfUrl,name:v.pdfName||'Dokument.pdf',ts:0};
+    }
     selETs=Object.assign({},v.usedETs||{});
   }
   renderSelETs();
   renderAuFotos();
+  renderAuPdfs();
+  anhStatus('');
   openM('bd-auftrag');
 }
 function renderSelETs(){
@@ -920,7 +947,8 @@ function saveAuftrag(){
     mech:document.getElementById('au-mech').value.trim(), km:document.getElementById('au-km').value.trim(),
     notiz:document.getElementById('au-notiz').value.trim(),
     pdfUrl:document.getElementById('au-pdf-url').value, pdfName:document.getElementById('au-pdf-name').value,
-    usedETs:Object.assign({},selETs), fotos:Object.assign({},auFotos), ts:Date.now()
+    usedETs:Object.assign({},selETs), fotos:Object.assign({},auFotos),
+    pdfs:Object.assign({},auPdfs), ts:Date.now()
   };
   if(auKey){AU&&AU.child(auKey).update(e);auftraege[auKey]={...auftraege[auKey],...e};}
   else{const k=AU?AU.push().key:'a_'+Date.now();AU&&AU.child(k).set(e);auftraege[k]=e;}
@@ -1097,6 +1125,30 @@ function uploadFoto(blob,name,onProg,onDone,onErr){
   );
 }
 
+// Meldung unter den Anhang-Knoepfen
+function anhStatus(text,fehler){
+  var el=document.getElementById('au-anh-status');
+  if(!el)return;
+  el.textContent=text||'';
+  el.className='anh-status'+(fehler?' fehler':'');
+}
+
+// Eine Datei nach Firebase Storage hochladen
+function uploadDatei(daten,name,typ,onProg,onDone,onErr){
+  if(typeof ST==='undefined'||!ST){
+    onErr(new Error('Keine Verbindung zum Dateispeicher. Seite neu laden und noch einmal versuchen.'));
+    return;
+  }
+  var sicher=String(name||'datei').replace(/[^a-zA-Z0-9._-]/g,'_');
+  var ref=ST.ref('werkstatt/anhaenge/'+Date.now()+'_'+Math.random().toString(36).slice(2,7)+'_'+sicher);
+  var task=ref.put(daten,{contentType:typ||'application/octet-stream'});
+  task.on('state_changed',
+    function(s){ if(s.totalBytes)onProg(s.bytesTransferred/s.totalBytes); },
+    function(e){ onErr(e); },
+    function(){ ref.getDownloadURL().then(function(u){ onDone(u,ref.fullPath); }).catch(onErr); }
+  );
+}
+
 function handleAuFotos(inp){
   var files=Array.prototype.slice.call(inp.files||[]);
   inp.value='';
@@ -1104,13 +1156,23 @@ function handleAuFotos(inp){
   var pw=document.getElementById('au-foto-prog-wrap');
   var pb=document.getElementById('au-foto-prog-bar');
   if(pw)pw.style.display='';
-  var total=files.length;
+  var total=files.length, fehler=0;
+
+  function fertig(){
+    if(pw)pw.style.display='none';
+    if(pb)pb.style.width='0';
+    renderAuFotos();
+    if(fehler)anhStatus(fehler+' von '+total+' Fotos konnten nicht hochgeladen werden.',true);
+    else anhStatus(total+(total===1?' Foto hinzugef\u00fcgt.':' Fotos hinzugef\u00fcgt.'));
+  }
+
   function step(i){
-    if(i>=total){ if(pw)pw.style.display='none'; if(pb)pb.style.width='0'; renderAuFotos(); return; }
+    if(i>=total){ fertig(); return; }
     var f=files[i];
-    compressImg(f,1600,0.82).then(function(blob){
-      var base=f.name.replace(/[.][^.]+$/,'');
-      uploadFoto(blob, base+'.jpg',
+    anhStatus('Lade Foto '+(i+1)+' von '+total+' \u2026');
+
+    function hoch(daten,name,typ){
+      uploadDatei(daten,name,typ,
         function(frac){ if(pb)pb.style.width=Math.round(((i+frac)/total)*100)+'%'; },
         function(url,path){
           var id='f'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
@@ -1118,9 +1180,18 @@ function handleAuFotos(inp){
           renderAuFotos();
           step(i+1);
         },
-        function(err){ alert('Upload-Fehler: '+(err&&err.message?err.message:err)); step(i+1); }
-      );
-    }).catch(function(err){ alert(err.message); step(i+1); });
+        function(err){
+          fehler++;
+          anhStatus('Fehler bei "'+f.name+'": '+(err&&err.message?err.message:err),true);
+          step(i+1);
+        });
+    }
+
+    // Verkleinern spart Speicher und Zeit; klappt es nicht
+    // (z.B. sehr grosse iPhone-Aufnahme), wird das Original genommen.
+    compressImg(f,1600,0.82)
+      .then(function(blob){ hoch(blob, f.name.replace(/[.][^.]+$/,'')+'.jpg', 'image/jpeg'); })
+      .catch(function(){ hoch(f, f.name, f.type||'image/jpeg'); });
   }
   step(0);
 }
@@ -1138,6 +1209,32 @@ function renderAuFotos(){
     return '<div class="foto-thumb"><img src="'+esc(f.url)+'" data-lb="'+esc(f.url)+'" alt="Foto">'+
            '<button type="button" class="foto-del" data-delfoto="'+esc(id)+'" title="Entfernen">&times;</button></div>';
   }).join('');
+}
+
+// Fotos und PDFs eines Auftrags unter der Karte anzeigen
+function anhangStreifen(v){
+  var teile=[];
+  var fotos=v.fotos||{};
+  var fks=Object.keys(fotos);
+  fks.sort(function(a,b){ return (fotos[a].ts||0)-(fotos[b].ts||0); });
+  fks.forEach(function(id){
+    teile.push('<img class="t-foto" loading="lazy" src="'+esc(fotos[id].url)+
+               '" data-lb="'+esc(fotos[id].url)+'" alt="Foto">');
+  });
+  var pdfs=v.pdfs||{};
+  var pks=Object.keys(pdfs);
+  pks.sort(function(a,b){ return (pdfs[a].ts||0)-(pdfs[b].ts||0); });
+  pks.forEach(function(id){
+    teile.push('<a class="t-pdf" href="'+esc(pdfs[id].url)+'" target="_blank" rel="noopener">'+
+               '\u00d6ffnen: '+esc(pdfs[id].name||'PDF')+'</a>');
+  });
+  // alte Einzel-PDFs weiterhin anzeigen
+  if(!pks.length && v.pdfUrl){
+    teile.push('<a class="t-pdf" href="'+esc(v.pdfUrl)+'" target="_blank" rel="noopener">'+
+               '\u00d6ffnen: '+esc(v.pdfName||'PDF')+'</a>');
+  }
+  if(!teile.length)return '';
+  return '<div class="t-anh">'+teile.join('')+'</div>';
 }
 
 function fotoStrip(fotos){
@@ -1189,6 +1286,13 @@ function lbStep(d){
 document.addEventListener('click',function(e){
   var t=e.target;
   if(!t||!t.closest)return;
+  var delp=t.closest('[data-delpdf]');
+  if(delp){
+    e.preventDefault();
+    var pid=delp.getAttribute('data-delpdf');
+    if(confirm('PDF entfernen?')){ delete auPdfs[pid]; renderAuPdfs(); }
+    return;
+  }
   var del=t.closest('[data-delfoto]');
   if(del){
     e.preventDefault();
@@ -1239,12 +1343,76 @@ function fabAction(){
 }
 
 function handleAuPDF(inp){
-  const f=inp.files[0];if(!f)return;
-  uploadPDF(f,'werkstatt/auftraege','au-prog-wrap','au-prog-bar',(url,name)=>{
-    document.getElementById('au-pdf-url').value=url;
-    document.getElementById('au-pdf-name').value=name;
-    document.getElementById('au-pdf-prev').innerHTML=`<a class="pdf-link" href="${url}" target="_blank">📄 ${name}</a>`;
-  });
+  var files=Array.prototype.slice.call(inp.files||[]);
+  inp.value='';
+  if(!files.length)return;
+  var pw=document.getElementById('au-prog-wrap');
+  var pb=document.getElementById('au-prog-bar');
+  if(pw)pw.style.display='';
+  var total=files.length, fehler=0;
+
+  function step(i){
+    if(i>=total){
+      if(pw)pw.style.display='none';
+      if(pb)pb.style.width='0';
+      renderAuPdfs();
+      if(fehler)anhStatus(fehler+' von '+total+' PDFs konnten nicht hochgeladen werden.',true);
+      else anhStatus(total+(total===1?' PDF hinzugef\u00fcgt.':' PDFs hinzugef\u00fcgt.'));
+      return;
+    }
+    var f=files[i];
+    var istPdf=(f.type==='application/pdf')||/[.]pdf$/i.test(f.name||'');
+    if(!istPdf){
+      fehler++;
+      anhStatus('"'+f.name+'" ist keine PDF-Datei.',true);
+      step(i+1); return;
+    }
+    if(f.size>20*1024*1024){
+      fehler++;
+      anhStatus('"'+f.name+'" ist gr\u00f6\u00dfer als 20 MB.',true);
+      step(i+1); return;
+    }
+    anhStatus('Lade PDF '+(i+1)+' von '+total+' \u2026');
+    uploadDatei(f,f.name,'application/pdf',
+      function(frac){ if(pb)pb.style.width=Math.round(((i+frac)/total)*100)+'%'; },
+      function(url,path){
+        var id='p'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
+        auPdfs[id]={url:url,path:path,name:f.name,groesse:f.size,ts:Date.now()};
+        renderAuPdfs();
+        step(i+1);
+      },
+      function(err){
+        fehler++;
+        anhStatus('Fehler bei "'+f.name+'": '+(err&&err.message?err.message:err),true);
+        step(i+1);
+      });
+  }
+  step(0);
+}
+
+function fmtGroesse(b){
+  if(!b)return '';
+  if(b<1024)return b+' B';
+  if(b<1024*1024)return Math.round(b/1024)+' KB';
+  return (b/1024/1024).toFixed(1).replace('.',',')+' MB';
+}
+
+function renderAuPdfs(){
+  var box=document.getElementById('au-pdf-liste');
+  if(!box)return;
+  var ks=Object.keys(auPdfs||{});
+  if(!ks.length){ box.innerHTML=''; return; }
+  ks.sort(function(a,b){ return (auPdfs[a].ts||0)-(auPdfs[b].ts||0); });
+  box.innerHTML=ks.map(function(id){
+    var p=auPdfs[id];
+    return '<div class="pdf-zeile">'+
+      '<div class="pz-icon">PDF</div>'+
+      '<div class="pz-name">'+esc(p.name||'Dokument')+
+        (p.groesse?' <span style="color:var(--muted);font-weight:400">\u00b7 '+fmtGroesse(p.groesse)+'</span>':'')+'</div>'+
+      '<a class="pz-auf" href="'+esc(p.url)+'" target="_blank" rel="noopener">\u00d6ffnen</a>'+
+      '<button type="button" class="pz-del" data-delpdf="'+esc(id)+'" title="Entfernen">&times;</button>'+
+    '</div>';
+  }).join('');
 }
 function handleETpdf(inp){
   const f=inp.files[0];if(!f)return;
