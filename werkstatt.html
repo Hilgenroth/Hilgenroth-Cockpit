@@ -551,7 +551,7 @@ tr:hover .ra{opacity:1;}
 <script>
 // ── Firebase ──
 let db=null, ST=null;
-let AU=null, ET=null, LI=null, FZ=null;
+let AU=null, ET=null, LI=null, FZ=null, DAT=null;
 try{
   if(typeof firebase!=='undefined'){
     firebase.initializeApp({
@@ -569,6 +569,7 @@ try{
     ET=db.ref('werkstatt/ersatzteile');
     LI=db.ref('werkstatt/lieferanten');
     FZ=db.ref('werkstatt/fahrzeuge');
+    DAT=db.ref('werkstatt/dateien');
   }
 }catch(e){console.warn('Firebase:',e.message);}
 
@@ -811,7 +812,9 @@ function drawErsatzteile(){
         <td class="mono">${v.preis?fmtEur(v.preis):'–'}</td>
         <td class="${low?'lager-low':'lager-ok'} mono">${v.lager||0}${v.minlager?` / ${v.minlager}`:''}</td>
         <td style="font-size:11px;color:var(--muted)">${esc(v.lagerort||'–')}</td>
-        <td>${v.pdfUrl?`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄</a>`:'–'}</td>
+        <td>${v.pdfUrl?(String(v.pdfUrl).indexOf('db:')===0
+            ?`<button type="button" class="pdf-link" data-pdfref="${esc(String(v.pdfUrl).slice(3))}" data-pdfname="Beleg.pdf">PDF</button>`
+            :`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">PDF</a>`):'–'}</td>
         <td><div class="ra">
           <button class="ib e" onclick="openET('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
           <button class="ib d" onclick="delETconf('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
@@ -995,7 +998,14 @@ function openET(key){
     document.getElementById('et-lagerort').value=v.lagerort||'';
     document.getElementById('et-notiz').value=v.notiz||'';
     document.getElementById('et-pdf-url').value=v.pdfUrl||'';
-    if(v.pdfUrl) document.getElementById('et-pdf-prev').innerHTML=`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 Beleg</a>`;
+    if(v.pdfUrl){
+      var p=document.getElementById('et-pdf-prev');
+      if(String(v.pdfUrl).indexOf('db:')===0)
+        p.innerHTML='<button type="button" class="pdf-link" data-pdfref="'+esc(String(v.pdfUrl).slice(3))+
+          '" data-pdfname="Beleg.pdf">\u00d6ffnen: Beleg</button>';
+      else
+        p.innerHTML='<a class="pdf-link" href="'+esc(v.pdfUrl)+'" target="_blank">\u00d6ffnen: Beleg</a>';
+    }
   }
   openM('bd-et');
 }
@@ -1077,20 +1087,6 @@ function delFZ(){
 }
 
 // ── PDF Upload ──
-function uploadPDF(file,path,prog,bar,onDone){
-  if(!ST){alert('Firebase Storage nicht verfügbar.');return;}
-  if(!file||file.type!=='application/pdf'){alert('Nur PDF-Dateien.');return;}
-  if(file.size>15*1024*1024){alert('Max. 15 MB.');return;}
-  const ref=ST.ref(path+'/'+Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_'));
-  const task=ref.put(file);
-  const pw=document.getElementById(prog), pb=document.getElementById(bar);
-  if(pw)pw.style.display='';
-  task.on('state_changed',
-    s=>{const p=Math.round(s.bytesTransferred/s.totalBytes*100);if(pb)pb.style.width=p+'%';},
-    err=>{alert('Fehler: '+err.message);if(pw)pw.style.display='none';},
-    ()=>{ref.getDownloadURL().then(url=>{if(pw)pw.style.display='none';onDone(url,file.name);});}
-  );
-}
 // ── Fotos: komprimieren, hochladen, anzeigen ──
 function compressImg(file,maxPx,quality){
   return new Promise(function(resolve,reject){
@@ -1113,17 +1109,6 @@ function compressImg(file,maxPx,quality){
   });
 }
 
-function uploadFoto(blob,name,onProg,onDone,onErr){
-  if(!ST){onErr(new Error('Firebase Storage nicht verf\u00fcgbar.'));return;}
-  var safe=String(name||'foto.jpg').replace(/[^a-zA-Z0-9._-]/g,'_');
-  var ref=ST.ref('werkstatt/fotos/'+Date.now()+'_'+Math.random().toString(36).slice(2,7)+'_'+safe);
-  var task=ref.put(blob,{contentType:'image/jpeg'});
-  task.on('state_changed',
-    function(s){ if(s.totalBytes) onProg(s.bytesTransferred/s.totalBytes); },
-    function(e){ onErr(e); },
-    function(){ ref.getDownloadURL().then(function(u){ onDone(u,ref.fullPath); }).catch(onErr); }
-  );
-}
 
 // Meldung unter den Anhang-Knoepfen
 function anhStatus(text,fehler){
@@ -1134,52 +1119,71 @@ function anhStatus(text,fehler){
 }
 
 // Eine Datei nach Firebase Storage hochladen
-// Firebase-Fehlercodes in verstaendlichen Text uebersetzen
+// Anh\u00e4nge liegen in der Realtime Database (werkstatt/dateien),
+// NICHT in Firebase Storage. Storage w\u00fcrde ein kostenpflichtiges
+// Rechnungskonto verlangen, die Datenbank habt ihr ohnehin.
+var MAX_DATEI = 700*1024;   // Rohgr\u00f6\u00dfe je Datei
+
 function speicherFehlerText(e){
   var code=(e&&e.code)?String(e.code):'';
-  if(code.indexOf('unauthorized')>=0)
-    return 'Der Dateispeicher verweigert den Zugriff. In Firebase unter Storage \u2192 Regeln muss Schreiben erlaubt sein. (storage/unauthorized)';
-  if(code.indexOf('unauthenticated')>=0)
-    return 'Der Dateispeicher verlangt eine Anmeldung. Storage-Regeln anpassen. (storage/unauthenticated)';
-  if(code.indexOf('retry-limit')>=0)
-    return 'Zeit\u00fcberschreitung beim Hochladen \u2013 Verbindung zu langsam oder Datei zu gro\u00df. (storage/retry-limit-exceeded)';
-  if(code.indexOf('quota')>=0)
-    return 'Speicherplatz des Projekts ist aufgebraucht. (storage/quota-exceeded)';
-  if(code.indexOf('bucket-not-found')>=0||code.indexOf('project-not-found')>=0)
-    return 'Der Dateispeicher ist f\u00fcr dieses Firebase-Projekt nicht eingerichtet. ('+code+')';
-  if(code.indexOf('canceled')>=0)
-    return 'Hochladen abgebrochen.';
-  return (e&&e.message?e.message:'Unbekannter Fehler')+(code?' ('+code+')':'');
+  var txt=(e&&e.message)?e.message:'Unbekannter Fehler';
+  if(code==='PERMISSION_DENIED'||txt.indexOf('permission_denied')>=0||txt.indexOf('Permission denied')>=0)
+    return 'Die Datenbank verweigert das Schreiben. In Firebase unter Realtime Database \u2192 Regeln muss "werkstatt" auf true stehen.';
+  if(txt.indexOf('too large')>=0||txt.indexOf('zu gro')>=0)
+    return 'Die Datei ist zu gro\u00df f\u00fcr die Datenbank.';
+  return txt+(code?' ('+code+')':'');
 }
 
-function uploadDatei(daten,name,typ,onProg,onDone,onErr){
-  if(typeof ST==='undefined'||!ST){
-    onErr(new Error('Keine Verbindung zum Dateispeicher. Seite neu laden und noch einmal versuchen.'));
+function dateiLesen(datei){
+  return new Promise(function(ok,fehler){
+    var r=new FileReader();
+    r.onload=function(){ ok(r.result); };
+    r.onerror=function(){ fehler(new Error('Datei konnte nicht gelesen werden.')); };
+    r.readAsDataURL(datei);
+  });
+}
+
+// Speichert eine Datei in der Datenbank und gibt ihren Schl\u00fcssel zur\u00fcck
+function dbDateiSpeichern(daten,name,typ,onProg,onDone,onErr){
+  if(!DAT){
+    onErr(new Error('Keine Verbindung zur Datenbank. Seite neu laden und noch einmal versuchen.'));
     return;
   }
-  var sicher=String(name||'datei').replace(/[^a-zA-Z0-9._-]/g,'_');
-  var ref=ST.ref('werkstatt/anhaenge/'+Date.now()+'_'+Math.random().toString(36).slice(2,7)+'_'+sicher);
-  var task=ref.put(daten,{contentType:typ||'application/octet-stream'});
-  var fertig=false;
-  // Nicht endlos warten: nach 90 Sekunden abbrechen
-  var uhr=setTimeout(function(){
-    if(fertig)return;
-    fertig=true;
-    try{ task.cancel(); }catch(e){}
-    onErr(new Error('Zeit\u00fcberschreitung nach 90 Sekunden \u2013 keine Antwort vom Dateispeicher.'));
-  },90000);
-  task.on('state_changed',
-    function(s){ if(s.totalBytes)onProg(s.bytesTransferred/s.totalBytes); },
-    function(e){ if(fertig)return; fertig=true; clearTimeout(uhr); onErr(e); },
-    function(){
-      if(fertig)return;
-      ref.getDownloadURL().then(function(u){
-        if(fertig)return; fertig=true; clearTimeout(uhr); onDone(u,ref.fullPath);
-      }).catch(function(e){
-        if(fertig)return; fertig=true; clearTimeout(uhr); onErr(e);
-      });
-    }
-  );
+  if(daten.size>MAX_DATEI){
+    onErr(new Error('Die Datei ist '+fmtGroesse(daten.size)+' gro\u00df. Mehr als '+
+      fmtGroesse(MAX_DATEI)+' gehen nicht in die Datenbank.'));
+    return;
+  }
+  onProg(0.15);
+  dateiLesen(daten).then(function(dataUrl){
+    onProg(0.5);
+    var eintrag=DAT.push();
+    eintrag.set({ data:dataUrl, name:name||'Datei', typ:typ||'', groesse:daten.size, ts:Date.now() })
+      .then(function(){ onProg(1); onDone(eintrag.key); })
+      .catch(onErr);
+  }).catch(onErr);
+}
+
+// Datei bei Bedarf aus der Datenbank holen (gepuffert)
+var dateiPuffer={};
+function dbDateiHolen(key){
+  if(dateiPuffer[key])return Promise.resolve(dateiPuffer[key]);
+  if(!DAT)return Promise.reject(new Error('Keine Verbindung zur Datenbank.'));
+  return DAT.child(key).once('value').then(function(s){
+    var v=s.val();
+    if(!v)throw new Error('Datei nicht gefunden.');
+    dateiPuffer[key]=v;
+    return v;
+  });
+}
+
+function dbDateiLoeschen(key){
+  if(key&&DAT){ DAT.child(key).remove(); delete dateiPuffer[key]; }
+}
+
+// Kleines Vorschaubild erzeugen (wird direkt im Auftrag gespeichert)
+function makeThumb(datei){
+  return compressImg(datei,220,0.5).then(function(blob){ return dateiLesen(blob); });
 }
 
 function handleAuFotos(inp){
@@ -1204,28 +1208,27 @@ function handleAuFotos(inp){
     var f=files[i];
     anhStatus('Lade Foto '+(i+1)+' von '+total+' \u2026');
 
-    function hoch(daten,name,typ){
-      uploadDatei(daten,name,typ,
-        function(frac){ if(pb)pb.style.width=Math.round(((i+frac)/total)*100)+'%'; },
-        function(url,path){
-          var id='f'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
-          auFotos[id]={url:url,path:path,name:f.name,ts:Date.now()};
-          renderAuFotos();
-          step(i+1);
-        },
-        function(err){
-          fehler++;
-          letzterFehler=speicherFehlerText(err);
-          anhStatus('Fehler bei "'+f.name+'": '+letzterFehler,true);
-          step(i+1);
-        });
+    function misserfolg(err){
+      fehler++;
+      letzterFehler=speicherFehlerText(err);
+      anhStatus('Fehler bei "'+f.name+'": '+letzterFehler,true);
+      step(i+1);
     }
 
-    // Verkleinern spart Speicher und Zeit; klappt es nicht
-    // (z.B. sehr grosse iPhone-Aufnahme), wird das Original genommen.
-    compressImg(f,1400,0.75)
-      .then(function(blob){ hoch(blob, f.name.replace(/[.][^.]+$/,'')+'.jpg', 'image/jpeg'); })
-      .catch(function(){ hoch(f, f.name, f.type||'image/jpeg'); });
+    // 1) Bild verkleinern  2) kleines Vorschaubild  3) in die Datenbank
+    compressImg(f,1200,0.7).then(function(blob){
+      return makeThumb(blob).then(function(thumb){
+        dbDateiSpeichern(blob, f.name.replace(/[.][^.]+$/,'')+'.jpg', 'image/jpeg',
+          function(frac){ if(pb)pb.style.width=Math.round(((i+frac)/total)*100)+'%'; },
+          function(key){
+            var id='f'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
+            auFotos[id]={ref:key,thumb:thumb,name:f.name,groesse:blob.size,ts:Date.now()};
+            renderAuFotos();
+            step(i+1);
+          },
+          misserfolg);
+      });
+    }).catch(misserfolg);
   }
   step(0);
 }
@@ -1240,7 +1243,9 @@ function renderAuFotos(){
   ks.sort(function(a,b){ return (auFotos[a].ts||0)-(auFotos[b].ts||0); });
   box.innerHTML=ks.map(function(id){
     var f=auFotos[id];
-    return '<div class="foto-thumb"><img src="'+esc(f.url)+'" data-lb="'+esc(f.url)+'" alt="Foto">'+
+    var bild=f.thumb||f.url||'';
+    return '<div class="foto-thumb"><img src="'+esc(bild)+'" data-ref="'+esc(f.ref||'')+'" '+
+           'data-lb="'+esc(f.url||'')+'" alt="Foto">'+
            '<button type="button" class="foto-del" data-delfoto="'+esc(id)+'" title="Entfernen">&times;</button></div>';
   }).join('');
 }
@@ -1252,15 +1257,23 @@ function anhangStreifen(v){
   var fks=Object.keys(fotos);
   fks.sort(function(a,b){ return (fotos[a].ts||0)-(fotos[b].ts||0); });
   fks.forEach(function(id){
-    teile.push('<img class="t-foto" loading="lazy" src="'+esc(fotos[id].url)+
-               '" data-lb="'+esc(fotos[id].url)+'" alt="Foto">');
+    var f=fotos[id];
+    var bild=f.thumb||f.url||'';
+    teile.push('<img class="t-foto" loading="lazy" src="'+esc(bild)+
+               '" data-ref="'+esc(f.ref||'')+'" data-lb="'+esc(f.url||'')+'" alt="Foto">');
   });
   var pdfs=v.pdfs||{};
   var pks=Object.keys(pdfs);
   pks.sort(function(a,b){ return (pdfs[a].ts||0)-(pdfs[b].ts||0); });
   pks.forEach(function(id){
-    teile.push('<a class="t-pdf" href="'+esc(pdfs[id].url)+'" target="_blank" rel="noopener">'+
-               '\u00d6ffnen: '+esc(pdfs[id].name||'PDF')+'</a>');
+    var p=pdfs[id];
+    if(p.ref){
+      teile.push('<button type="button" class="t-pdf" data-pdfref="'+esc(p.ref)+
+                 '" data-pdfname="'+esc(p.name||'Dokument.pdf')+'">\u00d6ffnen: '+esc(p.name||'PDF')+'</button>');
+    } else {
+      teile.push('<a class="t-pdf" href="'+esc(p.url||'#')+'" target="_blank" rel="noopener">'+
+                 '\u00d6ffnen: '+esc(p.name||'PDF')+'</a>');
+    }
   });
   // alte Einzel-PDFs weiterhin anzeigen
   if(!pks.length && v.pdfUrl){
@@ -1281,6 +1294,54 @@ function fotoStrip(fotos){
 }
 
 // ── Lightbox ──
+// Volles Bild aus der Datenbank nachladen und gross anzeigen
+function lbOpenRef(key,vorschau){
+  var lb=document.getElementById('lightbox');
+  var im=document.getElementById('lb-img');
+  var inf=document.getElementById('lb-info');
+  var dl=document.getElementById('lb-dl');
+  if(!lb||!im)return;
+  lbList=[]; lbIdx=0;
+  im.src=vorschau||'';
+  if(inf)inf.textContent='l\u00e4dt \u2026';
+  if(dl)dl.style.display='none';
+  lb.classList.add('on');
+  dbDateiHolen(key).then(function(v){
+    im.src=v.data;
+    if(inf)inf.textContent=v.name||'';
+    if(dl){ dl.href=v.data; dl.setAttribute('download',v.name||'foto.jpg'); dl.style.display=''; }
+  }).catch(function(e){
+    if(inf)inf.textContent='Bild konnte nicht geladen werden: '+speicherFehlerText(e);
+  });
+}
+
+// PDF aus der Datenbank holen und in neuem Tab oeffnen
+function pdfOeffnen(key,name){
+  // Tab sofort oeffnen, sonst blockiert Safari ihn nach dem Laden
+  var w=window.open('','_blank');
+  if(w&&w.document){
+    w.document.write('<!doctype html><meta charset="utf-8"><title>'+
+      (name||'Dokument')+'</title><body style="font-family:sans-serif;padding:24px">Dokument wird geladen \u2026</body>');
+  }
+  dbDateiHolen(key).then(function(v){
+    var teile=String(v.data||'').split(',');
+    var roh=atob(teile[1]||'');
+    var arr=new Uint8Array(roh.length);
+    for(var i=0;i<roh.length;i++)arr[i]=roh.charCodeAt(i);
+    var blob=new Blob([arr],{type:v.typ||'application/pdf'});
+    var url=URL.createObjectURL(blob);
+    if(w)w.location.href=url;
+    else {
+      var a=document.createElement('a');
+      a.href=url; a.download=v.name||name||'Dokument.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+  }).catch(function(e){
+    if(w&&w.document){ w.document.body.textContent='Fehler: '+speicherFehlerText(e); }
+    else alert('Fehler: '+speicherFehlerText(e));
+  });
+}
+
 function lbCollect(url){
   // Nur sichtbare Bilder - sonst zaehlen die versteckten Vorschaubilder
   // aus dem geschlossenen Dialog mit.
@@ -1324,18 +1385,35 @@ document.addEventListener('click',function(e){
   if(delp){
     e.preventDefault();
     var pid=delp.getAttribute('data-delpdf');
-    if(confirm('PDF entfernen?')){ delete auPdfs[pid]; renderAuPdfs(); }
+    if(confirm('PDF entfernen?')){
+      if(auPdfs[pid]&&auPdfs[pid].ref)dbDateiLoeschen(auPdfs[pid].ref);
+      delete auPdfs[pid]; renderAuPdfs();
+    }
     return;
   }
   var del=t.closest('[data-delfoto]');
   if(del){
     e.preventDefault();
     var id=del.getAttribute('data-delfoto');
-    if(confirm('Foto entfernen?')){ delete auFotos[id]; renderAuFotos(); }
+    if(confirm('Foto entfernen?')){
+      if(auFotos[id]&&auFotos[id].ref)dbDateiLoeschen(auFotos[id].ref);
+      delete auFotos[id]; renderAuFotos();
+    }
     return;
   }
-  var im=t.closest('[data-lb]');
-  if(im){ e.preventDefault(); lbOpen(im.getAttribute('data-lb')); }
+  var pdfb=t.closest('[data-pdfref]');
+  if(pdfb){
+    e.preventDefault();
+    pdfOeffnen(pdfb.getAttribute('data-pdfref'), pdfb.getAttribute('data-pdfname'));
+    return;
+  }
+  var im=t.closest('[data-lb],[data-ref]');
+  if(im){
+    e.preventDefault();
+    var ref=im.getAttribute('data-ref');
+    if(ref) lbOpenRef(ref, im.getAttribute('src'));
+    else lbOpen(im.getAttribute('data-lb'));
+  }
 });
 // Zurueck-Link nur anzeigen, wenn die Seite NICHT im Cockpit-iframe laeuft
 (function(){
@@ -1401,17 +1479,19 @@ function handleAuPDF(inp){
       anhStatus('"'+f.name+'" ist keine PDF-Datei.',true);
       step(i+1); return;
     }
-    if(f.size>20*1024*1024){
+    if(f.size>MAX_DATEI){
       fehler++;
-      anhStatus('"'+f.name+'" ist gr\u00f6\u00dfer als 20 MB.',true);
+      letzterFehler='"'+f.name+'" ist '+fmtGroesse(f.size)+' gro\u00df. In die Datenbank passen bis '+
+        fmtGroesse(MAX_DATEI)+' je Datei.';
+      anhStatus(letzterFehler,true);
       step(i+1); return;
     }
-    anhStatus('Lade PDF '+(i+1)+' von '+total+' \u2026');
-    uploadDatei(f,f.name,'application/pdf',
+    anhStatus('Speichere PDF '+(i+1)+' von '+total+' \u2026');
+    dbDateiSpeichern(f,f.name,'application/pdf',
       function(frac){ if(pb)pb.style.width=Math.round(((i+frac)/total)*100)+'%'; },
-      function(url,path){
+      function(key){
         var id='p'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
-        auPdfs[id]={url:url,path:path,name:f.name,groesse:f.size,ts:Date.now()};
+        auPdfs[id]={ref:key,name:f.name,groesse:f.size,ts:Date.now()};
         renderAuPdfs();
         step(i+1);
       },
@@ -1444,17 +1524,32 @@ function renderAuPdfs(){
       '<div class="pz-icon">PDF</div>'+
       '<div class="pz-name">'+esc(p.name||'Dokument')+
         (p.groesse?' <span style="color:var(--muted);font-weight:400">\u00b7 '+fmtGroesse(p.groesse)+'</span>':'')+'</div>'+
-      '<a class="pz-auf" href="'+esc(p.url)+'" target="_blank" rel="noopener">\u00d6ffnen</a>'+
+      (p.ref?'<button type="button" class="pz-auf" data-pdfref="'+esc(p.ref)+'" data-pdfname="'+esc(p.name||'Dokument.pdf')+'">\u00d6ffnen</button>'
+            :'<a class="pz-auf" href="'+esc(p.url||'#')+'" target="_blank" rel="noopener">\u00d6ffnen</a>')+
       '<button type="button" class="pz-del" data-delpdf="'+esc(id)+'" title="Entfernen">&times;</button>'+
     '</div>';
   }).join('');
 }
 function handleETpdf(inp){
-  const f=inp.files[0];if(!f)return;
-  uploadPDF(f,'werkstatt/ersatzteile','et-prog-wrap','et-prog-bar',(url,name)=>{
-    document.getElementById('et-pdf-url').value=url;
-    document.getElementById('et-pdf-prev').innerHTML=`<a class="pdf-link" href="${url}" target="_blank">📄 ${name}</a>`;
-  });
+  var f=inp.files[0]; inp.value='';
+  if(!f)return;
+  var istPdf=(f.type==='application/pdf')||/[.]pdf$/i.test(f.name||'');
+  var prev=document.getElementById('et-pdf-prev');
+  if(!istPdf){ if(prev)prev.innerHTML='<span style="color:var(--red-warn);font-size:11px">Keine PDF-Datei.</span>'; return; }
+  var pw=document.getElementById('et-prog-wrap'), pb=document.getElementById('et-prog-bar');
+  if(pw)pw.style.display='';
+  dbDateiSpeichern(f,f.name,'application/pdf',
+    function(frac){ if(pb)pb.style.width=Math.round(frac*100)+'%'; },
+    function(key){
+      if(pw)pw.style.display='none'; if(pb)pb.style.width='0';
+      document.getElementById('et-pdf-url').value='db:'+key;
+      if(prev)prev.innerHTML='<button type="button" class="pdf-link" data-pdfref="'+esc(key)+
+        '" data-pdfname="'+esc(f.name)+'">\u00d6ffnen: '+esc(f.name)+'</button>';
+    },
+    function(err){
+      if(pw)pw.style.display='none';
+      if(prev)prev.innerHTML='<span style="color:var(--red-warn);font-size:11px">'+esc(speicherFehlerText(err))+'</span>';
+    });
 }
 
 // ── Modal ──
