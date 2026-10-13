@@ -120,6 +120,98 @@ tr:hover .ra{opacity:1;}
 .et-chip:hover{border-color:var(--red);color:var(--red);}
 .lager-low{color:var(--red-warn);font-weight:600;}
 .lager-ok{color:var(--green);}
+
+/* ── Fotos ── */
+.foto-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.foto-thumb{position:relative;width:76px;height:76px;border-radius:7px;overflow:hidden;border:1px solid var(--line);background:var(--bg);}
+.foto-thumb img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block;}
+.foto-del{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+.foto-del:hover{background:var(--red);}
+.t-fotos{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+.t-foto{width:58px;height:58px;object-fit:cover;border-radius:6px;border:1px solid var(--line);cursor:zoom-in;display:block;}
+.foto-cnt{font-size:11px;color:var(--muted);}
+
+/* ── Lightbox ── */
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:400;flex-direction:column;}
+.lb.on{display:flex;}
+.lb img{max-width:94vw;max-height:84vh;object-fit:contain;border-radius:6px;}
+.lb-bar{display:flex;align-items:center;gap:16px;margin-top:14px;}
+.lb-btn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lb-btn:hover{background:rgba(255,255,255,.22);}
+.lb-x{position:absolute;top:14px;right:14px;width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:24px;cursor:pointer;}
+.lb-info{color:rgba(255,255,255,.75);font-size:12px;font-family:var(--mono);}
+.lb-dl{color:#fff;font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);padding:7px 12px;border-radius:6px;}
+
+/* ── Mobil-FAB ── */
+.fab{display:none;position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:50%;background:var(--red);color:#fff;border:none;box-shadow:0 5px 18px rgba(200,16,46,.4);font-size:28px;line-height:1;cursor:pointer;z-index:150;align-items:center;justify-content:center;}
+
+/* ══════════ HANDY-ANSICHT ══════════ */
+@media (max-width:760px){
+  body{font-size:15px;}
+  .nav{padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .nav::-webkit-scrollbar{display:none;}
+  .ntab{height:46px;padding:0 12px;font-size:13px;}
+  /* Status: nur Punkt, klebt rechts, verdeckt keine Reiter */
+  .nav-right{position:sticky;right:0;background:var(--white);padding:0 4px 0 10px;
+             box-shadow:-8px 0 8px -4px rgba(255,255,255,.95);}
+  .slbl{display:none;}
+  .sdot{width:9px;height:9px;}
+
+  /* + Auftrag doppelt sich mit dem runden Button unten rechts */
+  #toolbar-btns{display:none!important;}
+
+  #toolbar{padding:8px 10px;gap:7px;}
+  .swrap{flex:1;min-width:0;}
+  .sinp{width:100%;height:40px;font-size:16px;}
+  #toolbar .fs{height:40px;font-size:14px;flex:1;min-width:140px;}
+  #toolbar-btns{width:100%;margin-left:0;}
+  #toolbar-btns .btn{flex:1;justify-content:center;}
+
+  /* Fahrzeugliste wird zur horizontalen Chipleiste */
+  .wrap{flex-direction:column;overflow:visible;}
+  .side{width:100%;flex-shrink:0;border-right:none;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:6px;padding:8px 10px;-webkit-overflow-scrolling:touch;}
+  .side::-webkit-scrollbar{display:none;}
+  .side-head{display:none;}
+  .fz-item{width:auto;flex-shrink:0;border-left:none;border-radius:20px;border:1px solid var(--line);overflow:hidden;}
+  .fz-item.on{border-color:var(--red);background:var(--red-l);}
+  .fz-item .fz-inner{padding:8px 14px!important;background:none!important;white-space:nowrap;}
+  .fz-item .fz-name{font-size:13px;}
+  .fz-item .fz-sub{display:none;}
+
+  .main{padding:14px 12px 90px;}
+  .ph{margin-bottom:12px;}
+  .pht{font-size:17px;}
+  .stat-row{grid-template-columns:1fr 1fr;gap:7px;}
+  .stat{padding:9px 11px;}
+
+  /* Timeline kompakter */
+  .t-entry{gap:0;}
+  .t-meta{font-size:12px;gap:8px;}
+  .t-ttl{font-size:15px;}
+  .t-foto{width:70px;height:70px;}
+
+  /* Vollbild-Modal */
+  .bd{align-items:flex-end;}
+  .md{width:100%;max-width:100%;border-radius:14px 14px 0 0;padding:18px 16px 24px;max-height:94vh;}
+  .fr2{grid-template-columns:1fr;}
+  .fi,.fs{height:44px;font-size:16px;}
+  textarea.fi{height:auto;}
+  .btn{height:42px;padding:0 16px;font-size:14px;}
+  .btn-sm{height:34px;font-size:13px;}
+  .ma{position:sticky;bottom:0;background:var(--white);padding-top:12px;margin-top:16px;border-top:1px solid var(--line);}
+  .ma .btn{flex:1;justify-content:center;}
+  .upload-btn{height:42px;padding:0 14px;font-size:13px;}
+  .foto-thumb{width:92px;height:92px;}
+  .ib{width:34px;height:34px;}
+
+  table{font-size:13px;}
+  th,td{padding:8px 9px;}
+
+  .fab{display:flex;}
+}
+@media (max-width:420px){
+  .stat-row{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -254,6 +346,23 @@ tr:hover .ra{opacity:1;}
       <div id="au-pdf-prev" style="margin-top:5px"></div>
       <input type="hidden" id="au-pdf-url">
       <input type="hidden" id="au-pdf-name">
+    </div>
+    <div class="fr"><label>Fotos zum Auftrag</label>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <label class="upload-btn" for="au-foto-cam">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Foto aufnehmen
+        </label>
+        <label class="upload-btn" for="au-foto-gal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Aus Galerie
+        </label>
+        <span class="foto-cnt" id="au-foto-cnt"></span>
+      </div>
+      <input type="file" id="au-foto-cam" accept="image/*" capture="environment" style="display:none" onchange="handleAuFotos(this)">
+      <input type="file" id="au-foto-gal" accept="image/*" multiple style="display:none" onchange="handleAuFotos(this)">
+      <div class="prog-wrap" id="au-foto-prog-wrap"><div class="prog-bar" id="au-foto-prog-bar" style="width:0"></div></div>
+      <div class="foto-grid" id="au-foto-grid"></div>
     </div>
     <div class="fr"><label>Notiz</label>
       <input class="fi" id="au-notiz" placeholder="z.B. Nächste Inspektion in 6 Monaten …">
@@ -421,6 +530,8 @@ let auftraege={}, ersatzteile={}, lieferanten={}, fahrzeuge={};
 let curTab='auftraege', curFZ=null, subTab='verlauf', etFzFilter='';
 let auKey=null, etKey=null, liefKey=null, fzKey=null;
 let selETs={}, sq='', etSq='';
+let auFotos={};
+let lbList=[], lbIdx=0;
 
 // ── Helpers ──
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -564,6 +675,7 @@ function drawAuftraege(){
             ${v.notiz?`<span>📝 ${esc(v.notiz)}</span>`:''}
             ${v.pdfUrl?`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 ${esc(v.pdfName||'PDF')}</a>`:''}
           </div>
+          ${fotoStrip(v.fotos)}
         </div>
       </div>`;
     });
@@ -693,6 +805,7 @@ function openAuftrag(key){
   document.getElementById('au-pdf-url').value='';
   document.getElementById('au-pdf-name').value='';
   document.getElementById('au-pdf-prev').innerHTML='';
+  auFotos={};
   if(key&&auftraege[key]){
     const v=auftraege[key];
     document.getElementById('au-fz').value=v.fzId||'';
@@ -709,10 +822,12 @@ function openAuftrag(key){
     document.getElementById('au-notiz').value=v.notiz||'';
     document.getElementById('au-pdf-url').value=v.pdfUrl||'';
     document.getElementById('au-pdf-name').value=v.pdfName||'';
+    auFotos=v.fotos?JSON.parse(JSON.stringify(v.fotos)):{};
     if(v.pdfUrl) document.getElementById('au-pdf-prev').innerHTML=`<a class="pdf-link" href="${esc(v.pdfUrl)}" target="_blank">📄 ${esc(v.pdfName||'PDF')}</a>`;
     selETs=Object.assign({},v.usedETs||{});
   }
   renderSelETs();
+  renderAuFotos();
   openM('bd-auftrag');
 }
 function renderSelETs(){
@@ -753,7 +868,7 @@ function saveAuftrag(){
     mech:document.getElementById('au-mech').value.trim(), km:document.getElementById('au-km').value.trim(),
     notiz:document.getElementById('au-notiz').value.trim(),
     pdfUrl:document.getElementById('au-pdf-url').value, pdfName:document.getElementById('au-pdf-name').value,
-    usedETs:Object.assign({},selETs), ts:Date.now()
+    usedETs:Object.assign({},selETs), fotos:Object.assign({},auFotos), ts:Date.now()
   };
   if(auKey){AU&&AU.child(auKey).update(e);auftraege[auKey]={...auftraege[auKey],...e};}
   else{const k=AU?AU.push().key:'a_'+Date.now();AU&&AU.child(k).set(e);auftraege[k]=e;}
@@ -896,6 +1011,153 @@ function uploadPDF(file,path,prog,bar,onDone){
     ()=>{ref.getDownloadURL().then(url=>{if(pw)pw.style.display='none';onDone(url,file.name);});}
   );
 }
+// ── Fotos: komprimieren, hochladen, anzeigen ──
+function compressImg(file,maxPx,quality){
+  return new Promise(function(resolve,reject){
+    if(!file.type||file.type.indexOf('image/')!==0){reject(new Error('Keine Bilddatei: '+file.name));return;}
+    var url=URL.createObjectURL(file);
+    var img=new Image();
+    img.onload=function(){
+      var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+      var scale=Math.min(1,maxPx/Math.max(w,h));
+      var cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
+      var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+      var ctx=cv.getContext('2d');
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);
+      ctx.drawImage(img,0,0,cw,ch);
+      URL.revokeObjectURL(url);
+      cv.toBlob(function(b){ if(b){resolve(b);}else{reject(new Error('Komprimierung fehlgeschlagen'));} },'image/jpeg',quality);
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('Bild konnte nicht gelesen werden'));};
+    img.src=url;
+  });
+}
+
+function uploadFoto(blob,name,onProg,onDone,onErr){
+  if(!ST){onErr(new Error('Firebase Storage nicht verf\u00fcgbar.'));return;}
+  var safe=String(name||'foto.jpg').replace(/[^a-zA-Z0-9._-]/g,'_');
+  var ref=ST.ref('werkstatt/fotos/'+Date.now()+'_'+Math.random().toString(36).slice(2,7)+'_'+safe);
+  var task=ref.put(blob,{contentType:'image/jpeg'});
+  task.on('state_changed',
+    function(s){ if(s.totalBytes) onProg(s.bytesTransferred/s.totalBytes); },
+    function(e){ onErr(e); },
+    function(){ ref.getDownloadURL().then(function(u){ onDone(u,ref.fullPath); }).catch(onErr); }
+  );
+}
+
+function handleAuFotos(inp){
+  var files=Array.prototype.slice.call(inp.files||[]);
+  inp.value='';
+  if(!files.length)return;
+  var pw=document.getElementById('au-foto-prog-wrap');
+  var pb=document.getElementById('au-foto-prog-bar');
+  if(pw)pw.style.display='';
+  var total=files.length;
+  function step(i){
+    if(i>=total){ if(pw)pw.style.display='none'; if(pb)pb.style.width='0'; renderAuFotos(); return; }
+    var f=files[i];
+    compressImg(f,1600,0.82).then(function(blob){
+      var base=f.name.replace(/[.][^.]+$/,'');
+      uploadFoto(blob, base+'.jpg',
+        function(frac){ if(pb)pb.style.width=Math.round(((i+frac)/total)*100)+'%'; },
+        function(url,path){
+          var id='f'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2,6);
+          auFotos[id]={url:url,path:path,name:f.name,ts:Date.now()};
+          renderAuFotos();
+          step(i+1);
+        },
+        function(err){ alert('Upload-Fehler: '+(err&&err.message?err.message:err)); step(i+1); }
+      );
+    }).catch(function(err){ alert(err.message); step(i+1); });
+  }
+  step(0);
+}
+
+function renderAuFotos(){
+  var box=document.getElementById('au-foto-grid');
+  var cnt=document.getElementById('au-foto-cnt');
+  if(!box)return;
+  var ks=Object.keys(auFotos||{});
+  if(cnt)cnt.textContent=ks.length?(ks.length+(ks.length===1?' Foto':' Fotos')):'';
+  if(!ks.length){ box.innerHTML=''; return; }
+  ks.sort(function(a,b){ return (auFotos[a].ts||0)-(auFotos[b].ts||0); });
+  box.innerHTML=ks.map(function(id){
+    var f=auFotos[id];
+    return '<div class="foto-thumb"><img src="'+esc(f.url)+'" data-lb="'+esc(f.url)+'" alt="Foto">'+
+           '<button type="button" class="foto-del" data-delfoto="'+esc(id)+'" title="Entfernen">&times;</button></div>';
+  }).join('');
+}
+
+function fotoStrip(fotos){
+  var ks=Object.keys(fotos||{});
+  if(!ks.length)return '';
+  ks.sort(function(a,b){ return (fotos[a].ts||0)-(fotos[b].ts||0); });
+  return '<div class="t-fotos">'+ks.map(function(id){
+    return '<img class="t-foto" loading="lazy" src="'+esc(fotos[id].url)+'" data-lb="'+esc(fotos[id].url)+'" alt="Foto">';
+  }).join('')+'</div>';
+}
+
+// ── Lightbox ──
+function lbCollect(url){
+  var all=Array.prototype.slice.call(document.querySelectorAll('[data-lb]'));
+  lbList=all.map(function(e){ return e.getAttribute('data-lb'); });
+  lbIdx=Math.max(0,lbList.indexOf(url));
+}
+function lbShow(){
+  var im=document.getElementById('lb-img');
+  var inf=document.getElementById('lb-info');
+  var dl=document.getElementById('lb-dl');
+  if(!im||!lbList.length)return;
+  im.src=lbList[lbIdx];
+  if(dl)dl.href=lbList[lbIdx];
+  if(inf)inf.textContent=(lbIdx+1)+' / '+lbList.length;
+}
+function lbOpen(url){
+  lbCollect(url);
+  lbShow();
+  document.getElementById('lightbox').classList.add('on');
+}
+function lbClose(){
+  var lb=document.getElementById('lightbox');
+  if(lb)lb.classList.remove('on');
+  var im=document.getElementById('lb-img');
+  if(im)im.src='';
+}
+function lbStep(d){
+  if(!lbList.length)return;
+  lbIdx=(lbIdx+d+lbList.length)%lbList.length;
+  lbShow();
+}
+
+// Klicks auf Thumbnails / Foto-L\u00f6schen (Event-Delegation)
+document.addEventListener('click',function(e){
+  var t=e.target;
+  if(!t||!t.closest)return;
+  var del=t.closest('[data-delfoto]');
+  if(del){
+    e.preventDefault();
+    var id=del.getAttribute('data-delfoto');
+    if(confirm('Foto entfernen?')){ delete auFotos[id]; renderAuFotos(); }
+    return;
+  }
+  var im=t.closest('[data-lb]');
+  if(im){ e.preventDefault(); lbOpen(im.getAttribute('data-lb')); }
+});
+document.addEventListener('keydown',function(e){
+  var lb=document.getElementById('lightbox');
+  if(!lb||!lb.classList.contains('on'))return;
+  if(e.key==='Escape')lbClose();
+  if(e.key==='ArrowLeft')lbStep(-1);
+  if(e.key==='ArrowRight')lbStep(1);
+});
+
+// Mobiler Plus-Button
+function fabAction(){
+  if(curTab==='auftraege')openAuftrag();
+  else if(curTab==='ersatzteile')openET();
+  else openLief();
+}
+
 function handleAuPDF(inp){
   const f=inp.files[0];if(!f)return;
   uploadPDF(f,'werkstatt/auftraege','au-prog-wrap','au-prog-bar',(url,name)=>{
@@ -1065,5 +1327,17 @@ document.addEventListener('input', function(e){
 // ── Start ──
 draw();sync(false);initFB();
 </script>
+<!-- Lightbox -->
+<div class="lb" id="lightbox">
+  <button class="lb-x" type="button" onclick="lbClose()">&times;</button>
+  <img id="lb-img" alt="Foto">
+  <div class="lb-bar">
+    <button class="lb-btn" type="button" onclick="lbStep(-1)">&#8249;</button>
+    <span class="lb-info" id="lb-info"></span>
+    <button class="lb-btn" type="button" onclick="lbStep(1)">&#8250;</button>
+    <a class="lb-dl" id="lb-dl" href="#" target="_blank" rel="noopener">Original</a>
+  </div>
+</div>
+<button class="fab" id="fab" type="button" onclick="fabAction()" title="Neu">+</button>
 </body>
 </html>
