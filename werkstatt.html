@@ -78,6 +78,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:#F7F8FA;color:#1B1D22;fon
 .tbl tr:hover td{background:var(--bg);}
 .ra{display:flex;gap:3px;opacity:0;transition:.12s;}
 tr:hover .ra{opacity:1;}
+/* In den Auftragskarten gibt es keine Tabellenzeile - dort beim
+   Ueberfahren der Karte einblenden. */
+.t-entry:hover .ra{opacity:1;}
 .ib{width:26px;height:26px;border-radius:4px;border:1px solid var(--line);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .ib svg{width:13px;height:13px;stroke-width:1.8;}
 .ib.e:hover{border-color:var(--red);color:var(--red);}
@@ -195,6 +198,11 @@ tr:hover .ra{opacity:1;}
   .t-cost{white-space:nowrap;}
   .t-head{gap:6px;}
   .t-foto{width:70px;height:70px;}
+  .t-entry[data-auf] .t-body{cursor:pointer;}
+  .t-entry[data-auf]:active .t-body{background:#FAFAFA;}
+  .ib{width:40px;height:40px;}
+  /* Ohne Hover muessen die Knoepfe immer sichtbar sein */
+  .ra{opacity:1!important;gap:6px;}
   table{font-size:13px;}
   th,td{padding:8px 9px;}
 
@@ -220,7 +228,6 @@ tr:hover .ra{opacity:1;}
   .ma .btn{flex:1;justify-content:center;}
   .upload-btn{height:44px;padding:0 14px;font-size:13px;}
   .foto-thumb{width:92px;height:92px;}
-  .ib{width:34px;height:34px;}
 
   .fab{display:flex;bottom:calc(16px + env(safe-area-inset-bottom));}
 }
@@ -688,7 +695,7 @@ function drawAuftraege(){
       const kosten=totalAuftrag(v);
       const isNeg=kosten<0;
       const etList=Object.keys(v.usedETs||{}).map(ek=>ersatzteile[ek]?.name||'?').filter(Boolean);
-      html+=`<div class="t-entry">
+      html+=`<div class="t-entry" data-auf="${k}">
         <div class="t-line">
           <div class="t-dot" style="background:${v.status==='Abgeschlossen'?'var(--green)':v.status==='In Arbeit'?'var(--amber)':v.status==='Warte auf Teile'?'var(--red-warn)':'var(--blue)'}"></div>
           ${i<items.length-1?'<div class="t-vline"></div>':''}
@@ -1144,8 +1151,12 @@ function fotoStrip(fotos){
 
 // ── Lightbox ──
 function lbCollect(url){
-  var all=Array.prototype.slice.call(document.querySelectorAll('[data-lb]'));
+  // Nur sichtbare Bilder - sonst zaehlen die versteckten Vorschaubilder
+  // aus dem geschlossenen Dialog mit.
+  var all=Array.prototype.slice.call(document.querySelectorAll('[data-lb]'))
+    .filter(function(e){ return e.offsetParent!==null || e.getClientRects().length>0; });
   lbList=all.map(function(e){ return e.getAttribute('data-lb'); });
+  if(!lbList.length) lbList=[url];
   lbIdx=Math.max(0,lbList.indexOf(url));
 }
 function lbShow(){
@@ -1204,6 +1215,20 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape')lbClose();
   if(e.key==='ArrowLeft')lbStep(-1);
   if(e.key==='ArrowRight')lbStep(1);
+});
+
+// Am Handy die ganze Karte antippbar machen (der Stift ist zu klein)
+document.addEventListener('click',function(e){
+  if(!window.matchMedia||!window.matchMedia('(max-width:760px)').matches)return;
+  var t=e.target;
+  if(!t||!t.closest)return;
+  // Knoepfe, Links und Bilder behalten ihre eigene Funktion
+  if(t.closest('button')||t.closest('a')||t.closest('[data-lb]')||t.closest('input'))return;
+  var karte=t.closest('.t-entry[data-auf]');
+  if(karte){
+    var k=karte.getAttribute('data-auf');
+    if(k&&auftraege[k])openAuftrag(k);
+  }
 });
 
 // Mobiler Plus-Button
