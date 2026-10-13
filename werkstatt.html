@@ -1134,6 +1134,24 @@ function anhStatus(text,fehler){
 }
 
 // Eine Datei nach Firebase Storage hochladen
+// Firebase-Fehlercodes in verstaendlichen Text uebersetzen
+function speicherFehlerText(e){
+  var code=(e&&e.code)?String(e.code):'';
+  if(code.indexOf('unauthorized')>=0)
+    return 'Der Dateispeicher verweigert den Zugriff. In Firebase unter Storage \u2192 Regeln muss Schreiben erlaubt sein. (storage/unauthorized)';
+  if(code.indexOf('unauthenticated')>=0)
+    return 'Der Dateispeicher verlangt eine Anmeldung. Storage-Regeln anpassen. (storage/unauthenticated)';
+  if(code.indexOf('retry-limit')>=0)
+    return 'Zeit\u00fcberschreitung beim Hochladen \u2013 Verbindung zu langsam oder Datei zu gro\u00df. (storage/retry-limit-exceeded)';
+  if(code.indexOf('quota')>=0)
+    return 'Speicherplatz des Projekts ist aufgebraucht. (storage/quota-exceeded)';
+  if(code.indexOf('bucket-not-found')>=0||code.indexOf('project-not-found')>=0)
+    return 'Der Dateispeicher ist f\u00fcr dieses Firebase-Projekt nicht eingerichtet. ('+code+')';
+  if(code.indexOf('canceled')>=0)
+    return 'Hochladen abgebrochen.';
+  return (e&&e.message?e.message:'Unbekannter Fehler')+(code?' ('+code+')':'');
+}
+
 function uploadDatei(daten,name,typ,onProg,onDone,onErr){
   if(typeof ST==='undefined'||!ST){
     onErr(new Error('Keine Verbindung zum Dateispeicher. Seite neu laden und noch einmal versuchen.'));
@@ -1142,10 +1160,25 @@ function uploadDatei(daten,name,typ,onProg,onDone,onErr){
   var sicher=String(name||'datei').replace(/[^a-zA-Z0-9._-]/g,'_');
   var ref=ST.ref('werkstatt/anhaenge/'+Date.now()+'_'+Math.random().toString(36).slice(2,7)+'_'+sicher);
   var task=ref.put(daten,{contentType:typ||'application/octet-stream'});
+  var fertig=false;
+  // Nicht endlos warten: nach 90 Sekunden abbrechen
+  var uhr=setTimeout(function(){
+    if(fertig)return;
+    fertig=true;
+    try{ task.cancel(); }catch(e){}
+    onErr(new Error('Zeit\u00fcberschreitung nach 90 Sekunden \u2013 keine Antwort vom Dateispeicher.'));
+  },90000);
   task.on('state_changed',
     function(s){ if(s.totalBytes)onProg(s.bytesTransferred/s.totalBytes); },
-    function(e){ onErr(e); },
-    function(){ ref.getDownloadURL().then(function(u){ onDone(u,ref.fullPath); }).catch(onErr); }
+    function(e){ if(fertig)return; fertig=true; clearTimeout(uhr); onErr(e); },
+    function(){
+      if(fertig)return;
+      ref.getDownloadURL().then(function(u){
+        if(fertig)return; fertig=true; clearTimeout(uhr); onDone(u,ref.fullPath);
+      }).catch(function(e){
+        if(fertig)return; fertig=true; clearTimeout(uhr); onErr(e);
+      });
+    }
   );
 }
 
@@ -1156,13 +1189,13 @@ function handleAuFotos(inp){
   var pw=document.getElementById('au-foto-prog-wrap');
   var pb=document.getElementById('au-foto-prog-bar');
   if(pw)pw.style.display='';
-  var total=files.length, fehler=0;
+  var total=files.length, fehler=0, letzterFehler='';
 
   function fertig(){
     if(pw)pw.style.display='none';
     if(pb)pb.style.width='0';
     renderAuFotos();
-    if(fehler)anhStatus(fehler+' von '+total+' Fotos konnten nicht hochgeladen werden.',true);
+    if(fehler)anhStatus(fehler+' von '+total+' Fotos nicht hochgeladen. '+letzterFehler,true);
     else anhStatus(total+(total===1?' Foto hinzugef\u00fcgt.':' Fotos hinzugef\u00fcgt.'));
   }
 
@@ -1182,14 +1215,15 @@ function handleAuFotos(inp){
         },
         function(err){
           fehler++;
-          anhStatus('Fehler bei "'+f.name+'": '+(err&&err.message?err.message:err),true);
+          letzterFehler=speicherFehlerText(err);
+          anhStatus('Fehler bei "'+f.name+'": '+letzterFehler,true);
           step(i+1);
         });
     }
 
     // Verkleinern spart Speicher und Zeit; klappt es nicht
     // (z.B. sehr grosse iPhone-Aufnahme), wird das Original genommen.
-    compressImg(f,1600,0.82)
+    compressImg(f,1400,0.75)
       .then(function(blob){ hoch(blob, f.name.replace(/[.][^.]+$/,'')+'.jpg', 'image/jpeg'); })
       .catch(function(){ hoch(f, f.name, f.type||'image/jpeg'); });
   }
@@ -1349,14 +1383,14 @@ function handleAuPDF(inp){
   var pw=document.getElementById('au-prog-wrap');
   var pb=document.getElementById('au-prog-bar');
   if(pw)pw.style.display='';
-  var total=files.length, fehler=0;
+  var total=files.length, fehler=0, letzterFehler='';
 
   function step(i){
     if(i>=total){
       if(pw)pw.style.display='none';
       if(pb)pb.style.width='0';
       renderAuPdfs();
-      if(fehler)anhStatus(fehler+' von '+total+' PDFs konnten nicht hochgeladen werden.',true);
+      if(fehler)anhStatus(fehler+' von '+total+' PDFs nicht hochgeladen. '+letzterFehler,true);
       else anhStatus(total+(total===1?' PDF hinzugef\u00fcgt.':' PDFs hinzugef\u00fcgt.'));
       return;
     }
@@ -1383,7 +1417,8 @@ function handleAuPDF(inp){
       },
       function(err){
         fehler++;
-        anhStatus('Fehler bei "'+f.name+'": '+(err&&err.message?err.message:err),true);
+        letzterFehler=speicherFehlerText(err);
+        anhStatus('Fehler bei "'+f.name+'": '+letzterFehler,true);
         step(i+1);
       });
   }
