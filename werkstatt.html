@@ -147,8 +147,20 @@ tr:hover .ra{opacity:1;}
 
 /* ══════════ HANDY-ANSICHT ══════════ */
 @media (max-width:760px){
-  body{font-size:15px;}
-  .nav{padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  /* Seite normal scrollen lassen - body hat am Desktop overflow:hidden */
+  html,body{height:auto;min-height:100%;overflow:visible;-webkit-overflow-scrolling:touch;}
+  body{display:block;font-size:15px;}
+  .wrap{display:block;overflow:visible;}
+  .main{overflow:visible;height:auto;flex:none;}
+
+  /* Modal: volle Hoehe, scrollt in sich */
+  .bd{align-items:stretch;justify-content:stretch;}
+  .bd.on{display:block;}
+  .md{position:fixed;inset:0;width:100%;max-width:100%;height:100%;max-height:100%;
+      border-radius:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      padding:16px 16px 20px;box-shadow:none;}
+  .nav{padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+       position:sticky;top:0;z-index:60;}
   .nav::-webkit-scrollbar{display:none;}
   .ntab{height:46px;padding:0 12px;font-size:13px;}
   /* Status: nur Punkt, klebt rechts, verdeckt keine Reiter */
@@ -169,10 +181,16 @@ tr:hover .ra{opacity:1;}
 
   /* Fahrzeugliste wird zur horizontalen Chipleiste */
   .wrap{flex-direction:column;overflow:visible;}
-  .side{width:100%;flex-shrink:0;border-right:none;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:6px;padding:8px 10px;-webkit-overflow-scrolling:touch;}
+  .side{display:flex;width:100%;flex-shrink:0;border-right:none;border-bottom:1px solid var(--line);
+        flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;padding:8px 10px;
+        -webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;}
   .side::-webkit-scrollbar{display:none;}
   .side-head{display:none;}
-  .fz-item{width:auto;flex-shrink:0;border-left:none;border-radius:20px;border:1px solid var(--line);overflow:hidden;}
+  /* innerer Container darf nicht zusammengedrueckt werden */
+  #fz-list{display:flex;flex-direction:row;flex-wrap:nowrap;gap:6px;flex:0 0 auto;}
+  .fz-item,.fz-add{flex-shrink:0;}
+  .fz-add{border-radius:20px;border:1px solid var(--line);padding:8px 14px;white-space:nowrap;}
+  .fz-item{width:auto;border-left:none;border-radius:20px;border:1px solid var(--line);overflow:hidden;}
   .fz-item.on{border-color:var(--red);background:var(--red-l);}
   .fz-item .fz-inner{padding:8px 14px!important;background:none!important;white-space:nowrap;}
   .fz-item .fz-name{font-size:13px;}
@@ -189,16 +207,17 @@ tr:hover .ra{opacity:1;}
   .t-meta{font-size:12px;gap:8px;}
   .t-ttl{font-size:15px;}
   .t-foto{width:70px;height:70px;}
+  .t-cost{white-space:nowrap;}
+  .t-head{gap:6px;}
 
   /* Vollbild-Modal */
-  .bd{align-items:flex-end;}
-  .md{width:100%;max-width:100%;border-radius:14px 14px 0 0;padding:18px 16px 24px;max-height:94vh;}
   .fr2{grid-template-columns:1fr;}
   .fi,.fs{height:44px;font-size:16px;}
   textarea.fi{height:auto;}
   .btn{height:42px;padding:0 16px;font-size:14px;}
   .btn-sm{height:34px;font-size:13px;}
-  .ma{position:sticky;bottom:0;background:var(--white);padding-top:12px;margin-top:16px;border-top:1px solid var(--line);}
+  .ma{position:sticky;bottom:0;background:var(--white);padding:12px 0 0;margin-top:16px;
+      border-top:1px solid var(--line);z-index:5;}
   .ma .btn{flex:1;justify-content:center;}
   .upload-btn{height:42px;padding:0 14px;font-size:13px;}
   .foto-thumb{width:92px;height:92px;}
