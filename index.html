@@ -379,6 +379,19 @@ function loadShow(id,file){
   fr.classList.add('active');
 }
 
+// ── Handy: Werkzeuge ohne iframe oeffnen ──
+// iPhone/Safari scrollt Inhalte innerhalb eines iframes nicht zuverlaessig.
+// Am Handy wird das Werkzeug deshalb als ganze Seite geladen.
+function istHandy(){
+  return window.matchMedia && window.matchMedia('(max-width:760px)').matches;
+}
+function oeffneAlsSeite(datei){
+  if(!datei || !istHandy()) return false;
+  try{ sessionStorage.setItem('cockpit_zurueck','1'); }catch(e){}
+  location.href = datei;
+  return true;
+}
+
 function activate(toolId){
   hideAll();
   document.querySelector(`.tab[data-tool="${toolId}"]`)?.classList.add('active');
@@ -416,7 +429,7 @@ function renderSubbar(){
     const btn=document.createElement('button');
     btn.className='subtab';btn.dataset.sub=id;
     btn.innerHTML=`${IC[s.icon]||''}<span>${s.label}</span><span class="sub-underline"></span>`;
-    btn.addEventListener('click',()=>activateSub(id));
+    btn.addEventListener('click',()=>{ if(oeffneAlsSeite(s.file)) return; activateSub(id); });
     bar.appendChild(btn);
   }
 }
@@ -429,7 +442,7 @@ function renderTabs(company){
     btn.className='tab'+(t.sub?' has-sub':'');
     btn.dataset.tool=t.id;btn.style.animationDelay=(i*40)+'ms';
     btn.innerHTML=`${IC[t.icon]||''}<span>${t.label}</span>${t.sub?IC.chev:''}<span class="tab-underline"></span>`;
-    btn.addEventListener('click',()=>activate(t.id));
+    btn.addEventListener('click',()=>{ if(!t.sub && oeffneAlsSeite(t.file)) return; activate(t.id); });
     bar.appendChild(btn);
   });
 }
@@ -707,7 +720,7 @@ function renderTabsFiltered(company, filteredTools){
     btn.className='tab'+(t.sub?' has-sub':'');
     btn.dataset.tool=t.id;btn.style.animationDelay=(i*40)+'ms';
     btn.innerHTML=`${IC[t.icon]||''}<span>${t.label}</span>${t.sub?IC.chev:''}<span class="tab-underline"></span>`;
-    btn.addEventListener('click',()=>activate(t.id));
+    btn.addEventListener('click',()=>{ if(!t.sub && oeffneAlsSeite(t.file)) return; activate(t.id); });
     bar.appendChild(btn);
   });
 }
