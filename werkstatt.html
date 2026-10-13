@@ -147,11 +147,13 @@ tr:hover .ra{opacity:1;}
 
 /* ══════════ HANDY-ANSICHT ══════════ */
 @media (max-width:760px){
-  /* Seite normal scrollen lassen - body hat am Desktop overflow:hidden */
-  html,body{height:auto;min-height:100%;overflow:visible;-webkit-overflow-scrolling:touch;}
-  body{display:block;font-size:15px;}
-  .wrap{display:block;overflow:visible;}
-  .main{overflow:visible;height:auto;flex:none;}
+  /* Hoehe bleibt begrenzt, der Inhaltsbereich scrollt in sich.
+     Wichtig: funktioniert auch im iframe des Cockpits (iOS scrollt iframes nicht). */
+  html,body{height:100%;overflow:hidden;}
+  body{display:flex;flex-direction:column;font-size:15px;}
+  .wrap{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:hidden;}
+  .main{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+        -webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;}
 
   /* Modal: volle Hoehe, scrollt in sich */
   .bd{align-items:stretch;justify-content:stretch;}
@@ -159,8 +161,7 @@ tr:hover .ra{opacity:1;}
   .md{position:fixed;inset:0;width:100%;max-width:100%;height:100%;max-height:100%;
       border-radius:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
       padding:16px 16px 20px;box-shadow:none;}
-  .nav{padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;
-       position:sticky;top:0;z-index:60;}
+  .nav{padding:0 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:0 0 auto;}
   .nav::-webkit-scrollbar{display:none;}
   .ntab{height:46px;padding:0 12px;font-size:13px;}
   /* Status: nur Punkt, klebt rechts, verdeckt keine Reiter */
@@ -172,7 +173,7 @@ tr:hover .ra{opacity:1;}
   /* + Auftrag doppelt sich mit dem runden Button unten rechts */
   #toolbar-btns{display:none!important;}
 
-  #toolbar{padding:8px 10px;gap:7px;}
+  #toolbar{padding:8px 10px;gap:7px;flex:0 0 auto;}
   .swrap{flex:1;min-width:0;}
   .sinp{width:100%;height:40px;font-size:16px;}
   #toolbar .fs{height:40px;font-size:14px;flex:1;min-width:140px;}
@@ -181,7 +182,7 @@ tr:hover .ra{opacity:1;}
 
   /* Fahrzeugliste wird zur horizontalen Chipleiste */
   .wrap{flex-direction:column;overflow:visible;}
-  .side{display:flex;width:100%;flex-shrink:0;border-right:none;border-bottom:1px solid var(--line);
+  .side{display:flex;width:100%;flex:0 0 auto;border-right:none;border-bottom:1px solid var(--line);
         flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;padding:8px 10px;
         -webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;}
   .side::-webkit-scrollbar{display:none;}
