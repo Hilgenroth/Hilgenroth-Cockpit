@@ -198,13 +198,19 @@ tr:hover .ra{opacity:1;}
   table{font-size:13px;}
   th,td{padding:8px 9px;}
 
-  /* Dialoge: oben beginnen, Seite dahinter scrollt mit dem Dialog */
-  .bd{align-items:flex-start;justify-content:center;overflow-y:auto;
-      -webkit-overflow-scrolling:touch;padding:0;}
+  /* Dialoge: KEIN fixiertes Overlay mit eigenem Scrollbereich - das
+     scrollt iOS nicht. Der Dialog wird zur normalen Seite, der Rest
+     wird ausgeblendet. Damit scrollt das Dokument wie ueberall sonst. */
+  .bd{position:static;inset:auto;background:none;display:none;
+      align-items:stretch;justify-content:stretch;padding:0;overflow:visible;}
+  .bd.on{display:block;}
   .md{width:100%;max-width:100%;border-radius:0;box-shadow:none;
-      max-height:none;height:auto;overflow:visible;
-      padding:16px 16px calc(24px + env(safe-area-inset-bottom));
-      margin:0 0 auto;}
+      max-height:none;height:auto;overflow:visible;margin:0;
+      padding:16px 16px calc(28px + env(safe-area-inset-bottom));}
+  /* Hintergrund ausblenden, solange ein Dialog offen ist */
+  body.dialog-offen #toolbar,
+  body.dialog-offen .wrap,
+  body.dialog-offen .fab{display:none!important;}
   .fr2{grid-template-columns:1fr;}
   .fi,.fs{height:44px;font-size:16px;}
   textarea.fi{height:auto;min-height:88px;}
@@ -1224,8 +1230,19 @@ function handleETpdf(inp){
 }
 
 // ── Modal ──
-function openM(id){document.getElementById(id).classList.add('on');}
-function closeM(id){document.getElementById(id).classList.remove('on');}
+function openM(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.classList.add('on');
+  document.body.classList.add('dialog-offen');
+  // Am Handy oben beginnen, der Dialog ist dort eine normale Seite
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+function closeM(id){
+  const el=document.getElementById(id);
+  if(el)el.classList.remove('on');
+  if(!document.querySelector('.bd.on')) document.body.classList.remove('dialog-offen');
+}
 document.querySelectorAll('.bd').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)closeM(b.id);}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.bd.on').forEach(b=>closeM(b.id));});
 
