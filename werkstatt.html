@@ -115,6 +115,9 @@ tr:hover .ra{opacity:1;}
 .upload-btn svg{width:12px;height:12px;stroke-width:2;}
 .pdf-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--red);text-decoration:none;padding:2px 7px;border-radius:4px;background:var(--red-l);}
 #fz-mob{display:none;}
+.zurueck{display:none;align-items:center;height:48px;padding:0 12px;flex:0 0 auto;
+  color:var(--muted);font-size:13px;font-weight:500;text-decoration:none;white-space:nowrap;}
+.zurueck:active{color:var(--red);}
 .prog-wrap{height:3px;background:var(--line);border-radius:2px;margin-top:5px;overflow:hidden;display:none;}
 .prog-bar{height:100%;background:var(--red);border-radius:2px;transition:width .2s;}
 .et-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--line);cursor:pointer;transition:.12s;}
@@ -151,10 +154,12 @@ tr:hover .ra{opacity:1;}
    Ganzes nach oben/unten scrollt. Keine festen Bereiche, kein
    overflow:hidden, keine seitlich scrollenden Leisten. */
 @media (max-width:760px){
-  html{height:auto;overflow:visible;}
-  body{height:auto;min-height:100%;overflow:visible;overflow-y:auto;
+  /* Das DOKUMENT scrollt, nicht der body. Setzt man overflow-y:auto auf
+     den body, wird dieser zum Scroll-Container - genau das bricht auf
+     iPhone/Safari (und erst recht im iframe). */
+  html{height:auto;min-height:100%;overflow:visible;-webkit-overflow-scrolling:touch;}
+  body{height:auto;min-height:100vh;overflow:visible;
        display:block;font-size:15px;
-       -webkit-overflow-scrolling:touch;
        padding-bottom:calc(84px + env(safe-area-inset-bottom));}
 
   /* Reiter */
@@ -162,6 +167,7 @@ tr:hover .ra{opacity:1;}
        -webkit-overflow-scrolling:touch;}
   .nav::-webkit-scrollbar{display:none;}
   .ntab{height:48px;padding:0 13px;font-size:13px;flex:0 0 auto;}
+  .zurueck{display:inline-flex;}
   .nav-right{position:static;margin-left:auto;padding-left:8px;flex:0 0 auto;}
   .slbl{display:none;}
   .sdot{width:9px;height:9px;}
@@ -232,6 +238,7 @@ tr:hover .ra{opacity:1;}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Lieferanten
   </button>
+  <a class="zurueck" id="zurueck" href="index.html">&#8592; Cockpit</a>
   <div class="nav-right">
     <span class="sdot" id="sdot"></span>
     <span class="slbl" id="slbl">verbinde …</span>
@@ -1175,6 +1182,16 @@ document.addEventListener('click',function(e){
   var im=t.closest('[data-lb]');
   if(im){ e.preventDefault(); lbOpen(im.getAttribute('data-lb')); }
 });
+// Zurueck-Link nur anzeigen, wenn die Seite NICHT im Cockpit-iframe laeuft
+(function(){
+  try{
+    if(window.self!==window.top){
+      var z=document.getElementById('zurueck');
+      if(z)z.style.display='none';
+    }
+  }catch(e){}
+})();
+
 document.addEventListener('keydown',function(e){
   var lb=document.getElementById('lightbox');
   if(!lb||!lb.classList.contains('on'))return;
