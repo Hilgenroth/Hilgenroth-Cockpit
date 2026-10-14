@@ -838,7 +838,7 @@ function drawErsatzteile(){
   let items=Object.entries(ersatzteile).filter(([k,v])=>v&&v.name);
   if(etSq) items=items.filter(([k,v])=>((v.name||'')+(v.artnr||'')+(v.kat||'')+(v.notiz||'')).toLowerCase().includes(etSq));
   if(etFzFilter==='__none__') items=items.filter(([k,v])=>!v.fzId);
-  else if(etFzFilter) items=items.filter(([k,v])=>v.fzId===etFzFilter);
+  else if(etFzFilter) items=items.filter(([k,v])=>fzAufloesen(v.fzId)===etFzFilter);
   items.sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
   const niedrig=items.filter(([k,v])=>v.minlager&&parseInt(v.lager||0)<=parseInt(v.minlager)).length;
   // Fahrzeug-Filter Optionen
