@@ -419,6 +419,10 @@ tr:hover .ra{opacity:1;}
 <script>
 // ── Firebase (Dispo-Hellefeld) ──
 let db=null, GR=null, KR=null, RR=null, WR=null, AR=null, ST=null;
+// WAU/WFZ/WET muessen VOR dem try stehen: eine Zuweisung vor der Deklaration
+// bricht ab, der Fehler landet lautlos im catch und die Werkstatt-Abos
+// werden nie eingerichtet.
+let WAU=null, WFZ=null, WET=null;
 try {
   if(typeof firebase !== 'undefined'){
     firebase.initializeApp({
@@ -447,7 +451,6 @@ try {
 
 // ── State ──
 let geraete={}, kats={}, reparaturen={}, werkstaetten={}, angebote={};
-let WAU=null, WFZ=null, WET=null;
 let wAuftraege={}, wFahrzeuge={}, wErsatzteile={};
 let zeigeWerkstatt=true;
 let curKat=null, curTab='all', curGeraetDetail=null, detailSubTab='verlauf', geraetKey=null, katKey=null, repKey=null, angKey=null, wsKey=null, viewMode='grid', sq='';
@@ -472,7 +475,7 @@ const DEFAULT_KATS=[
 
 // ── Helpers ──
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=on?'synchronisiert':'offline';}
+function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=(on?'synchronisiert':'offline')+' \u00b7 G-14.10. 11:11';}
 
 // ── Datum-Helpers ──
 function daysUntil(dateStr){
