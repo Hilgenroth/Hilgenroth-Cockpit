@@ -708,7 +708,8 @@ function showDetail(k){
 
 // Alle Werkstatt-Fahrzeuge, die zu diesem Geraet gehoeren
 function wFahrzeugeZuGeraet(geraetKey){
-  var treffer=[];
+  // Die Werkstatt speichert neue Auftraege direkt mit dem Geraete-Schluessel.
+  var treffer=[geraetKey];
   var g=geraete[geraetKey];
   Object.keys(wFahrzeuge||{}).forEach(function(fk){
     var f=wFahrzeuge[fk];
