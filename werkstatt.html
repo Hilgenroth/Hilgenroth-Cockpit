@@ -672,7 +672,7 @@ function statusBadge(s){
   const map={Offen:'badge-blue','In Arbeit':'badge-amber','Warte auf Teile':'badge-red',Abgeschlossen:'badge-green'};
   return`<span class="badge ${map[s]||'badge-gray'}">${esc(s)}</span>`;
 }
-function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=on?'synchronisiert':'offline';}
+function sync(on){document.getElementById('sdot').className='sdot'+(on?' on':'');document.getElementById('slbl').textContent=(on?'synchronisiert':'offline')+' \u00b7 W-14.10. 11:11';}
 
 // ── Tab / FZ ──
 function goTab(t){
