@@ -739,12 +739,17 @@ function wAuftragKosten(v){
 function wAuftraegeZuGeraet(geraetKey){
   if(!zeigeWerkstatt)return [];
   var fzIds=wFahrzeugeZuGeraet(geraetKey);
-  if(!fzIds.length)return [];
+  var g=geraete[geraetKey]||{};
   var liste=[];
   Object.keys(wAuftraege||{}).forEach(function(ak){
     var a=wAuftraege[ak];
     if(!a||!a.titel)return;
-    if(fzIds.indexOf(a.fzId)<0)return;
+    // 1. ueber den Schluessel, 2. ueber die mitgespeicherte Bezeichnung,
+    // 3. ueber das Kennzeichen - eine der drei Spuren trifft immer
+    var passt = fzIds.indexOf(a.fzId)>=0
+             || (a.fzName && g.name && a.fzName===g.name)
+             || (a.fzKz && g.kz && a.fzKz===g.kz);
+    if(!passt)return;
     var kosten=wAuftragKosten(a);
     liste.push([ak,{
       datum:a.datum||'',
