@@ -1142,8 +1142,12 @@ function saveAuftrag(){
   const fzId=document.getElementById('au-fz').value;
   if(!titel){alert('Bezeichnung ist Pflichtfeld.');return;}
   if(!fzId){alert('Bitte Fahrzeug auswählen.');return;}
+  // Bezeichnung und Kennzeichen mitspeichern: damit findet der Geraete-Manager
+  // den Auftrag auch dann, wenn sich die Schluessel einmal unterscheiden sollten
+  const fzDaten=fahrzeuge[fzId]||fahrzeuge[fzAufloesen(fzId)]||{};
   const e={
-    fzId, datum:document.getElementById('au-datum').value,
+    fzId, fzName:fzDaten.name||'', fzKz:fzDaten.kz||'',
+    datum:document.getElementById('au-datum').value,
     art:document.getElementById('au-art').value, status:document.getElementById('au-status').value,
     titel, beschr:document.getElementById('au-beschr').value.trim(),
     std:document.getElementById('au-std').value, satz:document.getElementById('au-satz').value,
