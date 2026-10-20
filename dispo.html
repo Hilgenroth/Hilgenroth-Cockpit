@@ -2446,6 +2446,44 @@ function clearTags(prefix){['V','D'].forEach(s=>{tags[prefix+s]=[];renderTags(pr
 
 // ===== SUNDERN: FAHRZEUG-TYP MIT ANZAHL =====
 let stFzgZeilen=[];
+
+// ===== LADEPLATZ (Motorwagen / Anhänger) =====
+// Eine Tour kann auf dem ganzen Fahrzeug, nur auf dem Motorwagen oder nur auf dem Anhänger liegen.
+const TEIL_LBL={MW:'MW',ANH:'Anh.'};
+function teilPrefix(t){ return (t&&TEIL_LBL[t.teil])?TEIL_LBL[t.teil]+': ':''; }
+// Tour-Indizes einer Fahrzeugzeile (neu: tourIdxs[], alt: tourIdx)
+function zTours(z){
+  if(!z)return [];
+  let a=z.tourIdxs;
+  if(a&&!Array.isArray(a)&&typeof a==='object')a=Object.values(a);
+  if(Array.isArray(a))return a.map(Number).filter(n=>!isNaN(n));
+  return (z.tourIdx!=null&&z.tourIdx!=='')?[Number(z.tourIdx)]:[];
+}
+function zSetTours(z,arr){
+  const a=[...new Set(arr.map(Number).filter(n=>!isNaN(n)))].sort((x,y)=>x-y);
+  z.tourIdxs=a; z.tourIdx=a.length?a[0]:null;
+}
+// Fahrten bilden: eine Anhänger-Ladung direkt hinter einer MW-Ladung gehört zur selben Fahrt
+function tourFahrten(touren){
+  const list=[]; const nrOf={};
+  (touren||[]).forEach((t,i)=>{
+    const prev=i>0?touren[i-1]:null;
+    if(t&&t.teil==='ANH'&&prev&&prev.teil==='MW'&&list.length){
+      const g=list[list.length-1]; g.idxs.push(i); nrOf[i]=g.nr;
+    } else {
+      const g={nr:list.length+1,idxs:[i]}; list.push(g); nrOf[i]=g.nr;
+    }
+  });
+  return {list,nrOf};
+}
+// Kurztext einer Tour, z.B. "MW: 0/45 · 3,5 t"
+function tourKurz(t){
+  if(!t)return '';
+  const ein=(t.mat==='Beton')?' m³':' t';
+  const m=parseFloat(t.menge);
+  return teilPrefix(t)+(t.sorte||t.mat||'')+((m&&m>0)?' · '+String(m)+ein:'');
+}
+
 function stRenderFzg(){
   const list=document.getElementById('stFzgList');
   if(!list)return;
@@ -2494,15 +2532,36 @@ function stRenderFzg(){
     +'</div>'
     // Tour zuweisen
     +'<div style="margin-top:4px">'
-    +'<select style="width:100%;font-size:12px;margin-bottom:4px" onchange="stFzgZeilen['+i+'].tourIdx=this.value===\'\'?null:parseInt(this.value);stSaveFzgJson()">'
-    +'<option value="">— Tour zuweisen —</option>'
-    +stTouren.filter(t=>t.sorte).map((t,ti)=>{const ein=t.mat==='Beton'?' m³':' t';return '<option value="'+ti+'"'+(z.tourIdx===ti?' selected':'')+'>Tour '+(ti+1)+': '+esc(t.mat||'')+(t.sorte?' – '+esc(t.sorte):'')+(t.menge?' · '+t.menge+ein:'')+' </option>';}).join('')
-    +'</select>'
+    +(()=>{
+      const sel=zTours(z);
+      const {list:fahrten}=tourFahrten(stTouren);
+      const verf=fahrten.filter(g=>g.idxs.some(ti=>stTouren[ti]&&(stTouren[ti].sorte||stTouren[ti].mat)));
+      let h='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:3px">Tour zuweisen <span style="font-weight:500;text-transform:none;letter-spacing:0">(mehrere möglich)</span></div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">';
+      if(!verf.length){
+        h+='<span style="font-size:11px;color:var(--ink3)">— noch keine Tour angelegt —</span>';
+      } else {
+        h+=verf.map(g=>{
+          const an=g.idxs.some(ti=>sel.includes(ti));
+          const txt=g.idxs.map(ti=>tourKurz(stTouren[ti])).filter(Boolean).join(' + ');
+          return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 8px;border-radius:100px;cursor:pointer;border:1px solid '+(an?'var(--blu)':'var(--line)')+';background:'+(an?'var(--blu-s)':'var(--bg-e)')+';color:'+(an?'var(--blu)':'var(--ink2)')+'">'
+            +'<input type="checkbox"'+(an?' checked':'')+' onchange="stToggleFahrt('+i+',\''+g.idxs.join(',')+'\',this.checked)" style="margin:0;width:13px;height:13px">'
+            +'Tour '+g.nr+(txt?' · '+esc(txt):'')
+            +'</label>';
+        }).join('');
+      }
+      h+='</div>';
+      h+='<button type="button" onclick="stSplitMwAnh('+i+')" style="background:none;border:1px dashed var(--line);color:var(--blu);font-size:11px;font-weight:700;padding:4px 8px;border-radius:var(--rs);cursor:pointer;font-family:inherit;margin-bottom:4px" title="Legt zwei Touren an: eine für den Motorwagen, eine für den Anhänger">⇄ MW / Anhänger getrennt beladen</button>';
+      return h;
+    })()
     +'<div style="display:flex;gap:6px;margin-bottom:4px">'
     +'<div style="display:flex;gap:3px;align-items:center;width:220px;flex-shrink:0">'
     +'<select style="width:95px" onchange="stFzgZeilen['+i+'].uhrzeit=this.value;document.querySelectorAll(\'#stFzgList .fzg-uhr\')['+i+'].value=this.value;stSaveFzgJson()">'
-    +'<option value="">—</option>'
-    +Array.from({length:57},(_,k)=>{const h=4+Math.floor(k/4);const m=(k%4)*15;return `<option value="${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}"${z.uhrzeit===String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')?' selected':''}>`;+`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</option>`;}).join('')
+    +'<option value="">⏰ Zeit</option>'
+    +Array.from({length:57},(_,k)=>{
+      const v=String(4+Math.floor(k/4)).padStart(2,'0')+':'+String((k%4)*15).padStart(2,'0');
+      return '<option value="'+v+'"'+(z.uhrzeit===v?' selected':'')+'>'+v+'</option>';
+    }).join('')
     +'</select>'
     +'<input type="text" class="fzg-uhr" placeholder="Uhrzeit" value="'+esc(z.uhrzeit||'')+'" oninput="stFzgZeilen['+i+'].uhrzeit=this.value;stSaveFzgJson()" style="width:80px;font-size:12px;padding:5px 6px;border:1px solid var(--line);border-radius:var(--rs);font-family:inherit;background:var(--surf)">'
     +'</div>'
@@ -2547,14 +2606,14 @@ document.addEventListener('pointerdown',function(e){
   });
 });
 window.stAddFzg=function(){
-  stFzgZeilen.push({typ:'',anz:1,vehicles:[],drivers:[],tourIdx:null,uhrzeit:'',hinweis:''});
+  stFzgZeilen.push({typ:'',anz:1,vehicles:[],drivers:[],tourIdx:null,tourIdxs:[],uhrzeit:'',hinweis:''});
   stRenderFzg();
 };
 window.stRemFzg=function(i){ stFzgZeilen.splice(i,1); stRenderFzg(); };
 function stResetFzg(){ stFzgZeilen=[]; stRenderFzg(); }
 
 // ===== SUNDERN: TOUREN (bis zu 4) =====
-let stTouren=[{mat:'',sorte:'',menge:''}];
+let stTouren=[{mat:'',sorte:'',menge:'',teil:''}];
 function stBuildSorteOpts(mat,curVal){
   const key=mat==='Strassenbaustoffe'?'strasse':mat==='Beton'?'beton':'asphalt';
   const liste=auftragssorten[key]||[];
@@ -2567,15 +2626,28 @@ function stRenderTouren(){
   const list=document.getElementById('stTourenList');
   const btn=document.getElementById('stAddTourBtn');
   if(!list)return;
-  list.innerHTML=stTouren.map((t,i)=>
-    '<div class="st-tour-row" style="display:grid;grid-template-columns:140px 1fr 110px auto;gap:6px;align-items:start;margin-bottom:10px">'
+  const {nrOf:fahrtNr}=tourFahrten(stTouren);
+  list.innerHTML=stTouren.map((t,i)=>{
+    const istAnhTeil=t.teil==='ANH'&&i>0&&stTouren[i-1].teil==='MW';
+    return '<div style="margin-bottom:10px'+(istAnhTeil?';margin-left:14px;border-left:2px solid var(--blu);padding-left:8px':'')+'">'
+    +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:'+(t.teil?'var(--blu)':'var(--ink3)')+';margin-bottom:3px">'
+    +(istAnhTeil?'↳ ':'')+'Tour '+fahrtNr[i]+(TEIL_LBL[t.teil]?' · '+TEIL_LBL[t.teil]:'')+'</div>'
+    +'<div class="st-tour-row" style="display:grid;grid-template-columns:140px 1fr 110px auto;gap:6px;align-items:start">'
     // Material
+    +'<div style="display:flex;flex-direction:column;gap:4px">'
     +'<select id="stMatSel'+i+'" onchange="stSetMat('+i+',this.value)" style="height:38px">'
     +'<option value=""'+(t.mat===''?' selected':'')+'>— Material —</option>'
     +'<option value="Asphalt"'+(t.mat==='Asphalt'?' selected':'')+'>🟤 Asphalt</option>'
     +'<option value="Strassenbaustoffe"'+(t.mat==='Strassenbaustoffe'?' selected':'')+'>🟢 Straßenbaustoffe</option>'
     +'<option value="Beton"'+(t.mat==='Beton'?' selected':'')+'>🔵 Beton</option>'
     +'</select>'
+    // Ladeplatz: ganzes Fahrzeug / Motorwagen / Anhänger
+    +'<select title="Ladeplatz" onchange="stSetTeil('+i+',this.value)" style="height:30px;font-size:11px;font-weight:700;padding:2px 6px;'+(t.teil?'color:var(--blu);background:var(--blu-s);border-color:var(--blu)':'')+'">'
+    +'<option value=""'+(!t.teil?' selected':'')+'>🚛 ganzes Fzg.</option>'
+    +'<option value="MW"'+(t.teil==='MW'?' selected':'')+'>🚚 MW (Motorwagen)</option>'
+    +'<option value="ANH"'+(t.teil==='ANH'?' selected':'')+'>🚃 Anh. (Anhänger)</option>'
+    +'</select>'
+    +'</div>'
     // Sorte: Suchfeld + Chip
     +'<div style="position:relative">'
     +(t.sorte
@@ -2596,8 +2668,8 @@ function stRenderTouren(){
     +'<span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:var(--ink3);pointer-events:none">'+(t.mat==='Beton'?'m³':'t')+'</span>'
     +'</div>'
     +(i>0?'<button type="button" onclick="stRemTour('+i+')" style="padding:0 8px;height:38px">×</button>':'<span></span>')
-    +'</div>'
-  ).join('');
+    +'</div></div>';
+  }).join('');
   if(btn)btn.style.display=stTouren.length>=4?'none':'inline-block';
   const h=document.getElementById('stTourenJson');
   if(h)h.value=JSON.stringify(stTouren.filter(t=>t.sorte));
@@ -2636,6 +2708,62 @@ window.stSetMat=function(i,val){
   stTouren[i].mat=val;
   stTouren[i].sorte='';
   stRenderTouren();
+  stRenderFzg();
+};
+window.stSetTeil=function(i,val){
+  stSyncFromDom();
+  stTouren[i].teil=val||'';
+  stRenderTouren();
+  stRenderFzg();
+};
+window.stToggleFahrt=function(i,idxStr,an){
+  const z=stFzgZeilen[i]; if(!z)return;
+  const idxs=String(idxStr).split(',').map(Number).filter(n=>!isNaN(n));
+  let cur=zTours(z).filter(x=>!idxs.includes(x));
+  if(an)cur=cur.concat(idxs);
+  zSetTours(z,cur);
+  stSaveFzgJson();
+  stRenderFzg();
+};
+window.stToggleTour=function(i,ti,an){
+  const z=stFzgZeilen[i]; if(!z)return;
+  const cur=zTours(z).filter(x=>x!==ti);
+  if(an)cur.push(ti);
+  zSetTours(z,cur);
+  stSaveFzgJson();
+  stRenderFzg();
+};
+// Ein Fahrzeug, zwei Ladeplätze: legt bei Bedarf Touren für MW und Anhänger an
+window.stSplitMwAnh=function(i){
+  stSyncFromDom();
+  const z=stFzgZeilen[i]; if(!z)return;
+  let idxs=zTours(z);
+  // vorhandene Zuweisung wird zum Motorwagen
+  if(idxs.length){ stTouren[idxs[0]].teil='MW'; }
+  else {
+    if(stTouren.length>=4){showToast('Maximal 4 Touren','amber');return;}
+    // erste leere Tour nutzen, sonst neue anlegen
+    let mw=stTouren.findIndex(t=>!t.sorte&&!t.mat);
+    if(mw===-1){ stTouren.push({mat:'',sorte:'',menge:'',teil:''}); mw=stTouren.length-1; }
+    stTouren[mw].teil='MW';
+    idxs=[mw];
+  }
+  // Anhänger-Ladung direkt hinter die MW-Ladung setzen (nur so zählt es als EINE Fahrt)
+  const mwIdx=idxs[0];
+  const schonAnh=stTouren[mwIdx+1]&&stTouren[mwIdx+1].teil==='ANH';
+  if(!schonAnh){
+    if(stTouren.length>=4){showToast('Maximal 4 Touren','amber');}
+    else{
+      stTouren.splice(mwIdx+1,0,{mat:'',sorte:'',menge:'',teil:'ANH'});
+      // alle Zuweisungen hinter der Einfügestelle verschieben sich um 1
+      stFzgZeilen.forEach(zz=>zSetTours(zz,zTours(zz).map(x=>x>mwIdx?x+1:x)));
+      idxs=idxs.map(x=>x>mwIdx?x+1:x);
+    }
+  }
+  if(stTouren[mwIdx+1]&&stTouren[mwIdx+1].teil==='ANH'&&!idxs.includes(mwIdx+1))idxs=[...idxs,mwIdx+1];
+  zSetTours(z,idxs);
+  stRenderTouren();
+  stRenderFzg();
 };
 window.stSetSorte=function(i,val){
   if(val==='__neu__'){addAuftragsSortePrompt(stTouren[i].mat||'Asphalt');return;}
@@ -2655,14 +2783,20 @@ window.stAddTour=function(){
   if(stTouren.length>=4)return;
   stSyncFromDom();
   const tourIdx=stTouren.length;
-  stTouren.push({mat:'',sorte:'',menge:''});
+  stTouren.push({mat:'',sorte:'',menge:'',teil:''});
   // Gleichzeitig neue Fahrzeugzeile für diese Tour
-  stFzgZeilen.push({typ:'',anz:1,vehicles:[],drivers:[],tourIdx,uhrzeit:'',hinweis:''});
+  stFzgZeilen.push({typ:'',anz:1,vehicles:[],drivers:[],tourIdx,tourIdxs:[tourIdx],uhrzeit:'',hinweis:''});
   stRenderTouren();
   stRenderFzg();
 };
-window.stRemTour=function(i){ stSyncFromDom(); stTouren.splice(i,1); stRenderTouren(); };
-function stResetTouren(){ stTouren=[{mat:'',sorte:'',menge:''}]; stRenderTouren(); }
+window.stRemTour=function(i){
+  stSyncFromDom();
+  stTouren.splice(i,1);
+  // Zuweisungen der Fahrzeugzeilen nachziehen
+  stFzgZeilen.forEach(z=>zSetTours(z,zTours(z).filter(x=>x!==i).map(x=>x>i?x-1:x)));
+  stRenderTouren(); stRenderFzg();
+};
+function stResetTouren(){ stTouren=[{mat:'',sorte:'',menge:'',teil:''}]; stRenderTouren(); }
 // Initial rendern
 // Direkt aufrufen – DOMContentLoaded hätte nie gefeuert, da das Script am Ende des Body steht
 stRenderFzg();
@@ -2717,9 +2851,16 @@ document.getElementById('formS').addEventListener('submit',e=>{
   const matRS=f.querySelector('[name="material"]:checked');
   // DOM-Werte synchronisieren bevor Submit
   stSyncFromDom();
-  const gueltTouren=stTouren.filter(t=>t.sorte);
+  // Touren ohne Sorte fallen weg – Zuweisungen der Fahrzeuge dabei auf die neuen Indizes umschreiben
+  const gueltTouren=[]; const idxMap={};
+  stTouren.forEach((t,i)=>{ if(t.sorte){ idxMap[i]=gueltTouren.length; gueltTouren.push(t); } });
   // Material nur Pflicht wenn keine Touren mit Sorte eingetragen
   if(!matRS&&gueltTouren.length===0){showToast('Material wählen oder Touren mit Sorte eintragen','amber');return;}
+  const fzgDetails=stFzgZeilen.map(z=>{
+    const o2={...z};
+    zSetTours(o2,zTours(z).map(x=>idxMap[x]).filter(x=>x!=null));
+    return o2;
+  });
   const fzgLabel=stFzgZeilen.length>0?stFzgZeilen.map(z=>z.anz+'× '+z.typ).join(', '):'';
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
   const menge=mengeWert?String(parseFloat(mengeWert)):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?String(parseFloat(t.menge)):'').filter(Boolean).join(' + '):'');
@@ -2733,13 +2874,13 @@ document.getElementById('formS').addEventListener('submit',e=>{
     auftragsnummer:f.auftragsnummer.value.trim(),
     baustelle:f.baustelle.value.trim(),
     vehicleTypes:stFzgZeilen.length>0?[fzgLabel]:[],
-    fahrzeugDetails:[...stFzgZeilen],
+    fahrzeugDetails:fzgDetails,
     anzahl:stFzgZeilen.reduce((s,z)=>s+z.anz,0)||'',
     vehicles:[...tags.SV],
     drivers:[...tags.SD],
     material:matRS?matRS.value:(gueltTouren.length>1?'Gemischt':''),    sorte:sorte,
     menge:menge,
-    touren:gueltTouren.length>1?gueltTouren:null,
+    touren:(gueltTouren.length>1||gueltTouren.some(t=>t.teil))?gueltTouren:null,
     datum:f.datum.value,
     uhrzeit:f.uhrzeit.value.trim(),
     bemerkung:f.bemerkung.value.trim(),
@@ -2771,13 +2912,13 @@ window.startEdit=function(type,id){
   tags[prefix+'D']=Array.isArray(order.drivers)?[...order.drivers]:[];
   if(prefix==='S'){
     stFzgZeilen=Array.isArray(order.fahrzeugDetails)
-      ? order.fahrzeugDetails.map(z=>({typ:z.typ||'',anz:parseInt(z.anz)||1,vehicles:Array.isArray(z.vehicles)?z.vehicles:[],drivers:Array.isArray(z.drivers)?z.drivers:[],tourIdx:z.tourIdx!=null?parseInt(z.tourIdx):null}))
+      ? order.fahrzeugDetails.map(z=>{const o2={typ:z.typ||'',anz:parseInt(z.anz)||1,vehicles:Array.isArray(z.vehicles)?z.vehicles:[],drivers:Array.isArray(z.drivers)?z.drivers:[],uhrzeit:z.uhrzeit||'',hinweis:z.hinweis||''};zSetTours(o2,zTours(z));return o2;})
       : [];
-    stRenderFzg();
     stTouren=Array.isArray(order.touren)&&order.touren.length
-      ? order.touren.map(t=>({mat:t.mat||order.material||'',sorte:t.sorte||'',menge:t.menge||''}))
-      : [{mat:order.material||'',sorte:order.sorte||'',menge:''}];
+      ? order.touren.map(t=>({mat:t.mat||order.material||'',sorte:t.sorte||'',menge:t.menge||'',teil:t.teil||''}))
+      : [{mat:order.material||'',sorte:order.sorte||'',menge:'',teil:''}];
     stRenderTouren();
+    stRenderFzg(); // erst nach den Touren – sonst fehlen die Zuweisungs-Chips
     const mF=document.getElementById('stMengeInput');
     if(mF)mF.value=order.menge?parseFloat(order.menge)||'':'';
     const mR=document.querySelector(`#formS [name="material"][value="${order.material}"]`);
@@ -3271,15 +3412,29 @@ function renderOv(){
     const chatKanal='hilgenroth-bst-'+bstNrSlug;
     const fzgTxt=Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length
       ? o.fahrzeugDetails.map(z=>{
-          const tour=z.tourIdx!=null&&Array.isArray(o.touren)?o.touren[z.tourIdx]:null;
-          const tourLabel=tour?('<div style="font-size:11px;color:var(--grn);font-weight:700">Tour '+(z.tourIdx+1)+': '+esc(tour.sorte||'')+(tour.menge?' · '+tour.menge+(tour.mat==='Beton'?' m³':' t'):'')+'</div>'):'';
+          const tourLabel=(()=>{
+            if(!Array.isArray(o.touren))return '';
+            const {list:fahrten}=tourFahrten(o.touren);
+            const zugew=zTours(z);
+            return fahrten.filter(g=>g.idxs.some(ti=>zugew.includes(ti))).map(g=>{
+              const zeilen=g.idxs.filter(ti=>o.touren[ti]).map(ti=>{
+                const t=o.touren[ti];
+                return '<div style="font-size:11px;color:var(--grn);font-weight:700">'
+                  +(TEIL_LBL[t.teil]?'<span style="display:inline-block;background:var(--grn-s);color:var(--grn);border-radius:3px;padding:0 4px;margin-right:3px;min-width:28px;text-align:center">'+esc(TEIL_LBL[t.teil])+'</span>':'')
+                  +esc(t.sorte||'')+((parseFloat(t.menge)>0)?' · '+String(parseFloat(t.menge))+(t.mat==='Beton'?' m³':' t'):'')+'</div>';
+              }).join('');
+              return '<div style="margin-top:3px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+g.nr+'</div>'+zeilen+'</div>';
+            }).join('');
+          })();
           const uhrzeitLabel=z.uhrzeit?('<div style="font-size:11px;color:var(--amb);font-weight:700">⏰ '+esc(z.uhrzeit)+'</div>'):'';
           const hinweisLabel=z.hinweis?('<div style="font-size:11px;color:var(--ink3);font-weight:600;font-style:italic">'+esc(z.hinweis)+'</div>'):'';
           return '<div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--line)"><div style="font-weight:700;line-height:1.4">'+esc(z.anz)+'× '+esc(z.typ)+'</div>'+(Array.isArray(z.drivers)&&z.drivers.length?'<div style="font-size:11px;color:var(--blu);font-weight:600">'+z.drivers.map(esc).join(', ')+'</div>':'')+(Array.isArray(z.vehicles)&&z.vehicles.length?'<div style="font-size:11px;color:var(--ink3);font-weight:600">'+z.vehicles.map(esc).join(', ')+'</div>':'')+tourLabel+uhrzeitLabel+hinweisLabel+'</div>';
         }).join('')
       : (o.vehicleTypes||[]).map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('');
-    const tourenHtml=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div></div>').join('')
+    const tourenHtml=Array.isArray(o.touren)&&(o.touren.length>1||o.touren.some(t=>t.teil))
+      ? tourFahrten(o.touren).list.map(g=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+g.nr+'</div>'
+          +g.idxs.map(ti=>{const t=o.touren[ti];return '<div style="font-weight:700;font-size:13px">'+(TEIL_LBL[t.teil]?'<span style="display:inline-block;font-size:10px;color:var(--blu);background:var(--blu-s);border-radius:3px;padding:0 4px;margin-right:4px;vertical-align:1px">'+esc(TEIL_LBL[t.teil])+'</span>':'')+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div>';}).join('')
+          +'</div>').join('')
       : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${smTel?`<a href="tel:${esc(smTel)}" class="bst-pill bst-pill-grn" style="margin-top:5px">📞 ${esc(smTel)}</a>`:''} ${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${(bst&&bst.ks)?`<div style="margin-top:4px"><span class="ks-pill" title="Kostenstelle Sundern">KS ${esc(bst.ks)}</span></div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
@@ -3295,7 +3450,12 @@ function renderOv(){
     </div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxt||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div>${(()=>{const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
+    <div><div class="tg-label">Material</div>${(()=>{
+      if(Array.isArray(o.touren)&&o.touren.length&&o.touren.some(t=>t.teil)){
+        return o.touren.filter(t=>t.mat||t.material).map(t=>{const m=t.mat||t.material;return '<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+(TEIL_LBL[t.teil]?esc(TEIL_LBL[t.teil])+' · ':'')+esc(m)+'</span>';}).join('');
+      }
+      const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);
+      return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
     <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
     <div><div class="tg-label">Menge</div><div style="font-weight:700">${(()=>{
   const cleanNum=(v,mat)=>{const n=parseFloat(String(v||'').replace(/ *(t|m³|cbm)\s*$/i,''));return (n&&n>0)?(n+(mat==='Beton'?' m³':' t')):'';};
@@ -3326,15 +3486,22 @@ function renderOv(){
     const fzgTxtF=Array.isArray(o.vehicleTypes)&&o.vehicleTypes.length
       ? o.vehicleTypes.map(v=>'<div style="font-weight:700;line-height:1.6">'+esc(v)+'</div>').join('')
       : '';
-    const tourenHtmlF=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div></div>').join('')
+    const tourenHtmlF=Array.isArray(o.touren)&&(o.touren.length>1||o.touren.some(t=>t.teil))
+      ? tourFahrten(o.touren).list.map(g=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+g.nr+'</div>'
+          +g.idxs.map(ti=>{const t=o.touren[ti];return '<div style="font-weight:700;font-size:13px">'+(TEIL_LBL[t.teil]?'<span style="display:inline-block;font-size:10px;color:var(--blu);background:var(--blu-s);border-radius:3px;padding:0 4px;margin-right:4px;vertical-align:1px">'+esc(TEIL_LBL[t.teil])+'</span>':'')+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div>';}).join('')
+          +'</div>').join('')
       : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div>${o.fremdArt?`<div style="margin-top:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;display:inline-block;${o.fremdArt==='lieferung'?'color:var(--grn);background:var(--grn-s)':'color:var(--ink3);background:var(--surf);border:1px solid var(--line)'}">${o.fremdArt==='lieferung'?'🚛 Lieferung':'🏭 Abholung'}</div>`:''}</div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>${(bstF&&bstF.ks)?`<div style="margin-top:4px"><span class="ks-pill" title="Kostenstelle Sundern">KS ${esc(bstF.ks)}</span></div>`:''}${mapsHrefF?`<a href="${mapsHrefF}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:700;color:var(--blu);text-decoration:none;background:var(--blu-s);padding:3px 8px;border-radius:100px">🗺 Route starten</a>`:''}</div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
-    <div><div class="tg-label">Material</div>${(()=>{const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
+    <div><div class="tg-label">Material</div>${(()=>{
+      if(Array.isArray(o.touren)&&o.touren.length&&o.touren.some(t=>t.teil)){
+        return o.touren.filter(t=>t.mat||t.material).map(t=>{const m=t.mat||t.material;return '<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+(TEIL_LBL[t.teil]?esc(TEIL_LBL[t.teil])+' · ':'')+esc(m)+'</span>';}).join('');
+      }
+      const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);
+      return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
     <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
     <div><div class="tg-label">Menge</div><div style="font-weight:700">${(()=>{
   const cleanNum=(v,mat)=>{const n=parseFloat(String(v||'').replace(/ *(t|m³|cbm)\s*$/i,''));return (n&&n>0)?(n+(mat==='Beton'?' m³':' t')):'';};
@@ -3425,13 +3592,14 @@ window.exportTagesuebersicht=function(exportDatum){
     const smData=schachtmeister.find(s=>s.name===o.schachtmeister);
     const telefon=(smData&&smData.phone)||'';
     const tourenStr=Array.isArray(o.touren)&&o.touren.length>1
-      ? o.touren.map((t,i)=>'Tour '+(i+1)+': '+(t.mat?t.mat+' – ':'')+t.sorte+(t.menge?' ('+t.menge+(t.mat==='Beton'?' m³':' t')+')':'')).join(' | ')
+      ? (()=>{const nrO=tourFahrten(o.touren).nrOf;return o.touren.map((t,i)=>'Tour '+(nrO[i]||i+1)+(TEIL_LBL[t.teil]?' ('+TEIL_LBL[t.teil]+')':'')+': '+(t.mat?t.mat+' – ':'')+t.sorte+(t.menge?' ('+t.menge+(t.mat==='Beton'?' m³':' t')+')':'')).join(' | ');})()
       : '';
     // Wenn fahrzeugDetails vorhanden: eine Zeile pro Fahrzeuggruppe
     if(Array.isArray(o.fahrzeugDetails)&&o.fahrzeugDetails.length){
       o.fahrzeugDetails.forEach((z,zi)=>{
-        const tour=z.tourIdx!=null&&Array.isArray(o.touren)?o.touren[z.tourIdx]:null;
-        const tourLabel=tour?('Tour '+(z.tourIdx+1)+': '+(tour.mat?tour.mat+' – ':'')+tour.sorte+(tour.menge?' ('+tour.menge+(tour.mat==='Beton'?' m³':' t')+')':'')):'';
+        const zt=(Array.isArray(o.touren)?zTours(z):[]).map(ti=>({t:o.touren[ti],ti})).filter(x=>x.t);
+        const nrOfZ=Array.isArray(o.touren)?tourFahrten(o.touren).nrOf:{};
+        const tourLabel=zt.map(({t,ti})=>'Tour '+(nrOfZ[ti]||ti+1)+(TEIL_LBL[t.teil]?' ('+TEIL_LBL[t.teil]+')':'')+': '+(t.mat?t.mat+' – ':'')+t.sorte+(t.menge?' ('+t.menge+(t.mat==='Beton'?' m³':' t')+')':'')).join(' | ');
         sundernRows.push({
           'Uhrzeit':z.uhrzeit||o.uhrzeit||'',
           'Schachtmeister':o.schachtmeister||'',
@@ -3443,9 +3611,9 @@ window.exportTagesuebersicht=function(exportDatum){
           'Fahrzeugtyp':(z.anz||1)+'× '+(z.typ||''),
           'Fahrzeuge':(z.vehicles||[]).join(', '),
           'Fahrer':(z.drivers||[]).join(', '),
-          'Material':tour?tour.mat:o.material||'',
-          'Sorte':tour?tour.sorte:o.sorte||'',
-          'Menge':tour?tour.menge:o.menge||'',
+          'Material':zt.length?zt.map(({t})=>teilPrefix(t)+(t.mat||'')).join(' + '):o.material||'',
+          'Sorte':zt.length?zt.map(({t})=>teilPrefix(t)+(t.sorte||'')).join(' + '):o.sorte||'',
+          'Menge':zt.length?zt.map(({t})=>teilPrefix(t)+(t.menge||'')+(t.mat==='Beton'?' m³':' t')).join(' + '):o.menge||'',
           'Tour-Zuweisung':tourLabel,
           'Touren':tourenStr,
           'Hinweis (Fahrzeug)':z.hinweis||'',
