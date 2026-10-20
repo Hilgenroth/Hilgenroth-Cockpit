@@ -227,6 +227,9 @@ td strong{color:var(--ink);font-weight:700}
 .sm-add-sm{grid-template-columns:1fr 180px auto!important}
 .sm-add-pin{grid-template-columns:1fr 110px 90px auto!important}
 #smList .sm-row{grid-template-columns:1fr 100px 84px 32px}
+#bstList .sm-row{grid-template-columns:70px 88px 1fr 1fr 56px}
+.sm-add-bst{grid-template-columns:88px 92px 1fr 1fr auto!important}
+.ks-pill{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--blu);background:#EAF1FD;border:1px solid #C3D8F7;border-radius:4px;padding:1px 5px;white-space:nowrap}
 #ffList .sm-row{grid-template-columns:1fr 110px 84px 32px 32px 32px}
 .sm-add input{padding:8px 10px;border:1px solid var(--line);border-radius:var(--rs);font-size:12px;font-family:inherit;font-weight:600;background:var(--surf)}
 .sm-add input:focus{outline:none;border-color:var(--brand);background:white}
@@ -1583,14 +1586,15 @@ td strong{color:var(--ink);font-weight:700}
 <div class="mb" id="bstModal" onclick="if(event.target===this)closeBstModal()">
   <div class="modal" style="max-width:700px">
     <h2>Baustellen verwalten</h2>
-    <p>Baustellennummer und Baustellen-Name sind gekoppelt – bei Eingabe der Nummer wird der Name automatisch ausgefüllt und umgekehrt.</p>
+    <p>Baustellennummer und Baustellen-Name sind gekoppelt – bei Eingabe der Nummer wird der Name automatisch ausgefüllt und umgekehrt. Die <strong>Kostenstelle Sundern</strong> wird je Baustelle hinterlegt und erscheint automatisch in der Tagesübersicht und im Excel-Export.</p>
     <div class="fleet-mgmt sm">
       <div class="fleet-col">
         <h4>🏗 Baustellen</h4>
-        <div style="display:grid;grid-template-columns:80px 1fr 1fr 56px;gap:6px;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);background:var(--surf);border-bottom:1px solid var(--line)"><span>Nr.</span><span>Name</span><span>Adresse</span><span></span></div>
+        <div style="display:grid;grid-template-columns:70px 88px 1fr 1fr 56px;gap:6px;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);background:var(--surf);border-bottom:1px solid var(--line)"><span>Nr.</span><span>Kostenst.</span><span>Name</span><span>Adresse</span><span></span></div>
 <div class="fleet-list" id="bstList" style="max-height:300px"></div>
-        <div class="sm-add">
+        <div class="sm-add sm-add-bst">
           <input type="text" id="newBstNr" placeholder="Bst.-Nr.">
+          <input type="text" id="newBstKs" placeholder="Kostenstelle">
           <input type="text" id="newBstName" placeholder="Baustellen-Name">
           <input type="text" id="newBstAddr" placeholder="Adresse (Straße, Ort)">
           <button type="button" onclick="addBst()">+ Hinzufügen</button>
@@ -2041,10 +2045,20 @@ function activeTab(){return document.querySelector('.tab.active')?.dataset.tab}
 // ===== SELECTS AUFBAUEN =====
 
 
+// Kostenstelle Sundern zu einem Auftrag ermitteln (über Bst.-Nr. oder Baustellen-Name)
+function findBstFor(o){
+  if(!o)return null;
+  return baustellen.find(b=>String(b.nr)===String(o.baustellennummer||''))
+      || baustellen.find(b=>b.name&&o.baustelle&&b.name.toLowerCase()===String(o.baustelle).toLowerCase())
+      || null;
+}
+function ksFor(o){ const b=findBstFor(o); return (b&&b.ks)?String(b.ks):''; }
+function ksByNr(nr){ const b=baustellen.find(x=>String(x.nr)===String(nr||'')); return (b&&b.ks)?String(b.ks):''; }
+
 function rebuildBstSelects(){
   const emptyNr='<option value="">-- Nummer wählen --</option>';
   const emptyName='<option value="">-- Baustelle wählen --</option>';
-  const optsNr=baustellen.map(b=>`<option value="${esc(b.nr)}">${esc(b.nr)} – ${esc(b.name)}</option>`).join('');
+  const optsNr=baustellen.map(b=>`<option value="${esc(b.nr)}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name)}</option>`).join('');
   const optsName=baustellen.map(b=>`<option value="${esc(b.name)}">${esc(b.name)} (${esc(b.nr)})</option>`).join('');
   const selNr=document.getElementById('selBstNr');
   const selName=document.getElementById('selBstName');
@@ -2062,7 +2076,7 @@ function onBstNrChange(nr){
   const selName=document.getElementById('selBstName');
   if(b){
     selName.value=b.name;
-    chip.style.display='flex'; chipTxt.textContent=b.nr+' · '+b.name;
+    chip.style.display='flex'; chipTxt.textContent=b.nr+' · '+b.name+(b.ks?'  ·  Kostenstelle '+b.ks:'');
   } else {
     selName.value='';
     chip.style.display='none'; chipTxt.textContent='';
@@ -2075,7 +2089,7 @@ function onBstNameChange(name){
   const selNr=document.getElementById('selBstNr');
   if(b){
     selNr.value=b.nr;
-    chip.style.display='flex'; chipTxt.textContent=b.nr+' · '+b.name;
+    chip.style.display='flex'; chipTxt.textContent=b.nr+' · '+b.name+(b.ks?'  ·  Kostenstelle '+b.ks:'');
   } else {
     selNr.value='';
     chip.style.display='none'; chipTxt.textContent='';
@@ -2087,6 +2101,7 @@ function renderBstModal(){
     : baustellen.map((b,i)=>`
     <div class="sm-row">
       <span title="${esc(b.nr)}" style="font-weight:700">${esc(b.nr)}</span>
+      <span title="Kostenstelle Sundern: ${esc(b.ks||'')}">${b.ks?`<span class="ks-pill">${esc(b.ks)}</span>`:'<em style="opacity:.45;font-weight:500">—</em>'}</span>
       <span title="${esc(b.name)}">${esc(b.name)}</span>
       <span class="ph" title="${esc(b.addr||'')}">${b.addr?esc(b.addr):'<em style="opacity:.5">keine Adresse</em>'}${
         b.lat&&b.lon?' <span title="Koordinaten hinterlegt (für Lieferanten-Finder)" style="color:var(--grn)">📍✓</span>'
@@ -2124,37 +2139,76 @@ window.startBstEdit=function(i){
   const b=baustellen[i];
   const rows=document.querySelectorAll('#bstList .sm-row');
   if(!rows[i])return;
+  const inpSt='padding:4px 6px;border:1px solid var(--line);border-radius:var(--rs);font-size:12px;font-family:inherit;min-width:0';
   rows[i].innerHTML=`
-    <span style="font-weight:700">${esc(b.nr)}</span>
-    <input type="text" value="${esc(b.name)}" id="bstEditName" style="padding:4px 6px;border:1px solid var(--line);border-radius:var(--rs);font-size:12px;font-weight:600;font-family:inherit">
-    <input type="text" value="${esc(b.addr||'')}" id="bstEditAddr" placeholder="Straße, Ort" style="padding:4px 6px;border:1px solid var(--line);border-radius:var(--rs);font-size:12px;font-weight:500;font-family:inherit">
+    <input type="text" value="${esc(b.nr)}" id="bstEditNr" placeholder="Nr." style="${inpSt};font-weight:800">
+    <input type="text" value="${esc(b.ks||'')}" id="bstEditKs" placeholder="Kostenst." style="${inpSt};font-weight:700">
+    <input type="text" value="${esc(b.name)}" id="bstEditName" style="${inpSt};font-weight:600">
+    <input type="text" value="${esc(b.addr||'')}" id="bstEditAddr" placeholder="Straße, Ort" style="${inpSt};font-weight:500">
     <div style="display:flex;gap:3px">
       <button onclick="saveBstEdit(${i})" title="Speichern" style="background:var(--grn-s);color:var(--grn);border:1px solid #5DCAA5;font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;cursor:pointer;font-family:inherit;white-space:nowrap">✓</button>
       <button onclick="renderBstModal()" title="Abbrechen" style="background:none;color:var(--ink3);border:1px solid var(--line);font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;cursor:pointer;font-family:inherit">✕</button>
     </div>`;
-  document.getElementById('bstEditAddr').focus();
+  rows[i].querySelectorAll('input').forEach(el=>el.addEventListener('keydown',ev=>{
+    if(ev.key==='Enter'){ev.preventDefault();saveBstEdit(i);}
+    if(ev.key==='Escape'){ev.preventDefault();renderBstModal();}
+  }));
+  document.getElementById('bstEditNr').focus();
 };
 window.saveBstEdit=function(i){
+  const alt=baustellen[i];
+  const nr=document.getElementById('bstEditNr')?.value.trim()||'';
   const name=document.getElementById('bstEditName')?.value.trim();
   const addr=document.getElementById('bstEditAddr')?.value.trim();
+  const ks=document.getElementById('bstEditKs')?.value.trim()||'';
+  if(!nr){showToast('Baustellennummer eingeben','amber');return;}
   if(!name){showToast('Name eingeben','amber');return;}
-  baustellen[i]={...baustellen[i],name,addr};
+  if(baustellen.some((b,j)=>j!==i&&String(b.nr)===nr)){showToast('Nummer bereits vorhanden','amber');return;}
+  const altNr=String(alt.nr);
+  const nrGeaendert=altNr!==nr;
+  if(nrGeaendert){
+    const betroffen=data.sundern.filter(o=>String(o.baustellennummer||'')===altNr).length
+                   +data.fremd.filter(o=>String(o.baustellennummer||'')===altNr).length;
+    if(!confirm('Baustellennummer '+altNr+' \u2192 '+nr+' \u00e4ndern?'+(betroffen?'\n\n'+betroffen+' bestehende Auftr\u00e4ge werden mit umgestellt.':'')+'\nSchachtmeister-Zuordnungen werden ebenfalls angepasst.'))return;
+  }
+  baustellen[i]={...alt,nr,name,addr,ks};
+  baustellen=[...baustellen].sort((a,b)=>String(a.nr).localeCompare(String(b.nr),undefined,{numeric:true}));
   bstRef.set(baustellen).then(()=>{
+    if(nrGeaendert)migriereBstNr(altNr,nr);
     renderBstModal();rebuildBstSelects();if(typeof renderBaustellenSelect==='function')renderBaustellenSelect();
-    showToast('Baustelle aktualisiert','success');
+    showToast(nrGeaendert?('Baustelle auf Nr. '+nr+' umgestellt'):'Baustelle aktualisiert','success');
   }).catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
+// Bst.-Nr. in Schachtmeister-Zuordnungen und bestehenden Aufträgen nachziehen
+function migriereBstNr(altNr,neuNr){
+  let smDirty=false;
+  schachtmeister=schachtmeister.map(sm=>{
+    const arr=Array.isArray(sm.baustellen)?sm.baustellen:[];
+    if(!arr.some(x=>String(x)===altNr))return sm;
+    smDirty=true;
+    return {...sm,baustellen:arr.map(x=>String(x)===altNr?neuNr:x)};
+  });
+  if(smDirty)smRef.set(smClean(schachtmeister)).catch(()=>{});
+  data.sundern.forEach(o=>{
+    if(String(o.baustellennummer||'')===altNr)sundernRef.child(o.id).update({baustellennummer:neuNr}).catch(()=>{});
+  });
+  data.fremd.forEach(o=>{
+    if(String(o.baustellennummer||'')===altNr)fremdRef.child(o.id).update({baustellennummer:neuNr}).catch(()=>{});
+  });
+}
 function openBstModal(){document.getElementById('bstModal').classList.add('show');renderBstModal();}
 function closeBstModal(){document.getElementById('bstModal').classList.remove('show');}
 function addBst(){
   const nr=document.getElementById('newBstNr').value.trim();
   const name=document.getElementById('newBstName').value.trim();
   const addr=document.getElementById('newBstAddr')?.value.trim()||'';
+  const ks=document.getElementById('newBstKs')?.value.trim()||'';
   if(!nr||!name){showToast('Nummer und Name eingeben','amber');return;}
   if(baustellen.find(b=>b.nr===nr)){showToast('Nummer bereits vorhanden','amber');return;}
-  baustellen=[...baustellen,{nr,name,addr}].sort((a,b)=>a.nr.localeCompare(b.nr,undefined,{numeric:true}));
+  baustellen=[...baustellen,{nr,name,addr,ks}].sort((a,b)=>a.nr.localeCompare(b.nr,undefined,{numeric:true}));
   bstRef.set(baustellen).then(()=>{
     document.getElementById('newBstNr').value='';
+    if(document.getElementById('newBstKs'))document.getElementById('newBstKs').value='';
     document.getElementById('newBstName').value='';
     if(document.getElementById('newBstAddr'))document.getElementById('newBstAddr').value='';
     renderBstModal();rebuildBstSelects();if(typeof renderBaustellenSelect==='function')renderBaustellenSelect();
@@ -2184,7 +2238,7 @@ function renderSMModal(){
   document.getElementById('smList').innerHTML=schachtmeister.map((s,i)=>{
     const smBst=Array.isArray(s.baustellen)?s.baustellen:[];
     const bstChips=smBst.map(nr=>`<span style="display:inline-flex;align-items:center;gap:3px;background:var(--blu-s);color:var(--blu);font-size:11px;font-weight:700;padding:2px 7px;border-radius:100px">${esc(String(nr))}<button onclick="removeSmBst(${i},'${nr}')" style="background:none;border:none;color:var(--blu);cursor:pointer;font-size:13px;padding:0;line-height:1">×</button></span>`).join('');
-    const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`).join('');
+    const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name||b.addr||'')}</option>`).join('');
     return `<div class="sm-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 4px">
       <div style="display:flex;align-items:center;gap:8px;width:100%">
         <span style="font-weight:700;flex:1" title="${esc(s.name)}">${esc(s.name)}</span>
@@ -2321,10 +2375,10 @@ function filterBstBySmName(smName,keepVal){
     if(baustellen.length>smBst.length){
       opts+='<option disabled>── Alle Baustellen ──</option>';
       baustellen.filter(b=>!smBst.includes(String(b.nr))&&!smBst.includes(b.nr))
-        .forEach(b=>{opts+=`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`;});
+        .forEach(b=>{opts+=`<option value="${esc(String(b.nr))}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name||b.addr||'')}</option>`;});
     }
   } else {
-    baustellen.forEach(b=>{opts+=`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`;});
+    baustellen.forEach(b=>{opts+=`<option value="${esc(String(b.nr))}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name||b.addr||'')}</option>`;});
   }
   bstSel.innerHTML=opts;
   if(keepVal){
@@ -2852,7 +2906,7 @@ function renderS(){
     const tourLabel=Array.isArray(o.touren)&&o.touren.length>1
       ? o.touren.map((t,i)=>'<span class="pill">Tour '+(i+1)+': '+esc(t.sorte)+(t.menge?' · '+esc(t.menge):'')+'</span>').join('')
       : esc(o.sorte||'');
-    return `<tr data-id="${o.id}"${editingId.sundern===o.id?' class="er"':''}><td><strong>${esc(o.schachtmeister)}</strong></td><td>${esc(o.baustellennummer)}</td><td>${esc(o.auftragsnummer)}</td><td>${esc(o.baustelle)}</td><td>${fzgLabel}</td><td>${pills(o.vehicles)}</td><td>${pills(o.drivers)}</td><td><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></td><td>${esc(o.sorte)}</td><td>${esc(o.menge)}</td><td>${tourLabel}</td><td>${fmtDate(o.datum)}</td><td>${esc(o.uhrzeit)}</td><td>${esc(o.bemerkung)}</td><td>${ra('sundern',o.id)}</td></tr>`;
+    return `<tr data-id="${o.id}"${editingId.sundern===o.id?' class="er"':''}><td><strong>${esc(o.schachtmeister)}</strong></td><td>${esc(o.baustellennummer)}${ksFor(o)?`<div style="font-size:9px;font-weight:800;color:var(--blu)">KS ${esc(ksFor(o))}</div>`:''}</td><td>${esc(o.auftragsnummer)}</td><td>${esc(o.baustelle)}</td><td>${fzgLabel}</td><td>${pills(o.vehicles)}</td><td>${pills(o.drivers)}</td><td><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></td><td>${esc(o.sorte)}</td><td>${esc(o.menge)}</td><td>${tourLabel}</td><td>${fmtDate(o.datum)}</td><td>${esc(o.uhrzeit)}</td><td>${esc(o.bemerkung)}</td><td>${ra('sundern',o.id)}</td></tr>`;
   }).join('');
 }
 
@@ -2917,7 +2971,7 @@ window.ovInlineEdit=function(id,type){
   modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;overflow-y:auto;padding:20px;box-sizing:border-box';
   const FZG=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
   const smOpts=schachtmeister.map(s=>`<option value="${esc(s.name)}"${s.name===o.schachtmeister?' selected':''}>${esc(s.name)}</option>`).join('');
-  const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)} – ${esc(b.name||b.addr||'')}</option>`).join('');
+  const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name||b.addr||'')}</option>`).join('');
   const matOpts=['Asphalt','Strassenbaustoffe','Beton'].map(m=>`<label><input type="radio" name="oe_material" value="${m}"${(o.material||'')===''+m?' checked':''}> ${m==='Strassenbaustoffe'?'Straßenbaustoffe':m}</label>`).join('');
 
   modal.innerHTML=`<div style="background:var(--bg-e);border-radius:var(--rl);padding:0;max-width:520px;width:100%;box-shadow:var(--sh-md);margin:0 auto;position:relative">
@@ -2937,13 +2991,14 @@ window.ovInlineEdit=function(id,type){
     </div>
     <div class="fg" style="margin-bottom:10px"><label>Baustellennummer</label>
       <div style="position:relative">
-        <select id="oe_bstnrSel" style="width:100%" onchange="if(this.value){document.getElementById('oe_bstnr').value=this.value;document.getElementById('oe_baustelle').value=baustellen.find(b=>String(b.nr)===this.value)?.name||document.getElementById('oe_baustelle').value;}">
+        <select id="oe_bstnrSel" style="width:100%" onchange="if(this.value){document.getElementById('oe_bstnr').value=this.value;document.getElementById('oe_baustelle').value=baustellen.find(b=>String(b.nr)===this.value)?.name||document.getElementById('oe_baustelle').value;}oeKsRefresh();">
           <option value="">— Baustelle wählen —</option>
           <option disabled>── Alle ──</option>
           ${bstOpts}
         </select>
       </div>
-      <input id="oe_bstnr" type="text" value="${esc(o.baustellennummer||'')}" placeholder="Nr. direkt eingeben" style="margin-top:4px">
+      <input id="oe_bstnr" type="text" value="${esc(o.baustellennummer||'')}" placeholder="Nr. direkt eingeben" style="margin-top:4px" oninput="oeKsRefresh()">
+      <div id="oe_ksInfo" style="margin-top:5px;font-size:11px;font-weight:700;color:var(--ink3)"></div>
     </div>
     <div class="fg" style="margin-bottom:10px"><label>Auftragsnummer</label><input id="oe_auftrnr" type="text" value="${esc(o.auftragsnummer||'')}"></div>
     `:''}
@@ -3012,6 +3067,17 @@ window.ovInlineEdit=function(id,type){
   if(sel&&inp){sel.value=inp.value||'';sel.addEventListener('change',()=>{if(sel.value){inp.value=sel.value;setTimeout(()=>sel.value='',50);}});}
 
   // Baustellen-Suche
+  // Kostenstelle Sundern zur aktuell gewählten Bst.-Nr. anzeigen
+  window.oeKsRefresh=function(){
+    const el=document.getElementById('oe_ksInfo');
+    if(!el)return;
+    const nr=document.getElementById('oe_bstnr')?.value.trim()||'';
+    const ks=ksByNr(nr);
+    el.innerHTML=ks?'<span class="ks-pill">Kostenstelle '+esc(ks)+'</span>'
+      :(nr?'<span style="color:var(--ink3)">keine Kostenstelle hinterlegt</span>':'');
+  };
+  oeKsRefresh();
+
   window.oeFilterBst=function(q){
     const box=document.getElementById('oe_bst_box');
     if(!box)return;
@@ -3028,6 +3094,7 @@ window.ovInlineEdit=function(id,type){
         document.getElementById('oe_baustelle').value=b.name||b.addr||'';
         if(document.getElementById('oe_bstnr'))document.getElementById('oe_bstnr').value=String(b.nr||'');
         if(document.getElementById('oe_bstnrSel'))document.getElementById('oe_bstnrSel').value=String(b.nr||'');
+        oeKsRefresh();
         box.style.display='none';
       });
       box.appendChild(d);
@@ -3046,6 +3113,7 @@ window.ovInlineEdit=function(id,type){
       document.getElementById('oe_bst_inp').value=firstBst.name||firstBst.addr||'';
       document.getElementById('oe_baustelle').value=firstBst.name||firstBst.addr||'';
     }
+    oeKsRefresh();
   };
 
   // Sorte-Suche
@@ -3214,7 +3282,7 @@ function renderOv(){
       ? o.touren.map((t,i)=>'<div style="margin-bottom:5px"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Tour '+(i+1)+'</div><div style="font-weight:700;font-size:13px">'+esc(t.sorte||'')+( (parseFloat(t.menge)>0)?' · '+(String(parseFloat(t.menge)))+((t.mat||t.material||o.material)==='Beton'?' m³':' t'):'')+'</div></div>').join('')
       : '';
     return `<div class="tour-row"><div class="tour-grid">
-    <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${smTel?`<a href="tel:${esc(smTel)}" class="bst-pill bst-pill-grn" style="margin-top:5px">📞 ${esc(smTel)}</a>`:''} ${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
+    <div><div class="tg-label">Schachtmeister</div><div class="t-name">${esc(o.schachtmeister)}</div>${smTel?`<a href="tel:${esc(smTel)}" class="bst-pill bst-pill-grn" style="margin-top:5px">📞 ${esc(smTel)}</a>`:''} ${o.baustellennummer?`<div class="t-sub">Bst. ${esc(o.baustellennummer)}</div>`:''} ${(bst&&bst.ks)?`<div style="margin-top:4px"><span class="ks-pill" title="Kostenstelle Sundern">KS ${esc(bst.ks)}</span></div>`:''} ${o.auftragsnummer?`<div class="t-sub">Nr. ${esc(o.auftragsnummer)}</div>`:''}</div>
     <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>
       <button class="bst-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.textContent=this.nextElementSibling.classList.contains('open')?'▴ zuklappen':'▾ Aktionen'">▾ Aktionen</button>
       <div class="bst-drawer">
@@ -3263,7 +3331,7 @@ function renderOv(){
       : '';
     return `<div class="tour-row"><div class="tour-grid">
     <div><div class="tg-label">Kunde</div><div class="t-name">${esc(o.firmenname)}</div>${o.fremdArt?`<div style="margin-top:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;display:inline-block;${o.fremdArt==='lieferung'?'color:var(--grn);background:var(--grn-s)':'color:var(--ink3);background:var(--surf);border:1px solid var(--line)'}">${o.fremdArt==='lieferung'?'🚛 Lieferung':'🏭 Abholung'}</div>`:''}</div>
-    <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>${mapsHrefF?`<a href="${mapsHrefF}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:700;color:var(--blu);text-decoration:none;background:var(--blu-s);padding:3px 8px;border-radius:100px">🗺 Route starten</a>`:''}</div>
+    <div><div class="tg-label">Baustelle</div><div class="t-bst">${o.baustelle?esc(o.baustelle):'—'}</div>${(bstF&&bstF.ks)?`<div style="margin-top:4px"><span class="ks-pill" title="Kostenstelle Sundern">KS ${esc(bstF.ks)}</span></div>`:''}${mapsHrefF?`<a href="${mapsHrefF}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;font-weight:700;color:var(--blu);text-decoration:none;background:var(--blu-s);padding:3px 8px;border-radius:100px">🗺 Route starten</a>`:''}</div>
     <div><div class="tg-label">Fahrzeugtyp</div>${fzgTxtF||'<div style="color:var(--muted)">—</div>'}</div>
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
     <div><div class="tg-label">Material</div>${(()=>{const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
@@ -3325,13 +3393,13 @@ window.exportF=function(){
 };
 window.exportS=function(){
   const l=getFilt('sundern');if(!l.length){showToast('Keine Auftraege');return}
-  dlXlsx({'Sundern':l.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}))},'Dispo_Sundern');showToast('Excel exportiert','success');
+  dlXlsx({'Sundern':l.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'Kostenstelle':ksFor(o),'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}))},'Dispo_Sundern');showToast('Excel exportiert','success');
 };
 window.exportBoth=function(){
   if(!data.fremd.length&&!data.sundern.length){showToast('Keine Auftraege');return}
   const sheets={};
   if(data.fremd.length)sheets['Fremdfirma']=data.fremd.map(o=>({'Kunde':o.firmenname,'AuftrNr':o.auftragsnummerF,'Baustelle':o.baustelle,'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl||'','Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Datum':fmtDate(o.abholung),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
-  if(data.sundern.length)sheets['Sundern']=data.sundern.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
+  if(data.sundern.length)sheets['Sundern']=data.sundern.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'Kostenstelle':ksFor(o),'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
   dlXlsx(sheets,'Hilgenroth_Dispo');showToast('Gesamt-Export erstellt','success');
 };
 window.openTagesExportModal=function(){
@@ -3369,6 +3437,7 @@ window.exportTagesuebersicht=function(exportDatum){
           'Schachtmeister':o.schachtmeister||'',
           'Telefon':telefon,
           'Bst.-Nr.':o.baustellennummer||'',
+          'Kostenstelle':ksFor(o),
           'Auftr.-Nr.':o.auftragsnummer||'',
           'Baustelle':o.baustelle||'',
           'Fahrzeugtyp':(z.anz||1)+'× '+(z.typ||''),
@@ -3391,6 +3460,7 @@ window.exportTagesuebersicht=function(exportDatum){
         'Schachtmeister':o.schachtmeister||'',
         'Telefon':telefon,
         'Bst.-Nr.':o.baustellennummer||'',
+        'Kostenstelle':ksFor(o),
         'Auftr.-Nr.':o.auftragsnummer||'',
         'Baustelle':o.baustelle||'',
         'Fahrzeugtyp':fzg,
@@ -3421,6 +3491,7 @@ window.exportTagesuebersicht=function(exportDatum){
       'Firma':o.firmenname||'',
       'Auftr.-Nr.':o.auftragsnummerF||'',
       'Baustelle':o.baustelle||'',
+      'Kostenstelle':ksFor(o),
       'Fahrzeugtyp':fzg,
       'Fahrzeuge':(o.vehicles||[]).join(', '),
       'Fahrer':(o.drivers||[]).join(', '),
@@ -3539,7 +3610,7 @@ function renderAlle(){
       <tr data-id="${o.id}" class="${editingId.sundern===o.id?'er':''}">
         <td class="tc-datum">${getDateLabel(o.datum)}</td>
         <td class="tc-name"><strong>${esc(o.schachtmeister)}</strong></td>
-        <td class="tc-bstnr">${esc(o.baustellennummer)}</td>
+        <td class="tc-bstnr">${esc(o.baustellennummer)}${ksFor(o)?`<div style="font-size:9px;font-weight:800;color:var(--blu);margin-top:2px" title="Kostenstelle Sundern">KS ${esc(ksFor(o))}</div>`:''}</td>
         <td class="tc-aufnr">${esc(o.auftragsnummer)}</td>
         <td class="tc-bst">${esc(o.baustelle)}</td>
         <td class="tc-mat"><span class="badge ${o.material==='Strassenbaustoffe'?'sb':''}">${esc(o.material)}</span></td>
@@ -4105,7 +4176,7 @@ window.tpShowDetail=function(type,id,evt){
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
       ${isSund?`
         <div><div style="font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;margin-bottom:4px">Schachtmeister</div><div style="font-weight:700">${esc(o.schachtmeister)}</div></div>
-        <div><div style="font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;margin-bottom:4px">Baustelle</div><div style="font-weight:700">${esc(o.baustelle)} ${o.baustellennummer?'('+esc(o.baustellennummer)+')':''}</div></div>
+        <div><div style="font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;margin-bottom:4px">Baustelle</div><div style="font-weight:700">${esc(o.baustelle)} ${o.baustellennummer?'('+esc(o.baustellennummer)+')':''}</div>${ksFor(o)?`<div style="font-size:11px;font-weight:800;color:var(--blu);margin-top:3px">Kostenstelle ${esc(ksFor(o))}</div>`:''}</div>
         <div><div style="font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;margin-bottom:4px">Material</div><div style="font-weight:700">${esc(o.material)} ${esc(o.sorte)} · ${esc(o.menge)}</div></div>
         <div><div style="font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;margin-bottom:4px">Uhrzeit</div><div style="font-weight:700">${esc(o.uhrzeit)||'—'}</div></div>
       `:`
