@@ -325,6 +325,40 @@ tr:hover .ra{opacity:1;}
   .br-foto{width:100px;height:100px;}
   .t-pdf{border:1px solid #999!important;color:#1B1D22!important;background:none!important;}
 }
+
+/* ── Rechnung einlesen ── */
+.sc-hint{font-size:12.5px;color:var(--muted);margin:0 0 14px;line-height:1.5}
+.sc-pick{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sc-btn{cursor:pointer;display:inline-flex;align-items:center;min-height:44px}
+.sc-status{font-size:13px;font-weight:600;padding:11px 13px;border-radius:8px;margin-bottom:14px;
+           background:#f1f3f5;color:#4b5563;line-height:1.45}
+.sc-status.lauft{background:#dbeafe;color:#1d4ed8}
+.sc-status.gut{background:#dcfce7;color:#15803d}
+.sc-status.schlecht{background:#fee2e2;color:#b91c1c}
+.sc-erkannt{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sc-feld{flex:1 1 220px;min-width:0}
+.sc-feld label{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;
+               text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.sc-feld select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+                font-size:14px;background:#fff;min-height:42px}
+.sc-tw{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:46vh}
+.sc-tab{width:100%;border-collapse:collapse;font-size:13px}
+.sc-tab th{position:sticky;top:0;background:#f8f9fb;text-align:left;font-size:10.5px;
+           letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+           padding:9px 10px;border-bottom:1px solid var(--line);font-weight:700;z-index:1}
+.sc-tab td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.sc-tab td:nth-child(2){min-width:260px}
+.sc-tab tr:last-child td{border-bottom:0}
+.sc-tab input[type=text],.sc-tab select{width:100%;padding:7px 8px;border:1px solid transparent;
+  border-radius:6px;font-size:13px;background:transparent;min-height:36px;color:inherit}
+.sc-tab input[type=text]:focus,.sc-tab select:focus{border-color:var(--red);background:#fff;outline:none}
+.sc-tab input[type=checkbox]{width:17px;height:17px;accent-color:var(--red);cursor:pointer}
+.sc-tab tr.aus{opacity:.4}
+@media (max-width:760px){
+  .sc-tw{max-height:none;overflow-x:auto}
+  .sc-tab{min-width:620px}
+  .sc-pick .sc-btn{flex:1 1 100%;justify-content:center}
+}
 </style>
 </head>
 <body>
@@ -577,6 +611,56 @@ tr:hover .ra{opacity:1;}
 </div>
 
 <!-- Lieferanten Modal -->
+<div class="bd" id="bd-scan">
+  <div class="md" style="width:940px">
+    <div class="mdt">Rechnung einlesen</div>
+    <p class="sc-hint">Artikelnummer, Bezeichnung und Preis werden aus der Rechnung gelesen.
+       Die Datei selbst wird <b>nicht</b> gespeichert &ndash; nur die Artikeldaten.</p>
+
+    <div class="sc-pick">
+      <label class="btn btn-p sc-btn">Datei wählen (PDF oder Bild)
+        <input type="file" id="sc-datei" accept="application/pdf,image/*" hidden>
+      </label>
+      <label class="btn btn-g sc-btn">Foto aufnehmen
+        <input type="file" id="sc-foto" accept="image/*" capture="environment" hidden>
+      </label>
+    </div>
+
+    <div id="sc-status" class="sc-status" style="display:none"></div>
+
+    <div id="sc-erkannt" class="sc-erkannt" style="display:none">
+      <div class="sc-feld">
+        <label>Fahrzeug / Gerät</label>
+        <select class="fs" id="sc-fz"></select>
+      </div>
+      <div class="sc-feld">
+        <label>Lieferant</label>
+        <select class="fs" id="sc-lief"></select>
+      </div>
+    </div>
+
+    <div id="sc-tabelle" style="display:none">
+      <div class="sc-tw">
+        <table class="sc-tab">
+          <thead><tr>
+            <th style="width:34px"><input type="checkbox" id="sc-alle" checked></th>
+            <th>Bezeichnung</th><th style="width:118px">Art.-Nr.</th>
+            <th style="width:62px">Menge</th><th style="width:86px">Preis netto</th>
+            <th style="width:138px">Kategorie</th>
+          </tr></thead>
+          <tbody id="sc-body"></tbody>
+        </table>
+      </div>
+      <p class="sc-hint" id="sc-roh-hint" style="margin-top:10px"></p>
+    </div>
+
+    <div class="ma">
+      <button class="btn btn-g" onclick="closeM('bd-scan')">Abbrechen</button>
+      <button class="btn btn-p" id="sc-ok" onclick="scanUebernehmen()" disabled>Übernehmen</button>
+    </div>
+  </div>
+</div>
+
 <div class="bd" id="bd-lief">
   <div class="md" style="width:420px">
     <div class="mdt" id="lief-title">Lieferant</div>
@@ -860,6 +944,7 @@ function drawErsatzteile(){
         Excel Import
         <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importET(this.files[0])">
       </label>
+      <button class="btn" onclick="openScan()" title="Rechnung oder Foto einlesen">Rechnung einlesen</button>
       <button class="btn btn-p" onclick="openET()">+ Ersatzteil</button>
     </div>
   </div>
@@ -1957,6 +2042,353 @@ document.addEventListener('input', function(e){
 
 // ── Start ──
 draw();sync(false);initFB();
+
+// ══════════════════════════════════════════════════════════
+//  Rechnung einlesen (PDF-Text oder Texterkennung bei Fotos)
+//  Die Datei wird NICHT gespeichert - nur die Artikeldaten.
+// ══════════════════════════════════════════════════════════
+var SC_PDF  = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+var SC_PDFW = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+var SC_OCR  = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';
+var scZeilen = [];
+var scRohtext = '';
+
+function scSkript(url){
+  return new Promise(function(ok,err){
+    if(document.querySelector('script[data-sc="'+url+'"]')){ ok(); return; }
+    var t=document.createElement('script');
+    t.src=url; t.dataset.sc=url;
+    t.onload=function(){ ok(); };
+    t.onerror=function(){ err(new Error('Baustein konnte nicht geladen werden. Besteht eine Internetverbindung?')); };
+    document.head.appendChild(t);
+  });
+}
+
+function scStatus(text, art){
+  var el=document.getElementById('sc-status');
+  if(!el)return;
+  el.style.display='';
+  el.className='sc-status'+(art?' '+art:'');
+  el.textContent=text;
+}
+
+function openScan(){
+  scZeilen=[]; scRohtext='';
+  document.getElementById('sc-status').style.display='none';
+  document.getElementById('sc-tabelle').style.display='none';
+  document.getElementById('sc-erkannt').style.display='none';
+  document.getElementById('sc-ok').disabled=true;
+  document.getElementById('sc-datei').value='';
+  document.getElementById('sc-foto').value='';
+  openM('bd-scan');
+}
+
+// ── Text aus der Datei holen ──
+function scTextAusDatei(datei){
+  if(datei.type==='application/pdf' || /\.pdf$/i.test(datei.name||'')) return scTextAusPdf(datei);
+  return scTextAusBild(datei);
+}
+
+function scTextAusPdf(datei){
+  return scSkript(SC_PDF).then(function(){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = SC_PDFW;
+    return datei.arrayBuffer();
+  }).then(function(buf){
+    return pdfjsLib.getDocument({data:buf}).promise;
+  }).then(function(pdf){
+    var seiten=[];
+    for(var i=1;i<=pdf.numPages;i++) seiten.push(i);
+    return seiten.reduce(function(kette,nr){
+      return kette.then(function(bisher){
+        return pdf.getPage(nr).then(function(seite){
+          return seite.getTextContent().then(function(tc){
+            // Elemente nach Zeilen gruppieren (gleiche Hoehe = gleiche Zeile)
+            var zeilen={};
+            tc.items.forEach(function(it){
+              if(!it.str || !it.str.trim())return;
+              var y=Math.round(it.transform[5]);
+              var schl=Math.round(y/4)*4;
+              (zeilen[schl]=zeilen[schl]||[]).push({x:it.transform[4], t:it.str});
+            });
+            var txt=Object.keys(zeilen).sort(function(a,b){return b-a;}).map(function(k){
+              return zeilen[k].sort(function(a,b){return a.x-b.x;})
+                     .map(function(e){return e.t;}).join(' ');
+            }).join('\n');
+            return bisher+'\n'+txt;
+          });
+        });
+      });
+    }, Promise.resolve('')).then(function(text){
+      if(text.replace(/\s/g,'').length>40) return text;
+      // Kein Textlayer -> eingescanntes PDF, Seiten als Bild erkennen
+      scStatus('Die Rechnung enthält keinen auslesbaren Text – Texterkennung läuft. Das kann beim ersten Mal eine Minute dauern.','lauft');
+      return scSeitenAlsBild(pdf);
+    });
+  });
+}
+
+function scSeitenAlsBild(pdf){
+  var max=Math.min(pdf.numPages,3);
+  var nrs=[]; for(var i=1;i<=max;i++) nrs.push(i);
+  return nrs.reduce(function(kette,nr){
+    return kette.then(function(bisher){
+      return pdf.getPage(nr).then(function(seite){
+        var vp=seite.getViewport({scale:2});
+        var cv=document.createElement('canvas');
+        cv.width=vp.width; cv.height=vp.height;
+        return seite.render({canvasContext:cv.getContext('2d'), viewport:vp}).promise
+          .then(function(){ return scOcr(cv); })
+          .then(function(t){ return bisher+'\n'+t; });
+      });
+    });
+  }, Promise.resolve(''));
+}
+
+function scTextAusBild(datei){
+  scStatus('Texterkennung läuft. Beim ersten Mal wird das Sprachpaket geladen – das kann eine Minute dauern.','lauft');
+  return scOcr(datei);
+}
+
+function scOcr(quelle){
+  return scSkript(SC_OCR).then(function(){
+    return Tesseract.recognize(quelle,'deu',{
+      logger:function(m){
+        if(m.status==='recognizing text')
+          scStatus('Texterkennung läuft … '+Math.round((m.progress||0)*100)+' %','lauft');
+        else if(m.status&&m.status.indexOf('loading')===0)
+          scStatus('Sprachpaket wird geladen …','lauft');
+      }
+    });
+  }).then(function(r){ return (r&&r.data&&r.data.text)||''; });
+}
+
+// ── Zeilen aus dem Text herausziehen ──
+var SC_STOP = /(summe|gesamtbetrag|zwischensumme|netto|brutto|mwst|ust\.|umsatzsteuer|rechnung|lieferschein|seite\s|datum|kundennr|kunden-nr|iban|bic|skonto|zahlbar|betrag|steuer|versand|fracht|verpackung|ihre bestellung|bestellnummer|auftragsnummer|uid|ust-id)/i;
+var SC_PREIS = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+
+function scZahl(t){ return parseFloat(String(t).replace(/\./g,'').replace(',','.')); }
+
+function scParse(text){
+  var roh=String(text||'').split(/[\r\n]+/);
+  var treffer=[];
+  roh.forEach(function(zeile){
+    var z=zeile.replace(/\s+/g,' ').trim();
+    if(z.length<8) return;
+    if(SC_STOP.test(z)) return;
+    var preise=z.match(SC_PREIS);
+    if(!preise||!preise.length) return;
+
+    var gesamt=scZahl(preise[preise.length-1]);
+    var einzel=preise.length>1?scZahl(preise[preise.length-2]):gesamt;
+    if(!isFinite(einzel)||einzel<=0) return;
+
+    // Teil vor dem ersten Preis = Position, Artikelnummer, Bezeichnung, Menge
+    var vorn=z.slice(0,z.indexOf(preise[0])).trim();
+    if(!vorn) return;
+
+    // Menge: steht in Rechnungen direkt vor den Preisen, also am Ende.
+    // Die Einheit muss dabeistehen - sonst wuerde "KG-Rohr" oder "DN 160"
+    // faelschlich als Menge gelesen.
+    var menge=0;
+    var mM=vorn.match(/(\d+(?:[.,]\d+)?)\s*(st|stk|stck|stueck|stück|x|ltr|liter|kg|lfm|pak|pck|pkg)\.?\s*$/i);
+    if(mM){ menge=scZahl(mM[1])||0; vorn=vorn.slice(0, vorn.length-mM[0].length).trim(); }
+    if(!menge && einzel>0 && gesamt>0){
+      var q=Math.round(gesamt/einzel);
+      if(q>=1 && q<=9999 && Math.abs(q*einzel-gesamt)<0.05) menge=q;
+    }
+    if(!menge) menge=1;
+
+    // fuehrende Positionsnummer entfernen (1  /  01  /  1.)
+    vorn=vorn.replace(/^\s*\d{1,3}[.)]?\s+/,'').trim();
+
+    // Artikelnummer: erstes Wort mit Ziffer, das kein reiner Zahlwert ist
+    var artnr='';
+    var woerter=vorn.split(' ').filter(Boolean);
+    for(var i=0;i<Math.min(woerter.length,3);i++){
+      var w=woerter[i].replace(/[,;:]$/,'');
+      if(w.length>=4 && /\d/.test(w) && /^[A-Za-z0-9][A-Za-z0-9._\-\/]*$/.test(w) && !/^\d+,\d+$/.test(w)){
+        artnr=w; woerter.splice(i,1); break;
+      }
+    }
+    var name=woerter.join(' ').replace(/\s+/g,' ').replace(/^[-–,;:\s]+|[-–,;:\s]+$/g,'').trim();
+    if(name.length<3) return;
+    if(/^\d+$/.test(name)) return;
+
+    treffer.push({an:true, name:name, artnr:artnr, menge:menge,
+                  preis:einzel.toFixed(2).replace('.',','), kat:scKategorie(name)});
+  });
+  return treffer;
+}
+
+function scKategorie(text){
+  var t=(text||'').toLowerCase();
+  if(/brems|belag|scheibe|sattel/.test(t))              return 'Bremsen';
+  if(/filter|luftfilter|ölfilter|oelfilter/.test(t))    return 'Filter';
+  if(/öl|oel|motor|schmier|fett|diesel|adblue/.test(t)) return 'Motor / Öl';
+  if(/hydraul|schlauch|zylinder|ventil|pumpe/.test(t))  return 'Hydraulik';
+  if(/reifen|kette|rad|felge|laufwerk/.test(t))         return 'Reifen / Ketten';
+  if(/lampe|birne|sicherung|kabel|batterie|relais|schalter|leucht/.test(t)) return 'Elektrik';
+  if(/blech|spiegel|scheibenwischer|tür|haube|kotflügel/.test(t)) return 'Karosserie';
+  if(/schlüssel|zange|bohrer|werkzeug|schraubendreher/.test(t))   return 'Werkzeug';
+  if(/bagger|lader|raupe|schaufel|zahn/.test(t))        return 'Baumaschine';
+  return 'Sonstiges';
+}
+
+// ── Fahrzeug und Lieferant im Text suchen ──
+function scNorm(t){ return String(t||'').toUpperCase().replace(/[^A-Z0-9ÄÖÜ]/g,''); }
+
+function scFindeFahrzeug(text){
+  var n=scNorm(text);
+  var treffer='';
+  // zuerst ueber das Kennzeichen, das ist eindeutig
+  Object.keys(fahrzeuge).forEach(function(k){
+    if(treffer)return;
+    var kz=scNorm(fahrzeuge[k].kz);
+    if(kz.length>=5 && n.indexOf(kz)>=0) treffer=k;
+  });
+  if(treffer) return treffer;
+  Object.keys(fahrzeuge).forEach(function(k){
+    if(treffer)return;
+    var nm=scNorm(fahrzeuge[k].name);
+    if(nm.length>=6 && n.indexOf(nm)>=0) treffer=k;
+  });
+  return treffer;
+}
+
+function scFindeLieferant(text){
+  var n=scNorm(text);
+  var treffer='';
+  Object.keys(lieferanten||{}).forEach(function(k){
+    if(treffer)return;
+    var nm=scNorm((lieferanten[k]||{}).name);
+    if(nm.length>=4 && n.indexOf(nm)>=0) treffer=k;
+  });
+  return treffer;
+}
+
+// ── Vorschau zeichnen ──
+var SC_KATS=['Baumaschine','Hydraulik','Motor / Öl','Filter','Bremsen','Elektrik',
+             'Karosserie','Reifen / Ketten','Werkzeug','Sonstiges'];
+
+function scZeichne(){
+  var tb=document.getElementById('sc-body');
+  tb.innerHTML=scZeilen.map(function(z,i){
+    return '<tr'+(z.an?'':' class="aus"')+'>'+
+      '<td><input type="checkbox" data-sc-an="'+i+'"'+(z.an?' checked':'')+'></td>'+
+      '<td><input type="text" data-sc-f="name" data-sc-i="'+i+'" value="'+esc(z.name)+'"></td>'+
+      '<td><input type="text" data-sc-f="artnr" data-sc-i="'+i+'" value="'+esc(z.artnr)+'"></td>'+
+      '<td><input type="text" data-sc-f="menge" data-sc-i="'+i+'" value="'+esc(z.menge)+'"></td>'+
+      '<td><input type="text" data-sc-f="preis" data-sc-i="'+i+'" value="'+esc(z.preis)+'"></td>'+
+      '<td><select data-sc-f="kat" data-sc-i="'+i+'">'+
+        SC_KATS.map(function(k){return '<option'+(k===z.kat?' selected':'')+'>'+esc(k)+'</option>';}).join('')+
+      '</select></td></tr>';
+  }).join('');
+  var n=scZeilen.filter(function(z){return z.an;}).length;
+  document.getElementById('sc-ok').disabled=!n;
+  document.getElementById('sc-ok').textContent=n?('Übernehmen ('+n+')'):'Übernehmen';
+}
+
+function scFuelleAuswahl(fzTreffer, liefTreffer){
+  var fz=document.getElementById('sc-fz');
+  fz.innerHTML='<option value="">— keinem Fahrzeug zuordnen —</option>'+
+    Object.entries(fahrzeuge).filter(function(e){return e[1]&&e[1].name;})
+    .sort(function(a,b){return a[1].name.localeCompare(b[1].name);})
+    .map(function(e){
+      return '<option value="'+esc(e[0])+'"'+(e[0]===fzTreffer?' selected':'')+'>'+
+             esc(e[1].name)+(e[1].kz?' ('+esc(e[1].kz)+')':'')+'</option>';
+    }).join('');
+  var li=document.getElementById('sc-lief');
+  li.innerHTML='<option value="">— ohne Lieferant —</option>'+
+    Object.entries(lieferanten||{}).filter(function(e){return e[1]&&e[1].name;})
+    .sort(function(a,b){return a[1].name.localeCompare(b[1].name);})
+    .map(function(e){
+      return '<option value="'+esc(e[0])+'"'+(e[0]===liefTreffer?' selected':'')+'>'+esc(e[1].name)+'</option>';
+    }).join('');
+  document.getElementById('sc-erkannt').style.display='';
+}
+
+// ── Ablauf ──
+function scVerarbeite(datei){
+  if(!datei)return;
+  scStatus('Rechnung wird gelesen …','lauft');
+  document.getElementById('sc-tabelle').style.display='none';
+  document.getElementById('sc-erkannt').style.display='none';
+  document.getElementById('sc-ok').disabled=true;
+
+  scTextAusDatei(datei).then(function(text){
+    scRohtext=text||'';
+    scZeilen=scParse(scRohtext);
+    var fzT=scFindeFahrzeug(scRohtext);
+    var liT=scFindeLieferant(scRohtext);
+    scFuelleAuswahl(fzT,liT);
+
+    if(!scZeilen.length){
+      scStatus('Es konnten keine Artikelzeilen erkannt werden. Du kannst das Ersatzteil von Hand anlegen – '+
+               'oder mir die Rechnung schicken, dann stelle ich die Erkennung auf diesen Lieferanten ein.','schlecht');
+      document.getElementById('sc-tabelle').style.display='none';
+      return;
+    }
+    var hinweis=scZeilen.length+' Artikel erkannt.';
+    if(fzT) hinweis+=' Fahrzeug erkannt: '+(fahrzeuge[fzT].name||'')+
+                     (fahrzeuge[fzT].kz?' ('+fahrzeuge[fzT].kz+')':'')+'.';
+    else    hinweis+=' Kein Fahrzeug erkannt – bitte unten auswählen.';
+    scStatus(hinweis+' Bitte prüfen und bei Bedarf ändern.','gut');
+    document.getElementById('sc-tabelle').style.display='';
+    document.getElementById('sc-roh-hint').textContent=
+      'Die Datei wird nicht gespeichert. Nach dem Übernehmen bleiben nur die Artikeldaten.';
+    document.getElementById('sc-alle').checked=true;
+    scZeichne();
+  }).catch(function(e){
+    scStatus('Konnte nicht gelesen werden: '+(e&&e.message?e.message:e),'schlecht');
+  });
+}
+
+function scUebernehmen(){ scanUebernehmen(); }
+
+function scanUebernehmen(){
+  var fzId=document.getElementById('sc-fz').value;
+  var liefId=document.getElementById('sc-lief').value;
+  var fzName=fzId&&fahrzeuge[fzId]?fahrzeuge[fzId].name:'';
+  var zu=scZeilen.filter(function(z){return z.an && (z.name||'').trim();});
+  if(!zu.length){ alert('Es ist keine Zeile ausgewählt.'); return; }
+  zu.forEach(function(z){
+    var e={ name:(z.name||'').trim(), artnr:(z.artnr||'').trim(), kat:z.kat||'Sonstiges',
+            liefId:liefId, fzId:fzId, fzName:fzName,
+            preis:String(z.preis||'').replace(',','.'),
+            lager:String(z.menge||''), minlager:'', lagerort:'',
+            notiz:'Aus Rechnung eingelesen', pdfUrl:'', ts:Date.now() };
+    var k = ET ? ET.push().key : ('e_'+Date.now()+'_'+Math.random().toString(36).slice(2,6));
+    if(ET) ET.child(k).set(e);
+    ersatzteile[k]=e;
+  });
+  closeM('bd-scan');
+  draw();
+  if(typeof showHinweis==='function') showHinweis(zu.length+' Ersatzteile angelegt.');
+}
+
+// ── Ereignisse ──
+document.addEventListener('change', function(ev){
+  var t=ev.target;
+  if(!t)return;
+  if(t.id==='sc-datei'||t.id==='sc-foto'){
+    if(t.files&&t.files[0]) scVerarbeite(t.files[0]);
+    return;
+  }
+  if(t.id==='sc-alle'){
+    scZeilen.forEach(function(z){ z.an=t.checked; });
+    scZeichne(); return;
+  }
+  if(t.dataset && t.dataset.scAn!==undefined){
+    var i=parseInt(t.dataset.scAn,10);
+    if(scZeilen[i]){ scZeilen[i].an=t.checked; scZeichne(); }
+    return;
+  }
+  if(t.dataset && t.dataset.scF!==undefined && t.dataset.scI!==undefined){
+    var j=parseInt(t.dataset.scI,10);
+    if(scZeilen[j]) scZeilen[j][t.dataset.scF]=t.value;
+  }
+});
+
 </script>
 <!-- Werkstattbericht -->
 <div class="bd" id="bd-bericht">
