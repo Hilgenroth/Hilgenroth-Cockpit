@@ -340,8 +340,18 @@ function buildFrames(){
   for(const tools of Object.values(TOOLS)) for(const t of tools) if(!t.sub) all.push(t);
   for(const [id,s] of Object.entries(ALL_SUBS)) all.push({id, label:s.label, file:s.file});
   for(const t of all){
-    // Nicht erlaubte Tools überspringen (Sub-Tools immer bauen)
-    if(perms && !subIds.includes(t.id) && !perms.includes(t.id)) continue;
+    // Nicht erlaubte Tools ueberspringen. Ein Unterpunkt zaehlt als erlaubt,
+    // wenn der Nutzer entweder ihn selbst oder seinen Oberreiter freigeschaltet hat.
+    if(perms){
+      const p = toArray(perms);
+      let erlaubt = p.includes(t.id);
+      if(!erlaubt && subIds.includes(t.id)){
+        erlaubt = Object.keys(SUBS_BY_TOOL).some(function(ober){
+          return p.includes(ober) && SUBS_BY_TOOL[ober] && SUBS_BY_TOOL[ober][t.id];
+        });
+      }
+      if(!erlaubt) continue;
+    }
     const loader=document.createElement('div');
     loader.className='loader';loader.id='loader-'+t.id;
     loader.innerHTML=`<div class="spinner"></div><div class="loader-text">${t.label} wird geladen</div>`;
@@ -623,6 +633,18 @@ function doLogin(){
   applyUser(u);
 }
 
+// Darf dieser Nutzer den Reiter sehen? Frueher waren Reiter mit Unterpunkten
+// (Labor, Beton) IMMER sichtbar - unabhaengig von den Rechten.
+function darfTool(t, perms){
+  const p = toArray(perms);
+  if(p.includes(t.id)) return true;
+  // Reiter mit Unterpunkten: sichtbar, sobald einer der Unterpunkte erlaubt ist
+  if(t.sub && SUBS_BY_TOOL[t.id]){
+    return Object.keys(SUBS_BY_TOOL[t.id]).some(sid => p.includes(sid));
+  }
+  return false;
+}
+
 function toArray(v){
   // Firebase speichert Arrays manchmal als Objekte {0:'a',1:'b'} → in echtes Array umwandeln
   if(!v) return [];
@@ -671,8 +693,8 @@ function startCockpit(){
   // TOOLS nach Berechtigungen filtern
   const perms = toArray(currentUser.perms);
   const filteredTools = {
-    sundern: TOOLS.sundern.filter(t=> t.sub || perms.includes(t.id)),
-    hellefeld: TOOLS.hellefeld.filter(t=> t.sub || perms.includes(t.id)),
+    sundern: TOOLS.sundern.filter(t=> darfTool(t, perms)),
+    hellefeld: TOOLS.hellefeld.filter(t=> darfTool(t, perms)),
   };
   // Beton-Subs
   const betonSubs = ['beton-pruefung','beton-kalk'];
@@ -731,8 +753,8 @@ function renderTabs(company){
   if(!currentUser){ _origRenderTabs(company); return; }
   const perms = currentUser.perms;
   const filtered = {
-    sundern: TOOLS.sundern.filter(t=>t.sub||perms.includes(t.id)),
-    hellefeld: TOOLS.hellefeld.filter(t=>t.sub||perms.includes(t.id)),
+    sundern: TOOLS.sundern.filter(t=> darfTool(t, perms)),
+    hellefeld: TOOLS.hellefeld.filter(t=> darfTool(t, perms)),
   };
   renderTabsFiltered(company, filtered);
 }
