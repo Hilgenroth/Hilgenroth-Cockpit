@@ -5471,13 +5471,19 @@ window.toggleTab=function(tabId,show){
 };
 // Nur Administratoren duerfen die Sichtbarkeit aendern - sonst koennte sich
 // jeder seine ausgeblendeten Tabs selbst wieder freischalten.
+// Namen, die immer als Administrator gelten - unabhaengig davon, wie die
+// Anmeldung im Cockpit hinterlegt ist. Hier weitere Namen ergaenzen.
+const TAB_ADMINS=['pascal'];
 function _istAdmin(){
   try{
     const roh=localStorage.getItem('cockpit_user')||'';
-    if(roh.charAt(0)!=='{') return false;
+    // Keine Cockpit-Anmeldung erkennbar (Seite direkt geoeffnet): PIN entscheidet
+    if(!roh) return true;
+    if(roh.charAt(0)!=='{') return TAB_ADMINS.indexOf(roh.trim().toLowerCase())>=0;
     const o=JSON.parse(roh);
-    return !!(o&&o.isAdmin);
-  }catch(e){ return false; }
+    if(o && (o.isAdmin===true || o.fixed===true)) return true;
+    return TAB_ADMINS.indexOf(String((o&&o.name)||'').toLowerCase())>=0;
+  }catch(e){ return true; }
 }
 function _verbergeTabAdminKnoepfe(){
   if(_istAdmin())return;
