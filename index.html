@@ -579,7 +579,14 @@ function checkSession(){
         const found = Object.values(allUsers).find(x=>x&&x.name===u.name&&x.pass===u.pass);
         if(found){
           currentUser.perms = toArray(found.perms);
-          // Tabs neu rendern falls Berechtigungen geändert
+          currentUser.isAdmin = !!found.isAdmin;
+          try{
+            const roh = JSON.parse(localStorage.getItem('cockpit_user')||'{}');
+            roh.isAdmin = !!found.isAdmin; roh.perms = currentUser.perms;
+            localStorage.setItem('cockpit_user', JSON.stringify(roh));
+          }catch(e){}
+          const ab = document.getElementById('admin-btn');
+          if(ab) ab.style.display = currentUser.isAdmin ? 'inline-flex' : 'none';
         } else if(Object.keys(allUsers).length > 0){
           // Nutzer existiert nicht mehr → abmelden
           doLogout();
@@ -780,11 +787,37 @@ function renderUserList(){
       <div>
         <div class="user-name">${u.name}</div>
         <div class="user-pass">PW: ${u.pass||''}</div>
+        <label style="display:inline-flex;align-items:center;gap:6px;margin-top:6px;
+                      font-size:12px;font-weight:600;color:#8A909B;cursor:pointer">
+          <input type="checkbox" ${u.isAdmin?'checked':''} onchange="toggleAdmin('${k}',this.checked)"
+                 style="width:15px;height:15px;accent-color:#c8102e;cursor:pointer">
+          Administrator
+        </label>
       </div>
       <div class="perm-grid">${pills}</div>
       <button class="user-del" onclick="delUser('${k}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
     </div>`;
   }).join('');
+}
+
+// Administrator-Kennzeichen. Davon haengt ab, wer in der Dispo-Zentrale die
+// Tab-Verwaltung sieht und wer im Cockpit die Benutzerverwaltung oeffnen darf.
+function toggleAdmin(userKey, an){
+  const u = allUsers[userKey];
+  if(!u) return;
+  if(UR) UR.child(userKey).update({isAdmin: !!an});
+  allUsers[userKey].isAdmin = !!an;
+  // Falls der angemeldete Nutzer betroffen ist, Anmeldung sofort nachziehen
+  if(currentUser && currentUser.name === u.name){
+    currentUser.isAdmin = !!an;
+    try{
+      const roh = JSON.parse(localStorage.getItem('cockpit_user')||'{}');
+      roh.isAdmin = !!an;
+      localStorage.setItem('cockpit_user', JSON.stringify(roh));
+    }catch(e){}
+    const ab = document.getElementById('admin-btn');
+    if(ab) ab.style.display = an ? 'inline-flex' : 'none';
+  }
 }
 
 function togglePerm(userKey, permId, pill){
