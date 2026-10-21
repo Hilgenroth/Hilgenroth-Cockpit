@@ -1701,12 +1701,7 @@ td strong{color:var(--ink);font-weight:700}
 <div class="mb" id="tabAdminModal" onclick="if(event.target===this)closeTabAdmin()">
   <div class="modal">
     <h2>⚙ Tab-Verwaltung</h2>
-    <p>Pro Benutzer festlegen, welche Tabs sichtbar sind. Die Einstellung gilt sofort auf
-       <b>allen</b> Geräten dieses Benutzers. Mindestens ein Tab muss aktiv bleiben.</p>
-    <label style="display:block;font-size:12px;font-weight:700;color:var(--ink3);margin-bottom:5px">BENUTZER</label>
-    <select id="tabAdminUser" onchange="wechsleTabBenutzer(this.value)"
-      style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--rs);
-             font-size:14px;font-weight:600;margin-bottom:14px;background:var(--surf);color:var(--ink)"></select>
+    <p>Tabs ein- oder ausblenden. Die Einstellungen bleiben auf diesem Gerät gespeichert. Mindestens ein Tab muss immer aktiv sein.</p>
     <div id="tabAdminList" style="border:1px solid var(--line);border-radius:var(--rs);overflow:hidden;margin-bottom:16px"></div>
     <div class="modal-a">
       <button class="btn-s" onclick="resetTabAdmin()">Alle einblenden</button>
@@ -2611,7 +2606,7 @@ function renderTags(key){
 function clearTags(prefix){['V','D'].forEach(s=>{tags[prefix+s]=[];renderTags(prefix+s)});if(prefix==='F'){tags.FT=[];renderTags('FT');if(typeof ffResetTyp==='function')ffResetTyp();}}
 
 // ===== FREMDFIRMEN: FAHRZEUG-TYP MIT ANZAHL =====
-const FF_FZG=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
+const FF_FZG=['3A-Zug','2A','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
 let ffTypZeilen=[];
 function ffRenderTyp(){
   const list=document.getElementById('ffTypList');
@@ -2691,7 +2686,7 @@ function tourKurz(t){
 function stRenderFzg(){
   const list=document.getElementById('stFzgList');
   if(!list)return;
-  const FZG=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
+  const FZG=['3A-Zug','2A','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
   const vOpts='<option value="">+ Kennzeichen…</option>'+fleet.vehicles.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
   const dOpts='<option value="">+ Fahrer…</option>'+fleet.drivers.map(d=>'<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
 
@@ -3328,7 +3323,7 @@ window.ovInlineEdit=function(id,type){
   const modal=document.createElement('div');
   modal.id='oe-modal';
   modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;overflow-y:auto;padding:20px;box-sizing:border-box';
-  const FZG=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
+  const FZG=['3A-Zug','2A','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
   const smOpts=schachtmeister.map(s=>`<option value="${esc(s.name)}"${s.name===o.schachtmeister?' selected':''}>${esc(s.name)}</option>`).join('');
   const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name||b.addr||'')}</option>`).join('');
   const matOpts=['Asphalt','Strassenbaustoffe','Beton'].map(m=>`<label><input type="radio" name="oe_material" value="${m}"${(o.material||'')===''+m?' checked':''}> ${m==='Strassenbaustoffe'?'Straßenbaustoffe':m}</label>`).join('');
@@ -5320,34 +5315,15 @@ window.copyNtfyKanal=function(kanal){
 // ===== TAB-VERWALTUNG (Admin, PIN 1999) =====
 const TAB_ADMIN_PIN='1999';
 // Benutzername aus URL-Parameter (?user=Name) oder sessionStorage, sonst 'default'
-// cockpit_user liegt als JSON vor ({name, pass, perms}). Frueher wurde der
-// komplette JSON-Text als Schluessel benutzt - dadurch passte nie etwas zusammen.
-function _leseBenutzer(){
+const _tabUser=(()=>{
   try{
     const p=new URLSearchParams(window.location.search).get('user');
-    if(p)return p.trim();
-    const roh=sessionStorage.getItem('cockpit_user')||sessionStorage.getItem('user')
-             ||localStorage.getItem('cockpit_user')||'';
-    if(!roh)return '';
-    if(roh.charAt(0)==='{'){
-      try{ const o=JSON.parse(roh); return (o&&o.name?String(o.name):'').trim(); }catch(e){ return ''; }
-    }
-    return roh.trim();
-  }catch(e){ return ''; }
-}
-// Firebase verbietet . # $ [ ] / in Schluesseln - Benutzernamen sind aber
-// E-Mail-Adressen. Deshalb wird daraus ein sauberer Schluessel gebildet.
-function tabSchluessel(name){
-  const k=String(name||'').toLowerCase().trim().replace(/[.#$\[\]\/]/g,'_');
-  return k||'default';
-}
-const _tabUserName=_leseBenutzer();
-const _tabUser=tabSchluessel(_tabUserName);
+    if(p)return p.trim().toLowerCase();
+    const s=sessionStorage.getItem('cockpit_user')||sessionStorage.getItem('user')||localStorage.getItem('cockpit_user')||'';
+    return s.trim().toLowerCase()||'default';
+  }catch(e){return 'default';}
+})();
 const _tabKey='tabSettings_'+_tabUser;
-// Zentrale Ablage: gilt geraeteuebergreifend fuer diesen Benutzer
-const tabRechteRef = (typeof db!=='undefined' && db) ? db.ref('cockpit/tabrechte') : null;
-let _tabRechte = {};            // {benutzer: {tabId:false, ...}}
-let _tabAdminZiel = _tabUser;   // welcher Benutzer im Dialog bearbeitet wird
 const ALL_TABS=[
   {id:'fremd',     label:'Fremdfirmen'},
   {id:'sundern',   label:'Sundern'},
@@ -5362,29 +5338,10 @@ const ALL_TABS=[
   {id:'ffchat',    label:'Chat'},
 ];
 let _tabAdminUnlocked=false;
-function getTabSettings(benutzer){
-  const b=tabSchluessel(benutzer||_tabUser);
-  if(_tabRechte && _tabRechte[b]) return Object.assign({}, _tabRechte[b]);
-  // Notnagel, solange die Datenbank noch nicht geantwortet hat
-  try{ const v=localStorage.getItem('tabSettings_'+b); return v?JSON.parse(v):{}; }catch(e){ return {}; }
+function getTabSettings(){
+  try{const v=localStorage.getItem(_tabKey);return v?JSON.parse(v):{};} catch(e){return {};}
 }
-function saveTabSettings(s, benutzer){
-  const b=tabSchluessel(benutzer||_tabUser);
-  _tabRechte[b]=s;
-  try{ localStorage.setItem('tabSettings_'+b, JSON.stringify(s)); }catch(e){}
-  if(!tabRechteRef) return;
-  try{
-    // nur echte Ausblendungen schreiben, Klarnamen fuer die Auswahlliste mitgeben
-    const rein={}; Object.keys(s).forEach(function(k){ if(k!=='_name'&&s[k]===false) rein[k]=false; });
-    const name=s._name||_tabAnzeige[b]||b;
-    if(Object.keys(rein).length) rein._name=name;
-    tabRechteRef.child(b).set(Object.keys(rein).length?rein:null)
-      .then(function(){ showToast('Gespeichert für '+name,'success'); })
-      .catch(function(e){ showToast('Nicht gespeichert: '+e.message,'amber'); });
-  }catch(e){
-    showToast('Nicht gespeichert: '+e.message,'amber');
-  }
-}
+function saveTabSettings(s){ try{localStorage.setItem(_tabKey,JSON.stringify(s));}catch(e){} }
 
 function applyTabSettings(){
   const s=getTabSettings();
@@ -5405,59 +5362,10 @@ function applyTabSettings(){
     if(first)first.click();
   }
 }
-// Erst nach dem Durchlauf des ganzen Skripts ausfuehren: der Tabwechsel ruft
-// Funktionen auf, deren Variablen weiter unten erst angelegt werden.
-setTimeout(applyTabSettings,0);
-
-// Aenderungen sofort uebernehmen - auch wenn sie von einem anderen Geraet kommen
-if(tabRechteRef){
-  tabRechteRef.on('value', function(snap){
-    _tabRechte = snap.val() || {};
-    try{ localStorage.setItem('tabSettings_'+_tabUser,
-         JSON.stringify(_tabRechte[_tabUser]||{})); }catch(e){}
-    setTimeout(applyTabSettings,0);
-    if(document.getElementById('tabAdminModal')?.classList.contains('show')) renderTabAdminList();
-  }, function(e){ console.warn('Tab-Rechte:', e.message); });
-}
-
-// Benutzerliste aus dem Cockpit, damit man jeden Kollegen einstellen kann
-let _tabBenutzer=[];
-let _tabAnzeige={};   // Schluessel -> Klarname
-if(typeof db!=='undefined' && db){
-  db.ref('cockpit/users').on('value', function(snap){
-    const v=snap.val()||{};
-    _tabBenutzer=Object.values(v).filter(u=>u&&u.name).map(u=>String(u.name));
-    fuelleTabBenutzer();
-  }, function(e){ console.warn('Benutzerliste:', e.message); });
-}
-
-function fuelleTabBenutzer(){
-  const sel=document.getElementById('tabAdminUser');
-  if(!sel)return;
-  // Schluessel -> Klarname. Aus den Cockpit-Nutzern, dem angemeldeten Nutzer und
-  // allem, wofuer schon etwas gespeichert ist.
-  _tabAnzeige={};
-  Object.keys(_tabRechte).forEach(function(k){
-    _tabAnzeige[k]=(_tabRechte[k]&&_tabRechte[k]._name)||k;
-  });
-  _tabBenutzer.concat(_tabUserName?[_tabUserName]:[]).filter(Boolean).forEach(function(n){
-    _tabAnzeige[tabSchluessel(n)]=String(n);
-  });
-  const keys=Object.keys(_tabAnzeige)
-    .sort((a,b)=>_tabAnzeige[a].localeCompare(_tabAnzeige[b],'de'));
-  sel.innerHTML=keys.map(function(k){
-    const aus=ALL_TABS.filter(t=>(_tabRechte[k]||{})[t.id]===false).length;
-    return '<option value="'+esc(k)+'"'+(k===_tabAdminZiel?' selected':'')+'>'+
-           esc(_tabAnzeige[k])+(aus?' \u00b7 '+aus+' ausgeblendet':' \u00b7 alle sichtbar')+'</option>';
-  }).join('');
-  if(keys.indexOf(_tabAdminZiel)<0 && keys.length){ _tabAdminZiel=keys[0]; }
-  sel.value=_tabAdminZiel;
-}
-
-window.wechsleTabBenutzer=function(key){ _tabAdminZiel=key||_tabUser; renderTabAdminList(); };
+applyTabSettings();
 
 function renderTabAdminList(){
-  const s=getTabSettings(_tabAdminZiel);
+  const s=getTabSettings();
   const list=document.getElementById('tabAdminList');
   if(!list)return;
   list.innerHTML=ALL_TABS.map(t=>{
@@ -5473,34 +5381,28 @@ function renderTabAdminList(){
   }).join('');
 }
 window.toggleTab=function(tabId,show){
-  const s=getTabSettings(_tabAdminZiel);
+  const s=getTabSettings();
   const visibleAfter=ALL_TABS.filter(t=>t.id!==tabId?s[t.id]!==false:show);
   if(visibleAfter.length===0){showToast('Mindestens ein Tab muss sichtbar bleiben','amber');renderTabAdminList();return;}
   s[tabId]=show;
-  s._name=_tabAnzeige[_tabAdminZiel]||_tabAdminZiel;
-  saveTabSettings(s,_tabAdminZiel);
+  saveTabSettings(s);
   applyTabSettings();
   renderTabAdminList();
-  fuelleTabBenutzer();
 };
-// Nur Administratoren duerfen die Sichtbarkeit aendern - sonst koennte sich
-// jeder seine ausgeblendeten Tabs selbst wieder freischalten.
 window.openTabAdmin=function(){
   if(!_tabAdminUnlocked){
     const pin=prompt('Admin-PIN eingeben:');
     if(pin!==TAB_ADMIN_PIN){showToast('Falscher PIN','amber');return;}
     _tabAdminUnlocked=true;
   }
-  fuelleTabBenutzer();
   renderTabAdminList();
   document.getElementById('tabAdminModal').classList.add('show');
 };
 window.closeTabAdmin=function(){ document.getElementById('tabAdminModal').classList.remove('show'); };
 window.resetTabAdmin=function(){
-  saveTabSettings({},_tabAdminZiel);
+  saveTabSettings({});
   applyTabSettings();
   renderTabAdminList();
-  fuelleTabBenutzer();
   showToast('Alle Tabs wieder eingeblendet','success');
 };
 
@@ -5589,7 +5491,7 @@ window.printOv=function(){
 const fzgPlanRef=db.ref('fahrzeugplan');
 let fzgPlan={};               // { 'YYYY-MM-DD': { smKey: [ {typ,anz,vehicles,drivers,notiz} ] } }
 let fbDate=todayISO;
-const FB_TYPEN=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Radlader','Sonstiges'];
+const FB_TYPEN=['3A-Zug','2A','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Radlader','Sonstiges'];
 
 function fbKey(name){ return String(name||'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'')||'ohne'; }
 function fbNorm(v){
