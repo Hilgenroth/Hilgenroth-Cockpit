@@ -466,6 +466,8 @@ td strong{color:var(--ink);font-weight:700}
 .fb-types{display:flex;flex-wrap:wrap;gap:5px;padding:12px 18px 0}
 .fb-type{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;border-radius:100px;padding:3px 10px;background:var(--blu-s);color:var(--blu);white-space:nowrap}
 .fb-type i{font-style:normal;background:var(--blu);color:#fff;border-radius:100px;padding:0 6px;font-size:10px}
+.fb-type.bst{background:var(--grn-s);color:var(--grn);max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fb-feld select optgroup{font-weight:800}
 .fb-body{padding:12px 18px 16px}
 .fb-pos{border:1px solid var(--line);border-radius:var(--rs);margin-top:10px;overflow:hidden}
 .fb-pos-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:8px 12px;background:var(--surf);border-bottom:1px solid var(--line)}
@@ -480,7 +482,26 @@ td strong{color:var(--ink);font-weight:700}
 .fb-dispo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:8px 12px;border-radius:var(--rs);background:var(--surf);font-size:11px;font-weight:700;color:var(--ink3)}
 .fb-dispo .ok{color:var(--grn)}
 .fb-dispo .warn{color:var(--amb)}
-.fb-none{padding:16px 18px;font-size:12px;color:var(--ink3);font-weight:600}
+.fb-none{padding:14px 2px;font-size:12px;color:var(--ink3);font-weight:600;text-align:center;border:1px dashed var(--line2);border-radius:var(--rs)}
+.fb-zeile{border:1px solid var(--line);border-radius:var(--rs);padding:9px 10px;margin-bottom:9px;background:var(--surf)}
+.fb-z1{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.fb-z1 select{flex:1;height:38px;line-height:1.4;font-size:13px;font-weight:700}
+.fb-z1 input{width:56px;text-align:center;padding:6px;border:1px solid var(--line);border-radius:var(--rs);font-size:13px;font-weight:700;font-family:inherit;background:var(--bg-e)}
+.fb-zx{font-size:11px;color:var(--ink3);font-weight:700}
+.fb-z1 button{background:none;border:none;color:var(--brand);font-size:19px;font-weight:700;cursor:pointer;line-height:1;padding:2px 4px}
+.fb-z2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fb-feld label{display:block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:3px}
+.fb-feld select,.fb-feld input{width:100%;font-size:12px;box-sizing:border-box}
+.fb-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px}
+.fb-chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px;color:#fff}
+.fb-chip.kz{background:var(--ink)}
+.fb-chip.fa{background:var(--brand)}
+.fb-chip button{background:none;border:none;color:#fff;font-size:13px;line-height:1;cursor:pointer;padding:0;margin-left:1px}
+.fb-box{display:none;position:absolute;z-index:60;left:0;right:0;top:100%;background:var(--bg-e);border:1px solid var(--line);border-radius:var(--rs);max-height:170px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.14)}
+.fb-notiz{width:100%;box-sizing:border-box;margin-top:8px;font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--rs);font-family:inherit;background:var(--bg-e)}
+.fb-add{width:100%;margin-top:4px;padding:9px;background:none;border:1px dashed var(--line2);border-radius:var(--rs);color:var(--blu);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+.fb-add:hover{background:var(--blu-s);border-color:var(--blu)}
+@media(max-width:560px){.fb-z2{grid-template-columns:1fr}}
 .fb-empty{text-align:center;padding:60px 20px;color:var(--ink3)}
 .fb-empty .ico{font-size:46px;opacity:.3;margin-bottom:14px}
 .fb-empty h3{font-size:15px;font-weight:700;color:var(--ink2);margin-bottom:4px}
@@ -1519,21 +1540,18 @@ td strong{color:var(--ink);font-weight:700}
   <div class="fb-hero">
     <div class="fb-hl">
       <div class="fb-ht">Fahrzeugbestellung</div>
-      <div class="fb-hd" id="fbTitel">—</div>
-      <div class="fb-hsub" id="fbSub">Welche Fahrzeuge die Schachtmeister angefordert haben</div>
+      <div class="fb-hd" id="fbTitel">&mdash;</div>
+      <div class="fb-hsub" id="fbSub">Fahrzeuge, Kennzeichen und Fahrer je Schachtmeister festlegen</div>
     </div>
     <div class="fb-hr">
-      <button class="nb nb-i" onclick="fbNav(-1)" title="Tag zurück"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="nb nb-i" onclick="fbNav(-1)" title="Tag zur&uuml;ck"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
       <button class="nb pri" onclick="fbNav('today')">Heute</button>
       <button class="nb" onclick="fbNav('tomorrow')">Morgen</button>
       <button class="nb nb-i" onclick="fbNav(1)" title="Tag vor"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       <input type="date" class="ndp" id="fbDate" onchange="fbSetDate(this.value)">
-      <select id="fbModus" class="ndp" onchange="renderFzgBest()" style="width:auto;font-weight:700">
-        <option value="tag">Nur dieser Tag</option>
-        <option value="offen">Alle offenen Bestellungen</option>
-      </select>
-      <button class="nb" onclick="fbExport()">⬇ Excel</button>
-      <button class="nb" onclick="printOv()">🖨 Drucken</button>
+      <button class="nb" onclick="fbVortag()" title="Die Fahrzeugplanung des Vortags auf diesen Tag kopieren" style="background:var(--grn-s);color:var(--grn);border-color:var(--grn)">&#128203; Vortag &uuml;bernehmen</button>
+      <button class="nb" onclick="fbExport()">&#11015; Excel</button>
+      <button class="nb" onclick="printOv()">&#128424; Drucken</button>
       <div class="fb-total"><b id="fbTotal">0</b><span>Fahrzeuge<br>gesamt</span></div>
     </div>
   </div>
@@ -2147,6 +2165,17 @@ authReady.then(()=>{
     renderFahrzeuge();
   });
 
+  fzgPlanRef.on('value',s=>{
+    const v=s.val()||{};
+    fzgPlan=(v&&typeof v==='object')?v:{};
+    if(typeof fbUpdateBadge==='function')fbUpdateBadge();
+    // nicht neu zeichnen, solange jemand in einem Feld tippt
+    if(activeTab()==='fzgbest'){
+      const ae=document.activeElement;
+      if(!(ae&&document.getElementById('fbGrid')&&document.getElementById('fbGrid').contains(ae)))renderFzgBest();
+      else fbRefreshKopf();
+    }
+  });
   bestRef.on('value',s=>{
     const v=s.val()||{};
     const neueIds=Object.keys(v).filter(id=>!_bestKnownIds.has(id));
@@ -2158,8 +2187,7 @@ authReady.then(()=>{
     bestellungen=v;
     updateBestBadge();
     if(activeTab()==='bestellungen')renderBest();
-    if(typeof fbUpdateBadge==='function')fbUpdateBadge();
-    if(activeTab()==='fzgbest')renderFzgBest();
+    if(activeTab()==='fzgbest'&&typeof fbRefreshKopf==='function')fbRefreshKopf();
   });
 }).catch(()=>{});
 
@@ -5450,8 +5478,33 @@ window.printOv=function(){
 })();
 
 
-// ===== FAHRZEUGBESTELLUNG =====
+// ===== FAHRZEUGBESTELLUNG (eigene Planung, unabhaengig vom Bestell-Terminal) =====
+const fzgPlanRef=db.ref('fahrzeugplan');
+let fzgPlan={};               // { 'YYYY-MM-DD': { smKey: [ {typ,anz,vehicles,drivers,notiz} ] } }
 let fbDate=todayISO;
+const FB_TYPEN=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Radlader','Sonstiges'];
+
+function fbKey(name){ return String(name||'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'')||'ohne'; }
+function fbNorm(v){
+  if(v&&!Array.isArray(v)&&typeof v==='object')v=Object.values(v);
+  if(!Array.isArray(v))return [];
+  return v.filter(Boolean).map(z=>({
+    typ:z.typ||'', anz:parseInt(z.anz)||1, bstNr:z.bstNr!=null?String(z.bstNr):'',
+    vehicles:Array.isArray(z.vehicles)?z.vehicles:(z.vehicles&&typeof z.vehicles==='object'?Object.values(z.vehicles):[]),
+    drivers:Array.isArray(z.drivers)?z.drivers:(z.drivers&&typeof z.drivers==='object'?Object.values(z.drivers):[]),
+    notiz:z.notiz||''
+  }));
+}
+function fbTag(d){ const t=fzgPlan[d||fbDate]||{}; return t; }
+function fbZeilen(name){ return fbNorm(fbTag()[fbKey(name)]); }
+function fbSave(name,zeilen){
+  const key=fbKey(name);
+  const tag=fzgPlan[fbDate]||(fzgPlan[fbDate]={});
+  tag[key]=zeilen;
+  fzgPlanRef.child(fbDate).child(key).set(zeilen.length?zeilen:null)
+    .catch(e=>showToast('Fehler beim Speichern: '+e.message,'amber'));
+}
+
 window.fbSetDate=function(v){ if(v){fbDate=v;renderFzgBest();} };
 window.fbNav=function(d){
   if(d==='today')fbDate=todayISO;
@@ -5460,157 +5513,217 @@ window.fbNav=function(d){
   const dp=document.getElementById('fbDate'); if(dp)dp.value=fbDate;
   renderFzgBest();
 };
-// Fahrzeugzeilen einer Bestellung – mit Rückfall auf den Text "3× 3A-Zug, 4× 3A"
-function fbFzgListe(b){
-  let d=b&&b.fahrzeugDetails;
-  if(d&&!Array.isArray(d)&&typeof d==='object')d=Object.values(d);
-  if(Array.isArray(d)&&d.length)
-    return d.filter(z=>z&&z.typ).map(z=>({typ:z.typ,anz:parseInt(z.anz)||1,fahrer:z.fahrer||'',aufgabe:z.aufgabe||''}));
-  const txt=(b&&b.fahrzeugtyp)||'';
-  if(!txt)return [];
-  return String(txt).split(',').map(t=>t.trim()).filter(Boolean).map(t=>{
-    const m=t.match(/^(\d+)\s*[×x]\s*(.+)$/);
-    return m?{typ:m[2].trim(),anz:parseInt(m[1])||1,fahrer:'',aufgabe:''}:{typ:t,anz:1,fahrer:'',aufgabe:''};
-  });
+window.fbVortag=function(){
+  const v=new Date(fbDate+'T12:00:00'); v.setDate(v.getDate()-1);
+  const vd=v.toISOString().slice(0,10);
+  const quelle=fzgPlan[vd]||{};
+  const anz=Object.values(quelle).reduce((a,z)=>a+fbNorm(z).length,0);
+  if(!anz){showToast('Für den '+fmtDate(vd)+' ist nichts geplant','amber');return;}
+  if(!confirm('Fahrzeugplanung vom '+fmtDate(vd)+' auf den '+fmtDate(fbDate)+' übernehmen?\n\nBereits vorhandene Zeilen dieses Tages werden ersetzt.'))return;
+  const ziel={}; Object.entries(quelle).forEach(([k,v2])=>{const n=fbNorm(v2);if(n.length)ziel[k]=n;});
+  fzgPlan[fbDate]=ziel;
+  fzgPlanRef.child(fbDate).set(ziel)
+    .then(()=>{renderFzgBest();showToast(anz+' Zeile(n) übernommen','success');})
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
+
+// --- Zeilen bearbeiten ---
+window.fbAddZeile=function(name){
+  const z=fbZeilen(name); z.push({typ:'',anz:1,bstNr:fbStdBst(name),vehicles:[],drivers:[],notiz:''});
+  fbSave(name,z); renderFzgBest();
+};
+window.fbRemZeile=function(name,i){ const z=fbZeilen(name); z.splice(i,1); fbSave(name,z); renderFzgBest(); };
+// Standard-Baustelle: die erste dem Schachtmeister zugeordnete
+function fbSmBst(name){
+  const sm=schachtmeister.find(s=>s.name===name);
+  let b=sm&&sm.baustellen;
+  if(b&&!Array.isArray(b)&&typeof b==='object')b=Object.values(b);
+  return Array.isArray(b)?b.map(String):[];
 }
-function fbAnz(b){ return fbFzgListe(b).reduce((a,z)=>a+z.anz,0); }
-// Bestellungen der Schachtmeister (Fremdfirmen-Eingänge haben keinen SM)
-function fbQuelle(){
-  const modus=(document.getElementById('fbModus')||{}).value||'tag';
-  return bestList().filter(b=>b.typ!=='fremd'&&fbFzgListe(b).length)
-    .filter(b=>modus==='offen'?!b.erledigt:String(b.datum||'')===fbDate)
-    .sort((a,b)=>String(a.uhrzeit||'').localeCompare(String(b.uhrzeit||'')));
+function fbStdBst(name){ const b=fbSmBst(name); return b.length?String(b[0]):''; }
+function fbBstLabel(nr){
+  const b=baustellen.find(x=>String(x.nr)===String(nr));
+  if(!b)return nr?String(nr):'';
+  return b.nr+(b.ks?' · KS '+b.ks:'')+' – '+(b.name||b.addr||'');
 }
-function fbStatus(b){
-  if(b.erledigt)return '<span class="best-badge bd-grn">Erledigt</span>';
-  if(b.beauftragt)return '<span class="best-badge bd-brand">Beauftragt</span>';
-  if(b.uebernommen)return '<span class="best-badge bd-blu">Übernommen</span>';
-  return '<span class="best-badge">Offen</span>';
+// Liste kommt immer frisch aus "Baustellen verwalten" bzw. der Schachtmeister-Zuordnung
+function fbBstOpts(name,cur){
+  const eigene=fbSmBst(name);
+  const vorhanden=new Set(baustellen.map(b=>String(b.nr)));
+  let o='<option value="">— Baustelle wählen —</option>';
+  const mk=(nr,stern)=>'<option value="'+esc(String(nr))+'"'+(String(cur)===String(nr)?' selected':'')+'>'
+    +(stern?'⭐ ':'')+esc(fbBstLabel(nr))+'</option>';
+  const zug=eigene.filter(nr=>vorhanden.has(String(nr)));
+  if(zug.length){
+    o+='<optgroup label="Baustellen dieses Schachtmeisters">'+zug.map(nr=>mk(nr,true)).join('')+'</optgroup>';
+    const rest=baustellen.filter(b=>!zug.includes(String(b.nr)));
+    if(rest.length)o+='<optgroup label="Alle übrigen Baustellen">'+rest.map(b=>mk(b.nr,false)).join('')+'</optgroup>';
+  } else {
+    o+=baustellen.map(b=>mk(b.nr,false)).join('');
+  }
+  // Baustelle wurde inzwischen gelöscht oder umbenannt – Wert trotzdem halten
+  if(cur&&!vorhanden.has(String(cur)))o+='<option value="'+esc(String(cur))+'" selected>'+esc(String(cur))+' (nicht mehr in der Liste)</option>';
+  return o;
 }
-// bereits disponierte Fahrzeuge eines Schachtmeisters an diesem Tag
-function fbDisponiert(smName){
-  return data.sundern.filter(o=>o.datum===fbDate&&o.schachtmeister===smName)
-    .reduce((sum,o)=>{
-      let d=o.fahrzeugDetails;
-      if(d&&!Array.isArray(d)&&typeof d==='object')d=Object.values(d);
-      if(Array.isArray(d)&&d.length)return sum+d.reduce((a,z)=>a+(parseInt(z.anz)||1),0);
-      return sum+(parseInt(o.anzahl)||0);
-    },0);
+window.fbSetBst=function(name,i,v){ const z=fbZeilen(name); if(!z[i])return; z[i].bstNr=v||''; fbSave(name,z); renderFzgBest(); };
+window.fbSetTyp=function(name,i,v){ const z=fbZeilen(name); if(!z[i])return; z[i].typ=v; fbSave(name,z); renderFzgBest(); };
+window.fbSetAnz=function(name,i,v){ const z=fbZeilen(name); if(!z[i])return; z[i].anz=parseInt(v)||1; fbSave(name,z); fbRefreshKopf(); };
+window.fbSetNotiz=function(name,i,v){ const z=fbZeilen(name); if(!z[i])return; z[i].notiz=v; fbSave(name,z); };
+window.fbAddKz=function(name,i,v){ if(!v)return; const z=fbZeilen(name); if(!z[i])return;
+  if(!z[i].vehicles.includes(v))z[i].vehicles.push(v); fbSave(name,z); renderFzgBest(); };
+window.fbRemKz=function(name,i,k){ const z=fbZeilen(name); if(!z[i])return; z[i].vehicles.splice(k,1); fbSave(name,z); renderFzgBest(); };
+window.fbRemFahrer=function(name,i,k){ const z=fbZeilen(name); if(!z[i])return; z[i].drivers.splice(k,1); fbSave(name,z); renderFzgBest(); };
+window.fbFahrerSuche=function(name,i,q){
+  const box=document.getElementById('fbFbox_'+fbKey(name)+'_'+i);
+  if(!box)return;
+  const liste=(fleet.drivers||[]);
+  const gefiltert=q.trim()?liste.filter(d=>d.toLowerCase().includes(q.toLowerCase())):liste;
+  box.innerHTML='';
+  const add=(val,frei)=>{
+    const d=document.createElement('div');
+    d.style.cssText='padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;cursor:pointer'+(frei?';color:var(--ink3);font-weight:500':'');
+    d.textContent=frei?('✎ „'+val+'“ übernehmen'):val;
+    d.addEventListener('pointerdown',e=>{
+      e.preventDefault(); e.stopPropagation();
+      const z=fbZeilen(name); if(!z[i])return;
+      if(!z[i].drivers.includes(val))z[i].drivers.push(val);
+      fbSave(name,z); renderFzgBest();
+    });
+    box.appendChild(d);
+  };
+  gefiltert.forEach(d=>add(d,false));
+  if(q.trim()&&!liste.some(d=>d.toLowerCase()===q.trim().toLowerCase()))add(q.trim(),true);
+  box.style.display=(gefiltert.length||q.trim())?'block':'none';
+};
+
+// --- Zaehlungen ---
+function fbAnzSM(name){ return fbZeilen(name).filter(z=>z.typ).reduce((a,z)=>a+z.anz,0); }
+function fbTypenSM(name){
+  const t={}; fbZeilen(name).filter(z=>z.typ).forEach(z=>{t[z.typ]=(t[z.typ]||0)+z.anz;}); return t;
 }
 function fbUpdateBadge(){
-  const el=document.getElementById('cntFzgBest');
-  if(!el)return;
-  const heute=bestList().filter(b=>b.typ!=='fremd'&&!b.erledigt&&String(b.datum||'')===todayISO);
-  el.textContent=heute.reduce((a,b)=>a+fbAnz(b),0);
+  const el=document.getElementById('cntFzgBest'); if(!el)return;
+  const tag=fzgPlan[todayISO]||{};
+  el.textContent=Object.values(tag).reduce((a,v)=>a+fbNorm(v).filter(z=>z.typ).reduce((b,z)=>b+z.anz,0),0);
 }
-function renderFzgBest(){
-  const grid=document.getElementById('fbGrid'); if(!grid)return;
-  const dp=document.getElementById('fbDate'); if(dp&&!dp.value)dp.value=fbDate;
-  const modus=(document.getElementById('fbModus')||{}).value||'tag';
-  const liste=fbQuelle();
-
-  // Kopf
+function fbRefreshKopf(){
+  const alle=schachtmeister.map(s=>s.name);
+  const gesamt=alle.reduce((a,n)=>a+fbAnzSM(n),0);
+  const tEl=document.getElementById('fbTotal'); if(tEl)tEl.textContent=gesamt;
+  const proTyp={};
+  alle.forEach(n=>Object.entries(fbTypenSM(n)).forEach(([t,c])=>{proTyp[t]=(proTyp[t]||0)+c;}));
+  const sumEl=document.getElementById('fbSum');
+  if(sumEl)sumEl.innerHTML=Object.entries(proTyp).sort((a,b)=>b[1]-a[1])
+    .map(([t,n])=>'<span class="fb-sum-chip'+(/zug/i.test(t)?' is-zug':'')+'">'+esc(t)+'<b>'+n+'</b></span>').join('');
+  const mitFzg=alle.filter(n=>fbAnzSM(n)>0).length;
   const dt=new Date(fbDate+'T12:00:00');
   const wd=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt.getDay()];
-  document.getElementById('fbTitel').textContent=modus==='offen'?'Alle offenen Bestellungen':fmtDate(fbDate);
-  document.getElementById('fbSub').textContent=modus==='offen'
-    ? 'Unabhängig vom Datum · '+liste.length+' Bestellung'+(liste.length===1?'':'en')
-    : wd+' · '+liste.length+' Bestellung'+(liste.length===1?'':'en')+' mit Fahrzeugen';
-  const gesamt=liste.reduce((a,b)=>a+fbAnz(b),0);
-  document.getElementById('fbTotal').textContent=gesamt;
+  const tt=document.getElementById('fbTitel'); if(tt)tt.textContent=fmtDate(fbDate);
+  const sb=document.getElementById('fbSub');
+  if(sb)sb.textContent=wd+' · '+mitFzg+' von '+alle.length+' Schachtmeistern verplant';
+  fbUpdateBadge();
+}
 
-  // Summen je Fahrzeugtyp
-  const proTyp={};
-  liste.forEach(b=>fbFzgListe(b).forEach(z=>{proTyp[z.typ]=(proTyp[z.typ]||0)+z.anz;}));
-  const sumEl=document.getElementById('fbSum');
-  sumEl.innerHTML=Object.keys(proTyp).length
-    ? Object.entries(proTyp).sort((a,b)=>b[1]-a[1])
-        .map(([t,n])=>'<span class="fb-sum-chip'+(/zug/i.test(t)?' is-zug':'')+'">'+esc(t)+'<b>'+n+'</b></span>').join('')
-    : '';
+function renderFzgBest(){
+  const grid=document.getElementById('fbGrid'); if(!grid)return;
+  const dp=document.getElementById('fbDate'); if(dp)dp.value=fbDate;
 
-  if(!liste.length){
-    grid.innerHTML='<div class="fb-empty"><div class="ico">🚛</div><h3>Keine Fahrzeugbestellungen</h3>'
-      +'<div style="font-size:12px">'+(modus==='offen'?'Aktuell ist nichts offen.':'Für '+fmtDate(fbDate)+' hat kein Schachtmeister Fahrzeuge angefordert.')+'</div></div>';
-    fbUpdateBadge();
-    return;
+  if(!schachtmeister.length){
+    grid.innerHTML='<div class="fb-empty"><div class="ico">👷</div><h3>Keine Schachtmeister angelegt</h3>'
+      +'<div style="font-size:12px">Lege sie oben über „Schachtmeister verwalten“ an.</div></div>';
+    fbRefreshKopf(); return;
   }
 
-  // nach Schachtmeister gruppieren – Reihenfolge wie in der Schachtmeister-Liste
-  const order=schachtmeister.map(s=>s.name);
-  const grp={};
-  liste.forEach(b=>{ const k=b.sm||'Ohne Schachtmeister'; (grp[k]=grp[k]||[]).push(b); });
-  const namen=Object.keys(grp).sort((a,b)=>{
-    const ia=order.indexOf(a)===-1?9999:order.indexOf(a);
-    const ib=order.indexOf(b)===-1?9999:order.indexOf(b);
-    return ia!==ib?ia-ib:a.localeCompare(b);
-  });
+  const kzOpts='<option value="">+ Kennzeichen…</option>'+(fleet.vehicles||[]).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
 
-  grid.innerHTML=namen.map(name=>{
-    const items=grp[name];
-    const smData=schachtmeister.find(s=>s.name===name);
-    const tel=(smData&&smData.phone)||items.find(b=>b.tel)?.tel||'';
-    const anzSM=items.reduce((a,b)=>a+fbAnz(b),0);
-    const typen={};
-    items.forEach(b=>fbFzgListe(b).forEach(z=>{typen[z.typ]=(typen[z.typ]||0)+z.anz;}));
-    const disp=modus==='offen'?null:fbDisponiert(name);
+  grid.innerHTML=schachtmeister.map(sm=>{
+    const name=sm.name, key=fbKey(name);
+    const zeilen=fbZeilen(name);
+    const anz=fbAnzSM(name);
+    const typen=fbTypenSM(name);
+    // Was der Schachtmeister selbst über das Terminal bestellt hat (nur als Hinweis)
+    const terminal=(typeof bestList==='function'?bestList():[])
+      .filter(b=>b.typ!=='fremd'&&b.sm===name&&String(b.datum||'')===fbDate&&!b.erledigt);
+    const tTxt=terminal.map(b=>b.fahrzeugtyp||'').filter(Boolean).join(', ');
 
-    return '<div class="fb-card">'
+    return '<div class="fb-card'+(anz?'':' leer')+'">'
       +'<div class="fb-ch"><div>'
         +'<div class="fb-name">'+esc(name)+'</div>'
-        +(tel?'<a class="fb-tel" href="tel:'+esc(tel)+'">📞 '+esc(tel)+'</a>':'')
-      +'</div><div class="fb-cnt"><b>'+anzSM+'</b><span>Fahrzeuge</span></div></div>'
-      +'<div class="fb-types">'+Object.entries(typen).sort((a,b)=>b[1]-a[1])
-        .map(([t,n])=>'<span class="fb-type">'+esc(t)+'<i>'+n+'</i></span>').join('')+'</div>'
+        +(sm.phone?'<a class="fb-tel" href="tel:'+esc(sm.phone)+'">📞 '+esc(sm.phone)+'</a>':'')
+      +'</div><div class="fb-cnt"><b>'+anz+'</b><span>Fahrzeuge</span></div></div>'
+      +(()=>{
+        const bst=[...new Set(zeilen.map(z=>z.bstNr).filter(Boolean))];
+        const chips=Object.entries(typen).sort((a,b)=>b[1]-a[1])
+          .map(([t,n])=>'<span class="fb-type">'+esc(t)+'<i>'+n+'</i></span>').join('')
+          +bst.map(nr=>{const b=baustellen.find(x=>String(x.nr)===String(nr));
+            return '<span class="fb-type bst" title="'+esc(fbBstLabel(nr))+'">🏗 '+esc(b?(b.name||b.addr||b.nr):nr)+'</span>';}).join('');
+        return chips?'<div class="fb-types">'+chips+'</div>':'';
+      })()
       +'<div class="fb-body">'
-      +items.map(b=>{
-          const zeilen=fbFzgListe(b);
-          return '<div class="fb-pos">'
-            +'<div class="fb-pos-h"><div>'
-              +'<div class="fb-pos-b">'+esc((b.bstNr?b.bstNr+' – ':'')+(b.bstName||'Ohne Baustelle'))+'</div>'
-              +'<div class="fb-pos-m">'+esc(fmtDatum(b.datum))+(b.uhrzeit?' · '+esc(b.uhrzeit):'')
-                +(b.material?' · '+esc(b.material):'')+(b.menge?' · '+esc(b.menge):'')+'</div>'
-            +'</div>'+fbStatus(b)+'</div>'
-            +zeilen.map(z=>'<div class="fb-fz">'
-                +'<b>'+esc(z.typ)+'</b>'
-                +'<span class="anz">'+z.anz+'×</span>'
-                +'<span class="mut" title="'+esc(z.fahrer||'')+'">'+(z.fahrer?esc(z.fahrer):'<span style="opacity:.5">kein Fahrer</span>')+'</span>'
-                +'<span class="mut task" title="'+esc(z.aufgabe||'')+'">'+(z.aufgabe?esc(z.aufgabe):'<span style="opacity:.5">—</span>')+'</span>'
-              +'</div>').join('')
-            +(b.bemerkung?'<div class="fb-fz" style="grid-template-columns:1fr"><span class="mut" style="white-space:normal">📝 '+esc(b.bemerkung)+'</span></div>':'')
-            +'</div>';
-        }).join('')
-      +(disp!==null?'<div class="fb-dispo"><span>Bestellt '+anzSM+' · disponiert '+disp+'</span>'
-          +(disp>=anzSM?'<span class="ok">✓ vollständig verplant</span>'
-            :'<span class="warn">⚠ '+(anzSM-disp)+' noch offen</span>')+'</div>':'')
+      +(zeilen.length?zeilen.map((z,i)=>
+          '<div class="fb-zeile">'
+          +'<div class="fb-z1">'
+            +'<select onchange="fbSetTyp(\''+esc(name)+'\','+i+',this.value)">'
+              +'<option value="">— Fahrzeugtyp —</option>'
+              +FB_TYPEN.map(t=>'<option value="'+t+'"'+(z.typ===t?' selected':'')+'>'+t+'</option>').join('')
+            +'</select>'
+            +'<input type="number" min="1" max="99" value="'+esc(z.anz)+'" title="Anzahl" oninput="fbSetAnz(\''+esc(name)+'\','+i+',this.value)">'
+            +'<span class="fb-zx">Fzg.</span>'
+            +'<button type="button" title="Zeile entfernen" onclick="fbRemZeile(\''+esc(name)+'\','+i+')">×</button>'
+          +'</div>'
+          +'<div class="fb-feld" style="margin-bottom:8px"><label>Baustelle</label>'
+            +'<select onchange="fbSetBst(\''+esc(name)+'\','+i+',this.value)">'+fbBstOpts(name,z.bstNr)+'</select>'
+            +(z.bstNr&&ksByNr(z.bstNr)?'<div style="margin-top:4px"><span class="ks-pill">Kostenstelle '+esc(ksByNr(z.bstNr))+'</span></div>':'')
+          +'</div>'
+          +'<div class="fb-z2">'
+            +'<div class="fb-feld"><label>Kennzeichen</label>'
+              +'<div class="fb-chips">'+z.vehicles.map((v,k)=>'<span class="fb-chip kz">'+esc(v)
+                  +'<button type="button" onclick="fbRemKz(\''+esc(name)+'\','+i+','+k+')">×</button></span>').join('')+'</div>'
+              +'<select onchange="fbAddKz(\''+esc(name)+'\','+i+',this.value);this.value=\'\'">'+kzOpts+'</select>'
+            +'</div>'
+            +'<div class="fb-feld"><label>Fahrer</label>'
+              +'<div class="fb-chips">'+z.drivers.map((d,k)=>'<span class="fb-chip fa">'+esc(d)
+                  +'<button type="button" onclick="fbRemFahrer(\''+esc(name)+'\','+i+','+k+')">×</button></span>').join('')+'</div>'
+              +'<div style="position:relative">'
+                +'<input type="text" placeholder="+ Fahrer suchen…" autocomplete="off" id="fbFinp_'+key+'_'+i+'"'
+                  +' oninput="fbFahrerSuche(\''+esc(name)+'\','+i+',this.value)" onfocus="fbFahrerSuche(\''+esc(name)+'\','+i+',this.value)">'
+                +'<div class="fb-box" id="fbFbox_'+key+'_'+i+'"></div>'
+              +'</div>'
+            +'</div>'
+          +'</div>'
+          +'<input type="text" class="fb-notiz" placeholder="Hinweis für dieses Fahrzeug (z.B. 7:30 Uhr, Material, Aufgabe)" value="'+esc(z.notiz||'')+'"'
+            +' oninput="fbSetNotiz(\''+esc(name)+'\','+i+',this.value)">'
+          +'</div>'
+        ).join('')
+        :'<div class="fb-none">Noch keine Fahrzeuge eingeplant.</div>')
+      +'<button type="button" class="fb-add" onclick="fbAddZeile(\''+esc(name)+'\')">+ Fahrzeug hinzufügen</button>'
+      +(tTxt?'<div class="fb-dispo"><span>📱 Über das Terminal bestellt</span><span class="warn">'+esc(tTxt)+'</span></div>':'')
       +'</div></div>';
   }).join('');
 
-  fbUpdateBadge();
+  fbRefreshKopf();
 }
 window.renderFzgBest=renderFzgBest;
+
 window.fbExport=function(){
-  const liste=fbQuelle();
-  if(!liste.length){showToast('Nichts zu exportieren','amber');return;}
   const rows=[];
-  liste.forEach(b=>fbFzgListe(b).forEach(z=>rows.push({
-    'Schachtmeister':b.sm||'',
-    'Telefon':b.tel||(schachtmeister.find(s=>s.name===b.sm)||{}).phone||'',
-    'Benötigt am':fmtDatum(b.datum),
-    'Uhrzeit':b.uhrzeit||'',
-    'Bst.-Nr.':b.bstNr||'',
-    'Kostenstelle':ksByNr(b.bstNr||''),
-    'Baustelle':b.bstName||'',
-    'Fahrzeugtyp':z.typ,
-    'Anzahl':z.anz,
-    'Fahrer':z.fahrer||'',
-    'Aufgabe':z.aufgabe||'',
-    'Material':b.material||'',
-    'Menge':b.menge||'',
-    'Status':b.erledigt?'Erledigt':b.beauftragt?'Beauftragt':b.uebernommen?'Übernommen':'Offen',
-    'Bemerkung':b.bemerkung||''
-  })));
-  const modus=(document.getElementById('fbModus')||{}).value||'tag';
-  dlXlsx({'Fahrzeugbestellung':rows},'Fahrzeugbestellung_'+(modus==='offen'?'offen':fbDate.replace(/-/g,'')));
+  schachtmeister.forEach(sm=>{
+    fbZeilen(sm.name).filter(z=>z.typ).forEach(z=>rows.push({
+      'Datum':fmtDate(fbDate),
+      'Schachtmeister':sm.name,
+      'Telefon':sm.phone||'',
+      'Bst.-Nr.':z.bstNr||'',
+      'Baustelle':(()=>{const b=baustellen.find(x=>String(x.nr)===String(z.bstNr));return b?(b.name||b.addr||''):'';})(),
+      'Kostenstelle':ksByNr(z.bstNr||''),
+      'Fahrzeugtyp':z.typ,
+      'Anzahl':z.anz,
+      'Kennzeichen':z.vehicles.join(', '),
+      'Fahrer':z.drivers.join(', '),
+      'Hinweis':z.notiz||''
+    }));
+  });
+  if(!rows.length){showToast('Nichts zu exportieren','amber');return;}
+  dlXlsx({'Fahrzeugbestellung':rows},'Fahrzeugbestellung_'+fbDate.replace(/-/g,''));
   showToast('Excel exportiert','success');
 };
 
