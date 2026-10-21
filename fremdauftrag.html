@@ -891,6 +891,7 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
   const btn=document.getElementById('submitBtn');
   btn.disabled=true; btn.textContent='Wird gesendet…';
   const orderId=Date.now().toString();
+  try{
   Promise.all([
     fremdRef.child(orderId).set(order),
     bestellungenRef.child(orderId).set({
@@ -899,7 +900,10 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
       bstName:bstName,
       material:order.sorte,
       menge:order.menge,
-      fahrzeugtyp:tags.FT.join(', '),
+      fahrzeugtyp:fzgZeilen.filter(z=>z.typ).map(z=>(parseInt(z.anz)||1)+'× '+z.typ).join(', '),
+      fahrzeugDetails:fzgZeilen.filter(z=>z.typ).map(z=>({typ:z.typ,anz:parseInt(z.anz)||1,fahrer:'',aufgabe:''})),
+      auftragsnummerF:order.auftragsnummerF||'',
+      touren:order.touren,
       datum:order.abholung,
       uhrzeit:order.uhrzeit,
       bemerkung:order.bemerkung,
@@ -923,6 +927,10 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
   }).finally(()=>{
     btn.disabled=false; btn.textContent='Auftrag einstellen';
   });
+  }catch(err){
+    toast('Fehler beim Senden: '+err.message,'amber');
+    btn.disabled=false; btn.textContent='Auftrag einstellen';
+  }
 });
 
 // ===== EIGENE AUFTRÄGE =====
