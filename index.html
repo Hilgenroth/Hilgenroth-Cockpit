@@ -384,7 +384,7 @@ function loadShow(id,file){
   if(!loaded.has(id)){
     loaded.add(id);
     const src = (fr.dataset.file && fr.dataset.file!=='undefined') ? fr.dataset.file : (file||'');
-    if(src){ document.getElementById('loader-'+id)?.classList.add('visible'); fr.src=src; }
+    if(src){ document.getElementById('loader-'+id)?.classList.add('visible'); fr.src=src+'?t='+Date.now(); }
   }
   fr.classList.add('active');
 }
