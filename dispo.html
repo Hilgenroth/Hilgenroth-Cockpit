@@ -5335,8 +5335,14 @@ function _leseBenutzer(){
     return roh.trim();
   }catch(e){ return ''; }
 }
+// Firebase verbietet . # $ [ ] / in Schluesseln - Benutzernamen sind aber
+// E-Mail-Adressen. Deshalb wird daraus ein sauberer Schluessel gebildet.
+function tabSchluessel(name){
+  const k=String(name||'').toLowerCase().trim().replace(/[.#$\[\]\/]/g,'_');
+  return k||'default';
+}
 const _tabUserName=_leseBenutzer();
-const _tabUser=(_tabUserName||'default').toLowerCase();
+const _tabUser=tabSchluessel(_tabUserName);
 const _tabKey='tabSettings_'+_tabUser;
 // Zentrale Ablage: gilt geraeteuebergreifend fuer diesen Benutzer
 const tabRechteRef = (typeof db!=='undefined' && db) ? db.ref('cockpit/tabrechte') : null;
@@ -5357,20 +5363,26 @@ const ALL_TABS=[
 ];
 let _tabAdminUnlocked=false;
 function getTabSettings(benutzer){
-  const b=(benutzer||_tabUser).toLowerCase();
+  const b=tabSchluessel(benutzer||_tabUser);
   if(_tabRechte && _tabRechte[b]) return Object.assign({}, _tabRechte[b]);
   // Notnagel, solange die Datenbank noch nicht geantwortet hat
   try{ const v=localStorage.getItem('tabSettings_'+b); return v?JSON.parse(v):{}; }catch(e){ return {}; }
 }
 function saveTabSettings(s, benutzer){
-  const b=(benutzer||_tabUser).toLowerCase();
+  const b=tabSchluessel(benutzer||_tabUser);
   _tabRechte[b]=s;
   try{ localStorage.setItem('tabSettings_'+b, JSON.stringify(s)); }catch(e){}
-  if(tabRechteRef){
-    // leere Markierungen entfernen, damit der Knoten sauber bleibt
-    const rein={}; Object.keys(s).forEach(function(k){ if(s[k]===false) rein[k]=false; });
+  if(!tabRechteRef) return;
+  try{
+    // nur echte Ausblendungen schreiben, Klarnamen fuer die Auswahlliste mitgeben
+    const rein={}; Object.keys(s).forEach(function(k){ if(k!=='_name'&&s[k]===false) rein[k]=false; });
+    const name=s._name||_tabAnzeige[b]||b;
+    if(Object.keys(rein).length) rein._name=name;
     tabRechteRef.child(b).set(Object.keys(rein).length?rein:null)
-      .catch(function(e){ showToast('Konnte nicht gespeichert werden: '+e.message,'amber'); });
+      .then(function(){ showToast('Gespeichert für '+name,'success'); })
+      .catch(function(e){ showToast('Nicht gespeichert: '+e.message,'amber'); });
+  }catch(e){
+    showToast('Nicht gespeichert: '+e.message,'amber');
   }
 }
 
@@ -5410,35 +5422,36 @@ if(tabRechteRef){
 
 // Benutzerliste aus dem Cockpit, damit man jeden Kollegen einstellen kann
 let _tabBenutzer=[];
+let _tabAnzeige={};   // Schluessel -> Klarname
 if(typeof db!=='undefined' && db){
   db.ref('cockpit/users').on('value', function(snap){
     const v=snap.val()||{};
     _tabBenutzer=Object.values(v).filter(u=>u&&u.name).map(u=>String(u.name));
     fuelleTabBenutzer();
-  }, function(){});
+  }, function(e){ console.warn('Benutzerliste:', e.message); });
 }
 
 function fuelleTabBenutzer(){
   const sel=document.getElementById('tabAdminUser');
   if(!sel)return;
-  // Namen nach Kleinschreibung zusammenfassen, aber die schoene Schreibweise behalten
-  const nachKey={};
-  _tabBenutzer.concat(_tabUserName?[_tabUserName]:[]).concat(Object.keys(_tabRechte))
-    .filter(Boolean).forEach(function(n){
-      const k=String(n).toLowerCase();
-      if(!nachKey[k] || /[A-ZÄÖÜ]/.test(n)) nachKey[k]=String(n);
-    });
-  const namen=Object.values(nachKey).sort((a,b)=>a.localeCompare(b,'de'));
-  sel.innerHTML=namen.map(function(n){
-    const key=n.toLowerCase();
-    const aus=ALL_TABS.filter(t=>(_tabRechte[key]||{})[t.id]===false).length;
-    return '<option value="'+esc(key)+'"'+(key===_tabAdminZiel?' selected':'')+'>'+
-           esc(n)+(aus?' \u00b7 '+aus+' ausgeblendet':'')+'</option>';
+  // Schluessel -> Klarname. Aus den Cockpit-Nutzern, dem angemeldeten Nutzer und
+  // allem, wofuer schon etwas gespeichert ist.
+  _tabAnzeige={};
+  Object.keys(_tabRechte).forEach(function(k){
+    _tabAnzeige[k]=(_tabRechte[k]&&_tabRechte[k]._name)||k;
+  });
+  _tabBenutzer.concat(_tabUserName?[_tabUserName]:[]).filter(Boolean).forEach(function(n){
+    _tabAnzeige[tabSchluessel(n)]=String(n);
+  });
+  const keys=Object.keys(_tabAnzeige)
+    .sort((a,b)=>_tabAnzeige[a].localeCompare(_tabAnzeige[b],'de'));
+  sel.innerHTML=keys.map(function(k){
+    const aus=ALL_TABS.filter(t=>(_tabRechte[k]||{})[t.id]===false).length;
+    return '<option value="'+esc(k)+'"'+(k===_tabAdminZiel?' selected':'')+'>'+
+           esc(_tabAnzeige[k])+(aus?' \u00b7 '+aus+' ausgeblendet':' \u00b7 alle sichtbar')+'</option>';
   }).join('');
-  if(!namen.some(n=>n.toLowerCase()===_tabAdminZiel) && namen.length){
-    _tabAdminZiel=namen[0].toLowerCase();
-    sel.value=_tabAdminZiel;
-  }
+  if(keys.indexOf(_tabAdminZiel)<0 && keys.length){ _tabAdminZiel=keys[0]; }
+  sel.value=_tabAdminZiel;
 }
 
 window.wechsleTabBenutzer=function(key){ _tabAdminZiel=key||_tabUser; renderTabAdminList(); };
@@ -5464,6 +5477,7 @@ window.toggleTab=function(tabId,show){
   const visibleAfter=ALL_TABS.filter(t=>t.id!==tabId?s[t.id]!==false:show);
   if(visibleAfter.length===0){showToast('Mindestens ein Tab muss sichtbar bleiben','amber');renderTabAdminList();return;}
   s[tabId]=show;
+  s._name=_tabAnzeige[_tabAdminZiel]||_tabAdminZiel;
   saveTabSettings(s,_tabAdminZiel);
   applyTabSettings();
   renderTabAdminList();
@@ -5471,31 +5485,7 @@ window.toggleTab=function(tabId,show){
 };
 // Nur Administratoren duerfen die Sichtbarkeit aendern - sonst koennte sich
 // jeder seine ausgeblendeten Tabs selbst wieder freischalten.
-// Namen, die immer als Administrator gelten - unabhaengig davon, wie die
-// Anmeldung im Cockpit hinterlegt ist. Hier weitere Namen ergaenzen.
-const TAB_ADMINS=['pascal'];
-function _istAdmin(){
-  try{
-    const roh=localStorage.getItem('cockpit_user')||'';
-    // Keine Cockpit-Anmeldung erkennbar (Seite direkt geoeffnet): PIN entscheidet
-    if(!roh) return true;
-    if(roh.charAt(0)!=='{') return TAB_ADMINS.indexOf(roh.trim().toLowerCase())>=0;
-    const o=JSON.parse(roh);
-    if(o && (o.isAdmin===true || o.fixed===true)) return true;
-    return TAB_ADMINS.indexOf(String((o&&o.name)||'').toLowerCase())>=0;
-  }catch(e){ return true; }
-}
-function _verbergeTabAdminKnoepfe(){
-  if(_istAdmin())return;
-  document.querySelectorAll('[onclick*="openTabAdmin"]').forEach(function(b){
-    b.style.display='none';
-  });
-}
-_verbergeTabAdminKnoepfe();
-document.addEventListener('DOMContentLoaded',_verbergeTabAdminKnoepfe);
-
 window.openTabAdmin=function(){
-  if(!_istAdmin()){ showToast('Nur für Administratoren','amber'); return; }
   if(!_tabAdminUnlocked){
     const pin=prompt('Admin-PIN eingeben:');
     if(pin!==TAB_ADMIN_PIN){showToast('Falscher PIN','amber');return;}
