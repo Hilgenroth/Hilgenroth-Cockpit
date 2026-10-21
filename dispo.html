@@ -1557,6 +1557,7 @@ td strong{color:var(--ink);font-weight:700}
       <button class="nb" onclick="fbNav('tomorrow')">Morgen</button>
       <button class="nb nb-i" onclick="fbNav(1)" title="Tag vor"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       <input type="date" class="ndp" id="fbDate" onchange="fbSetDate(this.value)">
+      <button class="nb" id="fbFilterBtn" onclick="fbToggleFilter()" title="Schachtmeister ohne Fahrzeug ausblenden">&#128065; Nur verplante</button>
       <button class="nb" onclick="fbVortag()" title="Die Fahrzeugplanung des Vortags auf diesen Tag kopieren" style="background:var(--grn-s);color:var(--grn);border-color:var(--grn)">&#128203; Vortag &uuml;bernehmen</button>
       <button class="nb" onclick="fbExport()">&#11015; Excel</button>
       <button class="nb" onclick="printOv()">&#128424; Drucken</button>
@@ -5513,6 +5514,20 @@ function fbSave(name,zeilen){
     .catch(e=>showToast('Fehler beim Speichern: '+e.message,'amber'));
 }
 
+const FB_FILTER_KEY='fbNurVerplant_'+(typeof _tabUser!=='undefined'?_tabUser:'default');
+let fbNurVerplant=(()=>{ try{return localStorage.getItem(FB_FILTER_KEY)==='1'}catch(e){return false} })();
+window.fbToggleFilter=function(){
+  fbNurVerplant=!fbNurVerplant;
+  try{localStorage.setItem(FB_FILTER_KEY,fbNurVerplant?'1':'0')}catch(e){}
+  renderFzgBest();
+};
+function fbFilterBtnSync(){
+  const b=document.getElementById('fbFilterBtn'); if(!b)return;
+  b.innerHTML=fbNurVerplant?'👁 Alle anzeigen':'👁 Nur verplante';
+  b.title=fbNurVerplant?'Auch Schachtmeister ohne Fahrzeug wieder anzeigen':'Schachtmeister ohne Fahrzeug ausblenden';
+  if(fbNurVerplant){b.style.background='var(--blu-s)';b.style.color='var(--blu)';b.style.borderColor='var(--blu)';}
+  else {b.style.background='';b.style.color='';b.style.borderColor='';}
+}
 window.fbSetDate=function(v){ if(v){fbDate=v;renderFzgBest();} };
 window.fbNav=function(d){
   if(d==='today')fbDate=todayISO;
@@ -5628,7 +5643,8 @@ function fbRefreshKopf(){
   const wd=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt.getDay()];
   const tt=document.getElementById('fbTitel'); if(tt)tt.textContent=fmtDate(fbDate);
   const sb=document.getElementById('fbSub');
-  if(sb)sb.textContent=wd+' · '+mitFzg+' von '+alle.length+' Schachtmeistern verplant';
+  if(sb)sb.textContent=wd+' · '+mitFzg+' von '+alle.length+' Schachtmeistern verplant'
+    +(fbNurVerplant?' · nur verplante sichtbar':'');
   fbUpdateBadge();
 }
 
@@ -5644,7 +5660,16 @@ function renderFzgBest(){
 
   const kzOpts='<option value="">+ Kennzeichen…</option>'+(fleet.vehicles||[]).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
 
-  grid.innerHTML=schachtmeister.map(sm=>{
+  fbFilterBtnSync();
+  const sichtbar=fbNurVerplant?schachtmeister.filter(sm=>fbAnzSM(sm.name)>0):schachtmeister;
+  if(fbNurVerplant&&!sichtbar.length){
+    grid.innerHTML='<div class="fb-empty"><div class="ico">🚛</div><h3>Noch niemand verplant</h3>'
+      +'<div style="font-size:12px">Für '+fmtDate(fbDate)+' hat noch kein Schachtmeister ein Fahrzeug. '
+      +'<button type="button" onclick="fbToggleFilter()" style="background:none;border:none;color:var(--blu);font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline;padding:0">Alle anzeigen</button></div></div>';
+    fbRefreshKopf(); return;
+  }
+
+  grid.innerHTML=sichtbar.map(sm=>{
     const name=sm.name, key=fbKey(name);
     const zeilen=fbZeilen(name);
     const anz=fbAnzSM(name);
