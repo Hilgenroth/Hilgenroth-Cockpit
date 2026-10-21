@@ -466,7 +466,15 @@ td strong{color:var(--ink);font-weight:700}
 .fb-types{display:flex;flex-wrap:wrap;gap:5px;padding:12px 18px 0}
 .fb-type{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;border-radius:100px;padding:3px 10px;background:var(--blu-s);color:var(--blu);white-space:nowrap}
 .fb-type i{font-style:normal;background:var(--blu);color:#fff;border-radius:100px;padding:0 6px;font-size:10px}
-.fb-type.bst{background:var(--grn-s);color:var(--grn);max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fb-bst{padding:11px 18px 0}
+.fb-bst-l{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);margin-bottom:5px}
+.fb-bst-c{display:flex;flex-wrap:wrap;gap:5px}
+.fb-bchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--surf);border:1px solid var(--line);color:var(--ink2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fb-bchip b{font-weight:800;color:var(--ink)}
+.fb-bchip em{font-style:normal;font-size:9px;font-weight:800;color:var(--blu);background:#EAF1FD;border:1px solid #C3D8F7;border-radius:4px;padding:0 4px}
+.fb-bchip.on{background:var(--grn-s);border-color:#5DCAA5;color:var(--grn)}
+.fb-bchip.on b{color:var(--grn)}
+.fb-bst-leer{font-size:11px;font-weight:600;color:var(--ink3);background:var(--surf);border:1px dashed var(--line2);border-radius:var(--rs);padding:7px 10px}
 .fb-feld select optgroup{font-weight:800}
 .fb-body{padding:12px 18px 16px}
 .fb-pos{border:1px solid var(--line);border-radius:var(--rs);margin-top:10px;overflow:hidden}
@@ -5652,12 +5660,26 @@ function renderFzgBest(){
         +(sm.phone?'<a class="fb-tel" href="tel:'+esc(sm.phone)+'">📞 '+esc(sm.phone)+'</a>':'')
       +'</div><div class="fb-cnt"><b>'+anz+'</b><span>Fahrzeuge</span></div></div>'
       +(()=>{
-        const bst=[...new Set(zeilen.map(z=>z.bstNr).filter(Boolean))];
-        const chips=Object.entries(typen).sort((a,b)=>b[1]-a[1])
-          .map(([t,n])=>'<span class="fb-type">'+esc(t)+'<i>'+n+'</i></span>').join('')
-          +bst.map(nr=>{const b=baustellen.find(x=>String(x.nr)===String(nr));
-            return '<span class="fb-type bst" title="'+esc(fbBstLabel(nr))+'">🏗 '+esc(b?(b.name||b.addr||b.nr):nr)+'</span>';}).join('');
-        return chips?'<div class="fb-types">'+chips+'</div>':'';
+        // Baustellen des Schachtmeisters – kommen live aus "Schachtmeister verwalten"
+        const eigene=fbSmBst(name);
+        const verplant=new Set(zeilen.map(z=>String(z.bstNr)).filter(Boolean));
+        const alle=[...eigene.map(String),...[...verplant].filter(nr=>!eigene.map(String).includes(nr))];
+        let h='<div class="fb-bst"><div class="fb-bst-l">Baustellen</div>';
+        if(alle.length){
+          h+='<div class="fb-bst-c">'+alle.map(nr=>{
+            const b=baustellen.find(x=>String(x.nr)===String(nr));
+            const aktiv=verplant.has(String(nr));
+            return '<span class="fb-bchip'+(aktiv?' on':'')+'" title="'+esc(fbBstLabel(nr))+'">'
+              +'<b>'+esc(String(nr))+'</b> '+esc(b?(b.name||b.addr||'—'):'nicht mehr in der Liste')
+              +(b&&b.ks?'<em>KS '+esc(b.ks)+'</em>':'')+'</span>';
+          }).join('')+'</div>';
+        } else {
+          h+='<div class="fb-bst-leer">Keine Baustelle zugeordnet – im Menü oben unter „Schachtmeister verwalten“ hinterlegen</div>';
+        }
+        h+='</div>';
+        const typChips=Object.entries(typen).sort((a,b)=>b[1]-a[1])
+          .map(([t,n])=>'<span class="fb-type">'+esc(t)+'<i>'+n+'</i></span>').join('');
+        return h+(typChips?'<div class="fb-types">'+typChips+'</div>':'');
       })()
       +'<div class="fb-body">'
       +(zeilen.length?zeilen.map((z,i)=>
