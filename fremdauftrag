@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1d1f">
+<title>Fremdfirmen-Terminal · Hilgenroth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<style>
+:root{
+  --bg:#f6f7f8;--bg-e:#fff;--surf:#fafbfb;
+  --ink:#1a1d1f;--ink2:#34373b;--ink3:#6c7177;--muted:#9aa0a8;
+  --line:#e8ebed;--line2:#d4d8dc;
+  --brand:#d11a2c;--brand-d:#a8121f;--brand-s:#fde8ea;
+  --grn:#1f7a3f;--grn-s:#dfeee5;
+  --amb:#b87514;--amb-s:#fdf0d8;
+  --blu:#1a5ab8;--blu-s:#dfe8f4;
+  --sh-sm:0 1px 2px rgba(15,18,22,.04),0 1px 1px rgba(15,18,22,.03);
+  --sh-md:0 4px 12px rgba(15,18,22,.06),0 1px 2px rgba(15,18,22,.04);
+  --sh-lg:0 12px 32px rgba(15,18,22,.08),0 2px 6px rgba(15,18,22,.04);
+  --r:10px;--rs:6px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:radial-gradient(1000px 500px at 80% -10%,rgba(209,26,44,.05),transparent 60%),var(--bg);
+  color:var(--ink);line-height:1.5;min-height:100vh;letter-spacing:-.005em;
+  padding:14px 14px calc(28px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:0 auto}
+
+header{background:var(--bg-e);border:1px solid var(--line);border-radius:var(--rl);
+  padding:14px 16px;box-shadow:var(--sh-sm);display:flex;align-items:center;
+  justify-content:space-between;gap:12px;margin-bottom:14px}
+header h1{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+header .sub{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-top:3px}
+.conn{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surf);
+  border:1px solid var(--line);border-radius:100px;font-size:10px;font-weight:700;
+  color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.conn.online{color:var(--grn);border-color:var(--grn-s);background:var(--grn-s)}
+.conn.online .conn-dot{background:var(--grn)}
+.conn.offline{color:var(--brand);border-color:var(--brand-s);background:var(--brand-s)}
+.conn.offline .conn-dot{background:var(--brand)}
+
+.panel{background:var(--bg-e);border:1px solid var(--line);border-radius:var(--rl);
+  padding:20px 18px;box-shadow:var(--sh-sm);margin-bottom:14px}
+.pt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);
+  margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center;gap:10px}
+
+.fg{margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--ink2)}
+label .req{color:var(--brand);margin-left:1px}
+input[type=text],input[type=date],input[type=time],input[type=number],input[type=password],textarea,select{
+  width:100%;padding:13px 12px;border:1px solid var(--line);border-radius:var(--rs);
+  font-size:16px;font-family:inherit;background:var(--surf);color:var(--ink);
+  transition:all .15s;font-weight:600}
+input:disabled{opacity:.7}
+input::placeholder,textarea::placeholder{color:var(--muted);font-weight:400}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--ink);background:#fff;
+  box-shadow:0 0 0 3px rgba(26,29,31,.06)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c7177' d='M3 4.5l3 3 3-3z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r2>.fg{min-width:0}
+.r2 input,.r2 select{width:100%;box-sizing:border-box}
+
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rg label{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;
+  margin-bottom:0;font-size:14px;color:var(--ink2);padding:12px;border:1px solid var(--line);
+  border-radius:var(--rs);background:var(--surf);transition:all .15s}
+.rg input{accent-color:var(--brand);width:18px;height:18px;flex-shrink:0}
+.rg label:has(input:checked){border-color:var(--ink);background:var(--ink);color:#fff}
+
+.ms-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.ms-tag{display:inline-flex;align-items:center;gap:6px;background:var(--surf);border:1px solid var(--line);
+  border-radius:100px;padding:5px 6px 5px 12px;font-size:12px;font-weight:700}
+.ms-tag button{background:none;border:none;color:var(--ink3);cursor:pointer;width:18px;height:18px;
+  border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.ms-tag button:hover{background:var(--brand-s);color:var(--brand)}
+.ms-add-row{display:flex;gap:8px}
+.tour-row{display:grid;grid-template-columns:1fr 80px auto 30px;gap:6px;align-items:center;margin-bottom:8px}
+.tour-row input,.tour-row select{padding:9px 10px;border:1px solid var(--line);border-radius:var(--rs);font-size:13px;font-family:inherit;background:var(--surf);color:var(--ink)}
+.tour-row .del{background:none;border:none;color:var(--brand);font-size:16px;font-weight:700;cursor:pointer;width:28px;height:28px;border-radius:4px;padding:0}
+.fzg-zeile{display:grid;grid-template-columns:1fr 80px 30px;gap:6px;align-items:center;margin-bottom:6px;background:var(--surf);border:1px solid var(--line);border-radius:var(--rs);padding:8px 10px}
+.fzg-zeile span{font-size:13px;font-weight:700}
+.fzg-zeile .del{background:none;border:none;color:var(--brand);font-size:16px;font-weight:700;cursor:pointer;width:28px;height:28px;border-radius:4px;padding:0}
+.ms-add-row input{flex:1}
+.ms-add-row button{padding:0 16px;background:var(--ink);color:#fff;border:none;border-radius:var(--rs);
+  font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+
+.btn-p{width:100%;padding:16px;background:var(--ink);color:#fff;font-size:15px;font-weight:800;
+  border:none;border-radius:var(--rs);cursor:pointer;font-family:inherit;box-shadow:var(--sh-sm);
+  transition:all .15s;letter-spacing:.01em}
+.btn-p:hover{background:var(--brand)}
+.btn-p:disabled{background:var(--muted);cursor:not-allowed}
+.btn-s{padding:9px 14px;background:#fff;color:var(--ink2);border:1px solid var(--line);
+  font-size:12px;font-weight:700;border-radius:var(--rs);cursor:pointer;font-family:inherit}
+.btn-s:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+#gate{position:fixed;inset:0;z-index:9998;background:radial-gradient(900px 500px at 50% 0%,rgba(209,26,44,.10),transparent 60%),#1a1d1f;
+  display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+#gate.hidden{display:none}
+.gate-card{background:var(--bg-e);border-radius:var(--rl);padding:26px 22px;width:100%;
+  max-width:400px;box-shadow:var(--sh-lg)}
+.gate-card h2{font-size:19px;font-weight:800;letter-spacing:-.02em;text-align:center}
+.gate-card p{font-size:12px;color:var(--ink3);margin:5px 0 20px;text-align:center;font-weight:600}
+.gate-err{color:var(--brand);font-size:12px;font-weight:700;margin-top:10px;min-height:16px;text-align:center}
+.admin-link{background:none;border:none;color:var(--ink3);font-size:10px;font-weight:700;
+  text-decoration:underline;cursor:pointer;font-family:inherit;padding:4px}
+
+.pin-field{position:relative}
+.pin-field input{width:100%;padding:16px 12px;border:1px solid var(--line);border-radius:var(--rs);
+  background:var(--surf);font-size:16px;color:transparent;caret-color:var(--ink);text-align:center;font-family:inherit}
+.pin-field input:focus{outline:none;border-color:var(--ink);background:#fff;box-shadow:0 0 0 3px rgba(26,29,31,.06)}
+.pin-dots{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;gap:16px;pointer-events:none}
+.pin-dot{width:13px;height:13px;border-radius:50%;background:var(--line2);transition:transform .15s,background .15s}
+.pin-dot.filled{background:var(--ink);transform:scale(1.15)}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(120%);bottom:20px;
+  background:var(--ink);color:#fff;padding:13px 22px;border-radius:var(--r);font-size:13px;
+  font-weight:700;box-shadow:var(--sh-lg);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  z-index:9999;max-width:92vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--grn)}
+.toast.amber{background:var(--brand)}
+.errbar{position:fixed;top:0;left:0;right:0;z-index:99999;background:var(--brand-d);color:#fff;
+  padding:12px 16px;font:700 13px/1.45 'Plus Jakarta Sans',system-ui,sans-serif;text-align:center}
+
+.ord{border:1px solid var(--line);border-left:4px solid var(--grn);border-radius:var(--r);
+  padding:13px 14px;margin-bottom:10px;background:var(--surf)}
+.ord-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.ord-h strong{font-size:14px;font-weight:800}
+.badge{padding:3px 9px;border-radius:100px;font-size:9px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.06em;background:var(--grn-s);color:var(--grn);white-space:nowrap}
+.ord small{display:block;font-size:12px;color:var(--ink3);font-weight:600;line-height:1.6}
+.empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
+.ord-notiz{margin-top:8px;background:var(--grn-s);color:var(--grn);border-radius:var(--rs);
+  padding:9px 11px;font-size:12px;font-weight:700;display:flex;gap:8px;align-items:flex-start}
+.ord-notiz svg{flex-shrink:0;margin-top:1px}
+.msg-bubble{max-width:80%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.4;white-space:pre-wrap}
+.msg-bubble.von-firma{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:3px}
+.msg-bubble.von-dispo{align-self:flex-start;background:var(--surf);border:1px solid var(--line);color:var(--ink2);border-bottom-left-radius:3px}
+.msg-time{font-size:9px;opacity:.6;margin-top:3px;display:block}
+.chat-thread-row{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:9px;
+  background:var(--surf);cursor:pointer;transition:border-color .15s}
+.chat-thread-row:hover{border-color:var(--ink)}
+.chat-thread-row.erledigt{opacity:.55}
+.chat-thread-row .cth{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.chat-thread-row .cth strong{font-size:13px;font-weight:800}
+.chat-thread-row .ctp{font-size:12px;color:var(--ink3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+
+<!-- ===== ZUGANG (persönlicher PIN je Fremdfirma) ===== -->
+<div id="gate">
+  <div class="gate-card">
+    <h2>Fremdfirmen-Terminal</h2>
+    <p>Rudolf Hilgenroth GmbH &amp; Co. KG</p>
+
+    <div class="fg">
+      <label>Ihr persönlicher PIN</label>
+      <div class="pin-field">
+        <input type="tel" id="pinInput" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="PIN">
+        <div class="pin-dots" id="pinDots">
+          <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+        </div>
+      </div>
+    </div>
+    <button class="btn-p" id="pinBtn">Anmelden</button>
+    <div class="gate-err" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Fremdfirmen-Terminal</h1>
+      <div class="sub" id="hdrFF">—</div>
+    </div>
+    <div class="conn" id="conn"><span class="conn-dot"></span><span id="connTxt">Verbinde…</span></div>
+  </header>
+
+  <div style="text-align:right;margin:-6px 2px 10px">
+    <button class="btn-s" onclick="openAdmin()" style="font-size:11px;padding:6px 10px">⚙ Admin</button>
+  </div>
+
+  <div class="panel" style="display:flex;gap:10px;padding:14px">
+    <a href="tel:+49293496260" style="text-decoration:none;flex:1">
+      <button type="button" class="btn-p" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Dispo anrufen
+      </button>
+    </a>
+    <button type="button" class="btn-s" style="flex:1;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px" onclick="openChatThread(_generalThreadId(),null,'Allgemeine Nachricht')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="pt">Neuer Auftrag</div>
+    <form id="ordForm">
+
+      <div class="fg">
+        <label>Firma</label>
+        <input type="text" id="firmenname" disabled>
+      </div>
+
+      <div class="fg">
+        <label>Auftragsnummer</label>
+        <input type="text" id="auftragsnummerF" placeholder="z.B. 5515">
+      </div>
+
+      <div class="fg">
+        <label>Baustelle <span style="font-weight:400;color:var(--ink3);font-size:11px">(optional)</span></label>
+        <input type="text" id="baustelle" list="bstDatalist" placeholder="Baustelle eingeben oder aus Liste wählen">
+        <datalist id="bstDatalist"></datalist>
+      </div>
+
+      <div class="fg">
+        <label>Material <span class="req">*</span></label>
+        <div class="rg">
+          <label><input type="radio" name="material" value="Asphalt" required> Asphalt</label>
+          <label><input type="radio" name="material" value="Strassenbaustoffe"> Straßenbaustoffe</label>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Touren <span style="font-weight:400;color:var(--ink3);font-size:11px">bis zu 4 – z.B. unterschiedliche Sorten für dieselbe Baustelle</span></label>
+        <div id="tourenList"></div>
+        <button type="button" class="btn-s" id="addTourBtn" onclick="addTour()" style="margin-top:4px">+ Weitere Tour hinzufügen</button>
+      </div>
+
+      <div class="r2">
+        <div class="fg">
+          <label>Abholung <span class="req">*</span></label>
+          <input type="date" id="abholung" required>
+        </div>
+        <div class="fg">
+          <label>Uhrzeit</label>
+          <input type="time" id="uhrzeit">
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Fahrzeuge <span style="font-weight:400;color:var(--ink3);font-size:11px">(Typ + Anzahl, mehrere möglich)</span></label>
+        <div id="fzgList"></div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <select id="fzgTypSel" style="flex:1">
+            <option value="">— Typ wählen —</option>
+            <option>Sattel</option><option>2A</option><option>3A</option><option>3A-Zug</option><option>4A</option>
+            <option>Trecker</option><option>Kipper</option><option>Tieflader</option>
+            <option>Betonmischer</option><option>Sonstiges</option>
+          </select>
+          <input type="number" id="fzgAnzSel" min="1" max="99" value="1" placeholder="Anz." style="width:70px">
+          <button type="button" class="btn-s" onclick="addFzgZeile()">+</button>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Eigene Fahrzeuge/Kennzeichen <span style="font-weight:400;color:var(--ink3);font-size:11px">(optional, mehrere möglich)</span></label>
+        <div class="ms-tags" id="tagsFV"></div>
+        <div class="ms-add-row">
+          <input type="text" id="fvInput" placeholder="Kennzeichen eingeben, dann Enter/Hinzufügen">
+          <button type="button" onclick="addFreeTag('FV')">+</button>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Fahrer <span style="font-weight:400;color:var(--ink3);font-size:11px">(optional, mehrere möglich)</span></label>
+        <div class="ms-tags" id="tagsFD"></div>
+        <div class="ms-add-row">
+          <input type="text" id="fdInput" placeholder="Name eingeben, dann Enter/Hinzufügen">
+          <button type="button" onclick="addFreeTag('FD')">+</button>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Bemerkung</label>
+        <textarea id="bemerkung" placeholder="Weitere Hinweise für die Disposition"></textarea>
+      </div>
+
+      <button type="submit" class="btn-p" id="submitBtn">Auftrag einstellen</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="pt"><span>Meine letzten Aufträge</span><span id="ordCount" style="font-weight:800;color:var(--ink)">0</span></div>
+    <div id="ordList"><div class="empty">Noch keine Aufträge.</div></div>
+  </div>
+
+  <div class="panel" id="replyNtfyPanel" style="display:none">
+    <div class="pt" style="cursor:pointer" onclick="toggleReplyNtfyBox()">
+      <span>🔔 Antworten der Dispo empfangen</span>
+      <span id="replyNtfyToggleIcon" style="font-weight:400;color:var(--ink3)">▾</span>
+    </div>
+    <div id="replyNtfyBox">
+      <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6">
+        So bekommst du Nachrichten der Dispo auch auf den Sperrbildschirm – einmalig einrichten:
+      </p>
+      <ol style="font-size:12px;color:var(--ink2);line-height:2;padding-left:18px;margin-bottom:12px">
+        <li>Kostenlose App <strong>„ntfy"</strong> aus dem App Store / Play Store installieren</li>
+        <li>App öffnen, auf <strong>„+"</strong> tippen und diesen Kanal eingeben:</li>
+      </ol>
+      <div style="background:var(--surf);border:1px solid var(--line);border-radius:var(--rs);padding:12px;
+        display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <code id="replyNtfyTopicText" style="font-size:13px;font-weight:800;letter-spacing:-.01em"></code>
+        <button class="btn-s" onclick="copyReplyNtfyTopic()">Kopieren</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="pt"><span>Meine Gespräche</span><span id="chatMsgCount" style="font-weight:800;color:var(--ink)">0</span></div>
+    <div id="chatMsgList"><div class="empty">Noch keine Gespräche.</div></div>
+  </div>
+</div>
+
+<!-- ===== CHAT-FENSTER (Allgemein oder zu einem Auftrag) ===== -->
+<div class="mb" id="chatOv" style="position:fixed;inset:0;z-index:9999;background:rgba(15,18,22,.55);display:none;align-items:flex-end;justify-content:center;padding:14px">
+  <div style="background:var(--bg-e);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:480px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;max-height:85vh">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)">
+      <div>
+        <strong id="chatOvTitle" style="font-size:14px;font-weight:800">Chat</strong>
+        <div id="chatOvStatus" style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:2px"></div>
+      </div>
+      <button onclick="closeChatThread()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;width:30px;height:30px;border-radius:var(--rs)">×</button>
+    </div>
+    <div id="chatOvMsgs" style="padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="padding:12px 16px;border-top:1px solid var(--line);background:var(--surf)">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <textarea id="chatOvInput" placeholder="Nachricht…" style="min-height:44px;flex:1"></textarea>
+        <button class="btn-p" style="width:auto;padding:0 18px" onclick="sendChatThreadMsg()">➤</button>
+      </div>
+      <button class="btn-s" id="chatOvErledigtBtn" style="width:100%" onclick="toggleChatThreadErledigt()">Als erledigt markieren</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== POPUP BEI NEUER DISPO-NACHRICHT ===== -->
+<div class="mb" id="replyAlertOv" style="position:fixed;inset:0;z-index:9999;background:rgba(15,18,22,.6);display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg-e);border-radius:var(--rl);width:100%;max-width:400px;box-shadow:var(--sh-lg);overflow:hidden">
+    <div style="background:var(--grn);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <strong style="font-size:15px;font-weight:800">Neue Nachricht von der Dispo</strong>
+    </div>
+    <div style="padding:18px 20px;font-size:13px;color:var(--ink2)">
+      <div id="replyAlertLabel" style="font-weight:700;margin-bottom:6px;color:var(--ink3);font-size:11px;text-transform:uppercase;letter-spacing:.06em"></div>
+      <div id="replyAlertBody" style="white-space:pre-wrap"></div>
+    </div>
+    <div style="padding:0 20px 20px;display:flex;gap:8px">
+      <button class="btn-s" style="flex:1" onclick="closeReplyAlert()">Schließen</button>
+      <button class="btn-p" style="flex:1" onclick="oeffneAusPopup()">Antworten</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIN-MODAL ===== -->
+<div class="mb" id="adminOv" style="position:fixed;inset:0;z-index:9999;background:rgba(15,18,22,.55);display:none;align-items:flex-start;justify-content:center;padding:14px;overflow-y:auto">
+  <div style="background:var(--bg-e);border-radius:var(--rl);width:100%;max-width:480px;box-shadow:var(--sh-lg);margin:20px 0 40px;overflow:hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)">
+      <strong style="font-size:15px;font-weight:800">Admin</strong>
+      <button onclick="closeAdmin()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;width:30px;height:30px;border-radius:var(--rs)">×</button>
+    </div>
+    <div id="adminPwStep" style="padding:16px 18px">
+      <div class="fg">
+        <label>Admin-Passwort</label>
+        <input type="password" id="adminPw" placeholder="Passwort" autocomplete="off">
+      </div>
+      <button class="btn-p" onclick="checkAdminPw()">Anmelden</button>
+      <div class="gate-err" id="adminPwErr"></div>
+    </div>
+    <div id="adminContent" style="display:none">
+      <div style="padding:16px 18px">
+        <strong style="font-size:12px;display:block;margin-bottom:6px">Baustellen</strong>
+        <div id="admBstList"></div>
+      </div>
+      <div style="padding:14px 18px;border-top:1px solid var(--line);background:var(--surf)">
+        <div class="r2" style="margin-bottom:8px">
+          <input type="text" id="admBstNr" placeholder="Nummer">
+          <input type="text" id="admBstName" placeholder="Name">
+        </div>
+        <input type="text" id="admBstAnfahrt" placeholder="Anfahrt, z.B. Vom Bahnhof" style="margin-bottom:8px">
+        <button class="btn-s" onclick="admAddBst()" style="width:100%">+ Baustelle hinzufügen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== FIREBASE (gleiches Projekt/DB wie die Dispo-Zentrale) =====
+const cfg = {
+  apiKey: "AIzaSyAuU6mF5p5JQ5qvwLVbYUGc1v-HoQ8ZUMw",
+  authDomain: "dispo-hellefeld.firebaseapp.com",
+  databaseURL: "https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "dispo-hellefeld",
+  storageBucket: "dispo-hellefeld.firebasestorage.app",
+  messagingSenderId: "34994251645",
+  appId: "1:34994251645:web:2f8a076d385bb245354e14"
+};
+firebase.initializeApp(cfg);
+const db=firebase.database();
+
+const ffRef=db.ref('fremdfirmen');
+const bstRef=db.ref('baustellen');
+const auftragssortenRef=db.ref('auftragssorten');
+let auftragssorten={asphalt:[],strasse:[]};
+const fremdRef=db.ref('fremd');
+const fremdfirmenChatRef=db.ref('fremdfirmenChat');
+const bestellungenRef=db.ref('bestellungen');
+const connRef=db.ref('.info/connected');
+let eigeneBaustellenRef=null;
+let eigeneBaustellen=[];
+
+// ===== AUTH: sofort anonym anmelden, unabhängig vom PIN =====
+function authErrorBanner(err){
+  const code=(err&&err.code)||'';
+  const msg = code==='auth/operation-not-allowed'
+    ? 'Anonyme Anmeldung ist im Firebase-Projekt nicht aktiviert.'
+    : code==='auth/unauthorized-domain'
+    ? 'Diese Domain ist in Firebase nicht freigegeben.'
+    : 'Anmeldung an der Datenbank fehlgeschlagen: '+((err&&err.message)||err);
+  let bar=document.getElementById('authErrBar');
+  if(!bar){bar=document.createElement('div');bar.id='authErrBar';bar.className='errbar';document.body.appendChild(bar);}
+  bar.textContent='\u26A0  '+msg;
+}
+const authReady = firebase.auth().signInAnonymously()
+  .catch(err=>{console.error('[Auth]',err);authErrorBanner(err);throw err;});
+
+let fremdfirmen=[], baustellen=[];
+let meineFF=null;
+let meineAuftraege=[];
+let tags={FV:[],FD:[]};
+let _ffListeReady=false, _pendingPinAttempt=false;
+
+function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function toast(msg,v){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(v?' '+v:'');setTimeout(()=>t.classList.remove('show'),2600)}
+function fmtDatum(iso){if(!iso)return'—';const p=String(iso).split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:iso}
+
+// ===== PIN-EINGABE =====
+function renderPinDots(){
+  const inp=document.getElementById('pinInput');
+  const box=document.getElementById('pinDots');
+  if(!inp||!box)return;
+  const len=inp.value.length;
+  const total=Math.max(4,len);
+  let html='';
+  for(let i=0;i<total;i++)html+='<span class="pin-dot'+(i<len?' filled':'')+'"></span>';
+  box.innerHTML=html;
+}
+function tryPin(){
+  const inp=document.getElementById('pinInput'), err=document.getElementById('pinErr');
+  const val=inp.value.trim();
+  if(!val){err.textContent='Bitte PIN eingeben';return;}
+  if(!_ffListeReady){
+    _pendingPinAttempt=true;
+    err.textContent='Einen Moment, Daten werden geladen…';
+    return;
+  }
+  pruefePin(val);
+}
+function pruefePin(val){
+  const err=document.getElementById('pinErr');
+  const treffer=fremdfirmen.find(f=>f.pin && String(f.pin)===val);
+  if(treffer){
+    try{localStorage.setItem('ffPin',val);}catch(e){}
+    err.textContent='';
+    setProfil(treffer.name);
+  } else {
+    err.textContent='Falscher PIN';
+    document.getElementById('pinInput').value='';
+    renderPinDots();
+    document.getElementById('pinInput').focus();
+  }
+}
+document.getElementById('pinBtn').addEventListener('click',tryPin);
+document.getElementById('pinInput').addEventListener('input',renderPinDots);
+document.getElementById('pinInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryPin();}});
+setTimeout(()=>document.getElementById('pinInput').focus(),150);
+
+function setProfil(name){
+  meineFF=name;
+  try{localStorage.setItem('ffName',name);}catch(e){}
+  document.getElementById('hdrFF').textContent=name;
+  document.getElementById('firmenname').value=name;
+  document.getElementById('gate').classList.add('hidden');
+  renderMeine();
+  ladeEigeneBaustellen(name);
+  zeigeReplyNtfyBox(name);
+  ladeMeineChatNachrichten(name);
+  renderTouren();
+  renderFzgZeilen();
+}
+
+// Jede Fremdfirma sieht und speichert nur ihre eigenen, zuvor selbst eingetippten
+// Baustellen – niemals die interne Baustellen-Liste von Hilgenroth.
+function ladeEigeneBaustellen(name){
+  eigeneBaustellenRef=db.ref('fremdfirmenBaustellen/'+ffSlug(name));
+  eigeneBaustellenRef.on('value',s=>{
+    const v=s.val();
+    eigeneBaustellen=Array.isArray(v)?v:[];
+    const dl=document.getElementById('bstDatalist');
+    dl.innerHTML=eigeneBaustellen.map(n=>'<option value="'+esc(n)+'">').join('');
+  });
+}
+
+// ===== ANTWORT-EMPFANG (ntfy-Anleitung + eigener Chat-Verlauf) =====
+function zeigeReplyNtfyBox(name){
+  const topic='hilgenroth-dispo-ff-reply-'+ffSlug(name);
+  document.getElementById('replyNtfyPanel').style.display='block';
+  document.getElementById('replyNtfyTopicText').textContent=topic;
+  let collapsed=null; try{collapsed=localStorage.getItem('replyNtfyBoxCollapsed');}catch(e){}
+  if(collapsed==='1'){
+    document.getElementById('replyNtfyBox').style.display='none';
+    document.getElementById('replyNtfyToggleIcon').textContent='▸';
+  }
+}
+window.toggleReplyNtfyBox=function(){
+  const box=document.getElementById('replyNtfyBox');
+  const icon=document.getElementById('replyNtfyToggleIcon');
+  const hidden=box.style.display==='none';
+  box.style.display=hidden?'block':'none';
+  icon.textContent=hidden?'▾':'▸';
+  try{localStorage.setItem('replyNtfyBoxCollapsed',hidden?'0':'1');}catch(e){}
+};
+window.copyReplyNtfyTopic=function(){
+  const txt=document.getElementById('replyNtfyTopicText').textContent;
+  navigator.clipboard?.writeText(txt).then(()=>toast('Kanalname kopiert','success'))
+    .catch(()=>toast('Kopieren nicht möglich – bitte manuell markieren','amber'));
+};
+
+// ===== CHAT ALS ECHTE GESPRÄCHS-THREADS =====
+// Jede Fremdfirma hat einen "Allgemein"-Thread (ID: general-<slug>) sowie optional
+// einen eigenen Thread pro Auftrag (ID = Auftrags-ID, dieselbe wie in "fremd"/"bestellungen").
+function _generalThreadId(){ return 'general-'+ffSlug(meineFF); }
+let meineThreads={};
+let _threadPrevSnapshot=null;
+let _activeThreadId=null;
+let _lastPopupThreadId=null;
+
+function ladeMeineChatNachrichten(name){
+  fremdfirmenChatRef.on('value',s=>{
+    const v=s.val()||{};
+    pruefeNeueDispoNachrichten(v,name);
+    meineThreads={};
+    Object.entries(v).forEach(([id,t])=>{ if(t.firma===name) meineThreads[id]=t; });
+    renderMeineChatNachrichten();
+    if(_activeThreadId && meineThreads[_activeThreadId]) renderChatOv();
+  });
+}
+function pruefeNeueDispoNachrichten(v,name){
+  if(_threadPrevSnapshot===null){ _threadPrevSnapshot=v; return; }
+  Object.entries(v).forEach(([id,t])=>{
+    if(t.firma!==name)return;
+    const prevMsgs=(_threadPrevSnapshot[id]&&_threadPrevSnapshot[id].msgs)||{};
+    const curMsgs=t.msgs||{};
+    Object.entries(curMsgs).forEach(([mid,m])=>{
+      if(m.von==='dispo' && !prevMsgs[mid]){
+        zeigeReplyAlert(t,m.text);
+      }
+    });
+  });
+  _threadPrevSnapshot=v;
+}
+function playReplySound(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const t0=ctx.currentTime;
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=740;
+    gain.gain.setValueAtTime(0.0001,t0);
+    gain.gain.exponentialRampToValueAtTime(0.25,t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001,t0+0.22);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0+0.24);
+  }catch(e){}
+}
+function zeigeReplyAlert(thread,text){
+  playReplySound();
+  _lastPopupThreadId=thread._id||null;
+  document.getElementById('replyAlertLabel').textContent=thread.bestellLabel||'Allgemein';
+  document.getElementById('replyAlertBody').textContent=text;
+  document.getElementById('replyAlertOv').style.display='flex';
+}
+window.closeReplyAlert=function(){ document.getElementById('replyAlertOv').style.display='none'; };
+window.oeffneAusPopup=function(){
+  closeReplyAlert();
+  if(_lastPopupThreadId) openChatThreadById(_lastPopupThreadId);
+};
+function renderMeineChatNachrichten(){
+  const box=document.getElementById('chatMsgList');
+  if(!box)return;
+  const list=Object.entries(meineThreads).map(([id,t])=>({...t,_id:id}))
+    .sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
+  document.getElementById('chatMsgCount').textContent=list.length;
+  if(!list.length){box.innerHTML='<div class="empty">Noch keine Gespräche.</div>';return;}
+  box.innerHTML=list.map(t=>{
+    const msgs=Object.values(t.msgs||{}).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    const last=msgs[msgs.length-1];
+    return '<div class="chat-thread-row'+(t.erledigt?' erledigt':'')+'" onclick="openChatThreadById(\''+t._id+'\')">'
+      +'<div class="cth"><strong>'+esc(t.bestellLabel||'Allgemein')+'</strong>'
+      +(t.erledigt?'<span class="badge" style="background:var(--grn-s);color:var(--grn)">Erledigt</span>':'<span class="badge" style="background:var(--blu-s);color:var(--blu)">Offen</span>')
+      +'</div>'
+      +'<div class="ctp">'+(last?(last.von==='firma'?'Du: ':'Dispo: ')+esc(last.text):'Noch keine Nachricht')+'</div>'
+      +'</div>';
+  }).join('');
+}
+function openChatThreadById(id){
+  const t=meineThreads[id];
+  openChatThread(id, t?t.bestellungId:null, t?t.bestellLabel:'Allgemein');
+}
+window.openChatThread=function(threadId,bestellungId,bestellLabel){
+  _activeThreadId=threadId;
+  if(!meineThreads[threadId]){
+    meineThreads[threadId]={firma:meineFF,bestellungId:bestellungId||null,bestellLabel:bestellLabel||'Allgemein',erledigt:false,msgs:{}};
+  }
+  document.getElementById('chatOv').style.display='flex';
+  renderChatOv();
+  setTimeout(()=>document.getElementById('chatOvInput').focus(),100);
+};
+window.closeChatThread=function(){ document.getElementById('chatOv').style.display='none'; _activeThreadId=null; };
+function renderChatOv(){
+  const t=meineThreads[_activeThreadId]; if(!t)return;
+  document.getElementById('chatOvTitle').textContent=t.bestellLabel||'Allgemein';
+  document.getElementById('chatOvStatus').textContent=t.erledigt?'Erledigt':'Offen';
+  const msgs=Object.values(t.msgs||{}).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const box=document.getElementById('chatOvMsgs');
+  box.innerHTML=!msgs.length
+    ? '<div class="empty">Noch keine Nachricht – schreib die erste.</div>'
+    : msgs.map(m=>'<div class="msg-bubble von-'+m.von+'">'+esc(m.text)+'<span class="msg-time">'+(m.createdAt?new Date(m.createdAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+'</span></div>').join('');
+  box.scrollTop=box.scrollHeight;
+  const btn=document.getElementById('chatOvErledigtBtn');
+  btn.textContent=t.erledigt?'Wieder öffnen':'Als erledigt markieren';
+}
+window.sendChatThreadMsg=function(){
+  const inp=document.getElementById('chatOvInput');
+  const txt=inp.value.trim();
+  if(!txt||!_activeThreadId)return;
+  const t=meineThreads[_activeThreadId];
+  const threadRef=fremdfirmenChatRef.child(_activeThreadId);
+  const upd={
+    firma:meineFF,
+    bestellungId:t.bestellungId||null,
+    bestellLabel:t.bestellLabel||'Allgemein',
+    erledigt:false,
+    updatedAt:firebase.database.ServerValue.TIMESTAMP
+  };
+  if(!t.createdAt)upd.createdAt=firebase.database.ServerValue.TIMESTAMP;
+  threadRef.update(upd).then(()=>{
+    return threadRef.child('msgs').push({von:'firma',text:txt,createdAt:firebase.database.ServerValue.TIMESTAMP});
+  }).then(()=>{
+    inp.value='';
+    const topic='hilgenroth-dispo-ff-chat-'+ffSlug(meineFF);
+    fetch('https://ntfy.sh/'+encodeURIComponent(topic),{
+      method:'POST', body:txt,
+      headers:{'Title':'Nachricht von '+meineFF+' · '+(t.bestellLabel||'Allgemein'),'Tags':'speech_balloon','Priority':'default'}
+    }).catch(()=>{});
+  }).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+window.toggleChatThreadErledigt=function(){
+  if(!_activeThreadId)return;
+  const t=meineThreads[_activeThreadId];
+  const val=!t.erledigt;
+  fremdfirmenChatRef.child(_activeThreadId).update({erledigt:val})
+    .then(()=>toast(val?'Als erledigt markiert':'Wieder geöffnet','success'))
+    .catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+
+connRef.on('value',s=>{
+  const el=document.getElementById('conn'), tx=document.getElementById('connTxt');
+  if(s.val()===true){el.className='conn online';tx.textContent='Online'}
+  else{el.className='conn offline';tx.textContent='Offline'}
+});
+
+authReady.then(()=>{
+  auftragssortenRef.on('value',s=>{
+    const v=s.val();
+    auftragssorten={
+      asphalt:Array.isArray(v&&v.asphalt)?v.asphalt:[],
+      strasse:Array.isArray(v&&v.strasse)?v.strasse:[]
+    };
+    // Sorten-Suchlisten aktualisieren ohne Werte zu verlieren
+    touren.forEach((_,i)=>ffRebuildSorteSuche(i));
+  });
+  ffRef.on('value',s=>{
+    const v=s.val();
+    fremdfirmen=Array.isArray(v)?v:[];
+    _ffListeReady=true;
+    if(!meineFF){
+      const smParam=new URLSearchParams(location.search).get('ff');
+      let treffer=null;
+      if(smParam) treffer=fremdfirmen.find(f=>ffSlug(f.name)===ffSlug(smParam));
+      if(!treffer){
+        let savedName=null; try{savedName=localStorage.getItem('ffName');}catch(e){}
+        if(savedName) treffer=fremdfirmen.find(f=>f.name===savedName);
+      }
+      if(!treffer){
+        let savedPin=null; try{savedPin=localStorage.getItem('ffPin');}catch(e){}
+        if(savedPin) treffer=fremdfirmen.find(f=>f.pin&&String(f.pin)===savedPin);
+      }
+      if(treffer){ setProfil(treffer.name); }
+      else if(_pendingPinAttempt){ _pendingPinAttempt=false; pruefePin(document.getElementById('pinInput').value.trim()); }
+    }
+    renderAdminBstList();
+  });
+
+  bstRef.on('value',s=>{
+    const v=s.val();
+    baustellen=Array.isArray(v)?v:[];
+    renderAdminBstList();
+  });
+
+  fremdRef.on('value',s=>{
+    const v=s.val()||{};
+    meineAuftraege=Object.entries(v).map(([id,o])=>({id,...o}));
+    renderMeine();
+  });
+}).catch(()=>{});
+
+function ffSlug(name){
+  return String(name||'').toLowerCase()
+    .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'unbekannt';
+}
+
+// ===== TAGS (Fahrzeug-Typ = feste Liste, Fahrzeuge/Fahrer = freie Eingabe) =====
+function renderTags(key){
+  const box=document.getElementById('tags'+key);
+  if(!box)return;
+  box.innerHTML=tags[key].map((t,i)=>'<span class="ms-tag">'+esc(t)+'<button type="button" onclick="removeTag(\''+key+'\','+i+')">×</button></span>').join('');
+}
+window.removeTag=function(key,i){ tags[key].splice(i,1); renderTags(key); };
+window.addFreeTag=function(key){
+  const inp=document.getElementById(key==='FV'?'fvInput':'fdInput');
+  const v=inp.value.trim();
+  if(!v)return;
+  if(!tags[key].includes(v))tags[key].push(v);
+  inp.value='';
+  renderTags(key);
+};
+['fvInput','fdInput'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); addFreeTag(id==='fvInput'?'FV':'FD'); }
+  });
+});
+
+// ===== TOUREN (bis zu 4 Touren mit je Material/Sorte/Menge) =====
+let touren=[{material:'',sorte:'',menge:''}];
+function ffGetSorteListe(mat){
+  return mat==='Strassenbaustoffe'?auftragssorten.strasse:auftragssorten.asphalt;
+}
+function ffRebuildSorteSuche(i){
+  const inp=document.getElementById('ffSorteInp'+i);
+  const box=document.getElementById('ffSorteBox'+i);
+  if(!inp||!box)return;
+  const q=inp.value;
+  const mat=touren[i]?touren[i].material:'';
+  const liste=ffGetSorteListe(mat);
+  const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste;
+  box.innerHTML=filtered.map(s=>'<div onclick="ffSelectSorte('+i+','+JSON.stringify(s)+')" style="padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer">'+s+'</div>').join('')
+    +(q.trim()?'<div onclick="ffSelectSorte('+i+','+JSON.stringify(q.trim())+')" style="padding:10px 12px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)">✎ „'+q.trim()+'“ verwenden</div>':'');
+  box.style.display=filtered.length||q.trim()?'block':'none';
+}
+window.ffSelectSorte=function(i,val){
+  touren[i].sorte=val;
+  const inp=document.getElementById('ffSorteInp'+i);
+  const chip=document.getElementById('ffSorteChip'+i);
+  const chipTxt=document.getElementById('ffSorteChipTxt'+i);
+  const box=document.getElementById('ffSorteBox'+i);
+  if(inp)inp.value='';
+  if(box)box.style.display='none';
+  if(chip)chip.style.display='flex';
+  if(chipTxt)chipTxt.textContent=val;
+};
+window.ffClearSorte=function(i){
+  touren[i].sorte='';
+  const inp=document.getElementById('ffSorteInp'+i);
+  const chip=document.getElementById('ffSorteChip'+i);
+  if(inp)inp.value='';
+  if(chip)chip.style.display='none';
+};
+function renderTouren(){
+  const list=document.getElementById('tourenList');
+  const btn=document.getElementById('addTourBtn');
+  list.innerHTML=touren.map((t,i)=>`
+    <div class="tour-row" style="flex-direction:column;gap:8px;align-items:stretch">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;cursor:pointer"><input type="radio" name="matTour${i}" value="Asphalt" ${t.material==='Asphalt'||!t.material?'checked':''} onchange="touren[${i}].material='Asphalt';touren[${i}].sorte='';ffClearSorte(${i});ffRebuildSorteSuche(${i})"> 🟤 Asphalt</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;cursor:pointer"><input type="radio" name="matTour${i}" value="Strassenbaustoffe" ${t.material==='Strassenbaustoffe'?'checked':''} onchange="touren[${i}].material='Strassenbaustoffe';touren[${i}].sorte='';ffClearSorte(${i});ffRebuildSorteSuche(${i})"> 🟢 Straßenbaustoffe</label>
+        ${i>0?'<button type="button" class="del" onclick="removeTour('+i+')" style="margin-left:auto">x</button>':''}
+      </div>
+      <div style="position:relative">
+        <input id="ffSorteInp${i}" type="text" placeholder="Sorte suchen oder tippen…" autocomplete="off"
+          oninput="touren[${i}].sorte=this.value;ffRebuildSorteSuche(${i})"
+          onfocus="ffRebuildSorteSuche(${i})" value="">
+        <div id="ffSorteChip${i}" style="display:${t.sorte?'flex':'none'};align-items:center;justify-content:space-between;margin-top:4px;background:#e8f0fe;color:#1a73e8;font-weight:700;font-size:13px;padding:8px 12px;border-radius:8px">
+          <span id="ffSorteChipTxt${i}">${esc(t.sorte)}</span>
+          <button type="button" onclick="ffClearSorte(${i})" style="background:none;border:none;color:inherit;font-size:18px;cursor:pointer;line-height:1;padding:0">x</button>
+        </div>
+        <div id="ffSorteBox${i}" style="display:none;position:absolute;z-index:99;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:8px;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
+      </div>
+      <div style="position:relative">
+        <input type="number" inputmode="decimal" min="0" step="0.5" placeholder="Menge" value="${esc(t.menge)}" oninput="touren[${i}].menge=this.value" style="padding-right:24px">
+        <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--ink3);font-size:12px;pointer-events:none">t</span>
+      </div>
+    </div>`).join('');
+  if(btn)btn.style.display=touren.length>=4?'none':'inline-flex';
+}
+window.addTour=function(){
+  if(touren.length>=4)return;
+  touren.push({material:'',sorte:'',menge:''});
+  renderTouren();
+};
+window.removeTour=function(i){
+  touren.splice(i,1);
+  renderTouren();
+};
+// Liste schließen bei Klick außerhalb
+document.addEventListener('click',e=>{
+  touren.forEach((_,i)=>{
+    const box=document.getElementById('ffSorteBox'+i);
+    const inp=document.getElementById('ffSorteInp'+i);
+    if(box&&inp&&!box.contains(e.target)&&e.target!==inp)box.style.display='none';
+  });
+});
+let fzgZeilen=[];
+function renderFzgZeilen(){
+  const list=document.getElementById('fzgList');
+  list.innerHTML=fzgZeilen.map((z,i)=>
+    '<div class="fzg-zeile"><span>'+esc(z.anz)+'× '+esc(z.typ)+'</span><span style="color:var(--ink3);font-size:11px">'+esc(z.typ)+'</span>'
+    +'<button type="button" class="del" onclick="removeFzgZeile('+i+')">×</button></div>'
+  ).join('');
+}
+window.addFzgZeile=function(){
+  const typ=document.getElementById('fzgTypSel').value;
+  const anz=parseInt(document.getElementById('fzgAnzSel').value)||1;
+  if(!typ)return;
+  const vorh=fzgZeilen.findIndex(z=>z.typ===typ);
+  if(vorh>=0){fzgZeilen[vorh].anz=anz;}else{fzgZeilen.push({typ,anz});}
+  document.getElementById('fzgTypSel').value='';
+  document.getElementById('fzgAnzSel').value='1';
+  renderFzgZeilen();
+};
+window.removeFzgZeile=function(i){ fzgZeilen.splice(i,1); renderFzgZeilen(); };
+
+// ===== AUFTRAG ABSENDEN (direkt in den Fremdfirmen-Tab, keine Freigabe nötig) =====
+document.getElementById('ordForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  if(!meineFF){toast('Bitte zuerst anmelden','amber');return;}
+
+  // Touren validieren
+  const gueltTouren=touren.filter(t=>t.sorte&&t.menge&&parseFloat(t.menge)>0);
+  if(!gueltTouren.length){toast('Bitte mindestens eine Tour mit Sorte und Menge angeben','amber');return;}
+
+  const bstName=document.getElementById('baustelle').value.trim();
+  if(bstName && !eigeneBaustellen.some(n=>n.toLowerCase()===bstName.toLowerCase()) && eigeneBaustellenRef){
+    eigeneBaustellenRef.set([...eigeneBaustellen,bstName]).catch(()=>{});
+  }
+
+  const ersteTour=gueltTouren[0];
+  const order={
+    firmenname:meineFF,
+    auftragsnummerF:document.getElementById('auftragsnummerF').value.trim(),
+    baustelle:bstName,
+    material:ersteTour.material||'Asphalt',
+    sorte:ersteTour.sorte,
+    menge:parseFloat(ersteTour.menge)+' t',
+    touren:gueltTouren.map(t=>({material:t.material||'Asphalt',sorte:t.sorte,menge:parseFloat(t.menge)+' t'})),
+    abholung:document.getElementById('abholung').value,
+    uhrzeit:document.getElementById('uhrzeit').value?document.getElementById('uhrzeit').value+' Uhr':'',
+    vehicleTypes:fzgZeilen.map(z=>z.anz+'× '+z.typ),
+    fahrzeugDetails:[...fzgZeilen],
+    vehicles:[...tags.FV],
+    drivers:[...tags.FD],
+    bemerkung:document.getElementById('bemerkung').value.trim(),
+    quelle:'terminal',
+    createdAt:firebase.database.ServerValue.TIMESTAMP
+  };
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true; btn.textContent='Wird gesendet…';
+  const orderId=Date.now().toString();
+  Promise.all([
+    fremdRef.child(orderId).set(order),
+    bestellungenRef.child(orderId).set({
+      typ:'fremd',
+      firma:meineFF,
+      bstName:bstName,
+      material:order.sorte,
+      menge:order.menge,
+      fahrzeugtyp:tags.FT.join(', '),
+      datum:order.abholung,
+      uhrzeit:order.uhrzeit,
+      bemerkung:order.bemerkung,
+      uebernommen:true,
+      beauftragt:false,
+      erledigt:false,
+      createdAt:firebase.database.ServerValue.TIMESTAMP
+    })
+  ]).then(()=>{
+    toast('Auftrag eingestellt','success');
+    document.getElementById('ordForm').reset();
+    document.getElementById('firmenname').value=meineFF;
+    tags={FV:[],FD:[]};
+    renderTags('FV');renderTags('FD');
+    touren=[{material:'',sorte:'',menge:''}];
+    fzgZeilen=[];
+    renderTouren();
+    renderFzgZeilen();
+  }).catch(err=>{
+    toast('Fehler: '+err.message,'amber');
+  }).finally(()=>{
+    btn.disabled=false; btn.textContent='Auftrag einstellen';
+  });
+});
+
+// ===== EIGENE AUFTRÄGE =====
+function renderMeine(){
+  const box=document.getElementById('ordList');
+  if(!box)return;
+  if(!meineFF){box.innerHTML='<div class="empty">Noch keine Aufträge.</div>';return;}
+  const list=meineAuftraege.filter(o=>o.firmenname===meineFF)
+    .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,15);
+  document.getElementById('ordCount').textContent=list.length;
+  if(!list.length){box.innerHTML='<div class="empty">Noch keine Aufträge.</div>';return;}
+  box.innerHTML=list.map(o=>{
+    const tourHtml=Array.isArray(o.touren)&&o.touren.length>1
+      ? '<div style="margin:4px 0;border-left:3px solid var(--blu-s);padding-left:8px">'
+        +o.touren.map((t,i)=>'<small>Tour '+(i+1)+': '+esc(t.sorte||'')+(t.menge?' · '+esc(t.menge):'')+'</small>').join('')
+        +'</div>'
+      : '<small>'+esc(o.sorte||'')+(o.menge?' · '+esc(o.menge):'')+'</small>';
+    const fzgHtml=o.vehicleTypes&&o.vehicleTypes.length
+      ? '<small>Fahrzeuge: '+esc(o.vehicleTypes.join(', '))+'</small>' : '';
+    const label=esc(o.sorte||'')+(o.baustelle?' · '+esc(o.baustelle):'');
+    return '<div class="ord"><div class="ord-h"><strong>'+esc(o.baustelle||'Auftrag')+'</strong>'
+    +'<span class="badge">Im System</span></div>'
+    +tourHtml
+    +'<small>Abholung: '+fmtDatum(o.abholung)+(o.uhrzeit?' · '+esc(o.uhrzeit):'')+'</small>'
+    +fzgHtml
+    +(o.bemerkung?'<small>'+esc(o.bemerkung)+'</small>':'')
+    +'<button class="btn-s" style="margin-top:8px;width:100%" onclick="openChatThread(\'' + o.id + '\',\'' + o.id + '\',\'' + label.replace(/\'/g,"\\'") + '\')">\u{1F4AC} Chat zu diesem Auftrag</button>'
+    +'</div>';
+  }).join('');
+}
+// ===== ADMIN (Baustellen mitpflegen, gleiche Liste wie Dispo-Zentrale) =====
+const ADMIN_PW='Hilgenroth8!';
+let adminUnlocked=false;
+window.openAdmin=function(){
+  document.getElementById('adminOv').style.display='flex';
+  let saved=null; try{saved=sessionStorage.getItem('ffAdmin');}catch(e){}
+  if(saved===ADMIN_PW){ adminUnlocked=true; showAdminContent(); }
+  else {
+    adminUnlocked=false;
+    document.getElementById('adminPwStep').style.display='block';
+    document.getElementById('adminContent').style.display='none';
+    document.getElementById('adminPw').value='';
+    document.getElementById('adminPwErr').textContent='';
+    setTimeout(()=>document.getElementById('adminPw').focus(),100);
+  }
+};
+window.closeAdmin=function(){ document.getElementById('adminOv').style.display='none'; };
+window.checkAdminPw=function(){
+  const v=document.getElementById('adminPw').value;
+  if(v===ADMIN_PW){
+    try{sessionStorage.setItem('ffAdmin',ADMIN_PW);}catch(e){}
+    adminUnlocked=true;
+    showAdminContent();
+  } else {
+    document.getElementById('adminPwErr').textContent='Falsches Passwort';
+  }
+};
+function showAdminContent(){
+  document.getElementById('adminPwStep').style.display='none';
+  document.getElementById('adminContent').style.display='block';
+  renderAdminBstList();
+}
+document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkAdminPw();}});
+function renderAdminBstList(){
+  if(!adminUnlocked)return;
+  const bl=document.getElementById('admBstList');
+  if(!bl)return;
+  bl.innerHTML=!baustellen.length
+    ? '<div style="padding:10px 0;color:var(--muted);font-size:12px">Noch keine Baustellen.</div>'
+    : baustellen.map(b=>'<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:12px"><strong>'+esc(b.nr)+'</strong> – '+esc(b.name)+'</div>').join('');
+}
+window.admAddBst=function(){
+  const nr=document.getElementById('admBstNr').value.trim();
+  const name=document.getElementById('admBstName').value.trim();
+  const anfahrt=document.getElementById('admBstAnfahrt').value.trim();
+  if(!nr||!name){toast('Nummer und Name eingeben','amber');return;}
+  if(baustellen.find(b=>b.nr===nr)){toast('Nummer bereits vorhanden','amber');return;}
+  const neu=[...baustellen,{nr,name,anfahrt}].sort((a,b)=>a.nr.localeCompare(b.nr,undefined,{numeric:true}));
+  bstRef.set(neu).then(()=>{
+    document.getElementById('admBstNr').value='';
+    document.getElementById('admBstName').value='';
+    document.getElementById('admBstAnfahrt').value='';
+    toast('Baustelle hinzugefügt','success');
+  }).catch(e=>toast('Fehler: '+e.message,'amber'));
+};
+
+// Datum-Vorgabe: morgen
+(function(){
+  const d=new Date(); d.setDate(d.getDate()+1);
+  document.getElementById('abholung').value=d.toISOString().slice(0,10);
+})();
+</script>
+</body>
+</html>
