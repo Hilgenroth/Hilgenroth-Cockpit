@@ -429,27 +429,34 @@ let _smListeReady=false, _pendingPinAttempt=false;
 function esc(s){if(!s&&s!==0)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function toast(msg,v){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(v?' '+v:'');setTimeout(()=>t.classList.remove('show'),2600)}
 
-const FZG_TYPEN=['3A-Zug','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
+const FZG_TYPEN=['3A-Zug','2A','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
 let bFzgZeilen=[{typ:'',anz:1}];
 function bRenderFzg(){
   const list=document.getElementById('fzgList');
   const btn=document.getElementById('addFzgBtn');
   if(!list)return;
   list.innerHTML=bFzgZeilen.map((z,i)=>
-    '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
+    '<div style="margin-bottom:10px;border:1px solid var(--line);border-radius:var(--rs);padding:10px;background:var(--surf)">'
+    // Zeile 1: Typ + Anzahl + Löschen
+    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
     +'<select style="flex:1" onchange="bFzgZeilen['+i+'].typ=this.value">'
     +'<option value="">— Typ wählen —</option>'
     +FZG_TYPEN.map(t=>'<option value="'+t+'"'+(z.typ===t?' selected':'')+'>'+t+'</option>').join('')
     +'</select>'
     +'<input type="number" min="1" max="20" value="'+z.anz+'" style="width:70px;text-align:center" oninput="bFzgZeilen['+i+'].anz=parseInt(this.value)||1" title="Anzahl">'
     +'<span style="font-size:11px;color:var(--ink3);white-space:nowrap">Fzg.</span>'
-    +(i>0?'<button type="button" onclick="bFzgZeilen.splice('+i+',1);bRenderFzg()" style="background:none;border:none;color:var(--brand);font-size:18px;cursor:pointer;line-height:1">x</button>':'<span style="width:20px"></span>')
+    +(i>0?'<button type="button" onclick="bFzgZeilen.splice('+i+',1);bRenderFzg()" style="background:none;border:none;color:var(--brand);font-size:18px;cursor:pointer;line-height:1">×</button>':'<span style="width:20px"></span>')
+    +'</div>'
+    // Zeile 2: Kennzeichen / Fahrer
+    +'<input type="text" placeholder="Kennzeichen / Fahrer (z.B. PW 840)" value="'+esc(z.fahrer||'')+'" oninput="bFzgZeilen['+i+'].fahrer=this.value" style="width:100%;margin-bottom:6px;box-sizing:border-box">'
+    // Zeile 3: Aufgabe / Material
+    +'<input type="text" placeholder="Aufgabe / Material (z.B. mit Fräse &amp; 0,5 to. - 1/3)" value="'+esc(z.aufgabe||'')+'" oninput="bFzgZeilen['+i+'].aufgabe=this.value" style="width:100%;box-sizing:border-box">'
     +'</div>'
   ).join('');
   if(btn)btn.style.display=bFzgZeilen.length>=5?'none':'inline-flex';
 }
-window.bAddFzg=function(){ if(bFzgZeilen.length>=5)return; bFzgZeilen.push({typ:'',anz:1}); bRenderFzg(); };
-function bResetFzg(){ bFzgZeilen=[{typ:'',anz:1}]; bRenderFzg(); }
+window.bAddFzg=function(){ if(bFzgZeilen.length>=5)return; bFzgZeilen.push({typ:'',anz:1,fahrer:'',aufgabe:''}); bRenderFzg(); };
+function bResetFzg(){ bFzgZeilen=[{typ:'',anz:1,fahrer:'',aufgabe:''}]; bRenderFzg(); }
 
 function onMatTypeChange(val){
   const sorteWrap=document.getElementById('sorteWrap');
@@ -750,10 +757,9 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
     material:material,
     menge:mengeVal+' t',
     fahrzeugDetails:bFzgZeilen.filter(z=>z.typ).map((z,i)=>{
-      // Anzahl nochmal frisch aus DOM lesen
       const rows=document.querySelectorAll('#fzgList input[type="number"]');
       const domAnz=rows[i]?parseInt(rows[i].value)||1:z.anz;
-      return {typ:z.typ,anz:domAnz};
+      return {typ:z.typ,anz:domAnz,fahrer:z.fahrer||'',aufgabe:z.aufgabe||''};
     }),
     fahrzeugtyp:bFzgZeilen.filter(z=>z.typ).map(z=>z.anz+'× '+z.typ).join(', '),
     datum:document.getElementById('datum').value,
