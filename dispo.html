@@ -192,6 +192,8 @@ td strong{color:var(--ink);font-weight:700}
 .tour-row:hover{background:var(--surf)}
 .tour-grid{display:grid;grid-template-columns:200px 1fr 130px 130px 120px 150px 80px 1fr 1fr 110px;gap:10px;align-items:start}
 .badge{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* In der Tagesübersicht lieber umbrechen als abschneiden */
+.tour-grid .badge{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.2;text-align:left;overflow-wrap:anywhere;font-size:9px;letter-spacing:.03em;padding:3px 7px}
 .tg-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
 .t-name{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.2}
 .t-sub{font-size:12px;color:var(--ink3);margin-top:4px;font-weight:600}
@@ -1209,7 +1211,9 @@ td strong{color:var(--ink);font-weight:700}
         </div>
       </div>
       <div class="fg"><label>Bemerkung</label><textarea name="bemerkung" placeholder="Optionale Hinweise..."></textarea></div>
-      <div class="sr"><button type="submit" class="btn-p" id="submitS">Auftrag hinzufügen</button><button type="button" class="btn-c" onclick="cancelEdit('sundern')">Abbrechen</button></div>
+      <div class="sr"><button type="submit" class="btn-p" id="submitS">Auftrag hinzufügen</button>
+        <button type="button" class="btn-s" onclick="stMaskeLeeren()" title="Fahrzeuge, Touren, Material, Menge, Uhrzeit und Bemerkung zurücksetzen – Schachtmeister, Baustelle und Datum bleiben stehen">🧹 Maske leeren</button>
+        <button type="button" class="btn-c" onclick="cancelEdit('sundern')">Abbrechen</button></div>
     </form>
   </div>
   <div class="panel">
@@ -1256,6 +1260,8 @@ td strong{color:var(--ink);font-weight:700}
       </select>
       <button class="nb" onclick="printOv()">🖨 Drucken</button>
       <button class="nb" onclick="ovVortag()" title="Alle Sundern-Aufträge vom Vortag auf dieses Datum kopieren" style="background:var(--grn-s);color:var(--grn);border-color:var(--grn)">📋 Vortag übernehmen</button>
+      <button class="nb" id="ovLeerenBtn" onclick="ovLeeren()" title="Alle Sundern-Aufträge dieses Tages auf einmal löschen" style="background:var(--brand-s);color:var(--brand);border-color:var(--brand)">🗑 Tag leeren</button>
+      <button class="nb" id="ovUndoBtn" onclick="ovUndoLeeren()" title="Das Leeren rückgängig machen" style="display:none;background:var(--amb-s);color:var(--amb);border-color:var(--amb)">↩ Rückgängig</button>
     </div>
   </div>
   <div class="ov-panel">
@@ -1559,6 +1565,8 @@ td strong{color:var(--ink);font-weight:700}
       <button class="nb nb-i" onclick="fbNav(1)" title="Tag vor"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       <input type="date" class="ndp" id="fbDate" onchange="fbSetDate(this.value)">
       <button class="nb" id="fbFilterBtn" onclick="fbToggleFilter()" title="Schachtmeister ohne Fahrzeug ausblenden">&#128065; Nur verplante</button>
+      <button class="nb" id="fbLeerenBtn" onclick="fbLeeren()" title="Die komplette Fahrzeugplanung dieses Tages löschen" style="background:var(--brand-s);color:var(--brand);border-color:var(--brand)">&#128465; Tag leeren</button>
+      <button class="nb" id="fbUndoBtn" onclick="fbUndoLeeren()" title="Das Leeren rückgängig machen" style="display:none;background:var(--amb-s);color:var(--amb);border-color:var(--amb)">&#8617; Rückgängig</button>
       <button class="nb" onclick="fbVortag()" title="Die Fahrzeugplanung des Vortags auf diesen Tag kopieren" style="background:var(--grn-s);color:var(--grn);border-color:var(--grn)">&#128203; Vortag &uuml;bernehmen</button>
       <button class="nb" onclick="fbExport()">&#11015; Excel</button>
       <button class="nb" onclick="printOv()">&#128424; Drucken</button>
@@ -1758,7 +1766,7 @@ td strong{color:var(--ink);font-weight:700}
 <div class="mb" id="smModal" onclick="if(event.target===this)closeSMModal()">
   <div class="modal">
     <h2>Schachtmeister verwalten</h2>
-    <p>Änderungen sind sofort für alle Nutzer sichtbar. Der Zugang zum Bestell-Terminal läuft über einen persönlichen Link (Admin-Menü im Terminal → „🔗 Link"); der PIN ist nur eine Zusatzoption für den Fall, dass der Link mal verloren geht.</p>
+    <p>Änderungen sind sofort für alle Nutzer sichtbar. Der Zugang zum Bestell-Terminal läuft über einen persönlichen Link (Admin-Menü im Terminal → „🔗 Link"); der PIN ist nur eine Zusatzoption für den Fall, dass der Link mal verloren geht. Mit <strong>▲ ▼</strong> legst du die Reihenfolge fest – genau so werden die Schachtmeister in der Tagesübersicht sortiert. <em>Hellefeld</em> und <em>Olpe</em> stehen dort immer ganz unten.</p>
     <div class="fleet-mgmt sm">
       <div class="fleet-col">
         <h4>👷 Schachtmeister &amp; Telefonnummern</h4>
@@ -2383,10 +2391,28 @@ function removeBst(i){
   bstRef.set(baustellen).then(()=>{renderBstModal();rebuildBstSelects();showToast('Entfernt','success');}).catch(e=>showToast('Fehler: '+e.message,'amber'));
 }
 
+// Werke stehen in der Tagesübersicht immer unter den Schachtmeistern
+const SM_WERKE=['Hellefeld','Olpe'];
+function smIstWerk(name){ return SM_WERKE.some(w=>w.toLowerCase()===String(name||'').trim().toLowerCase()); }
+// Platz in der Tagesübersicht: Reihenfolge der Schachtmeister-Liste, dann Werke, dann Unbekannte
+function smSortIdx(name){
+  const n=String(name||'').trim();
+  const i=schachtmeister.findIndex(s=>s.name===n);
+  if(i>=0)return i;
+  const w=SM_WERKE.findIndex(x=>x.toLowerCase()===n.toLowerCase());
+  if(w>=0)return 100000+w;
+  return 200000;
+}
+function smWerkOpts(cur){
+  return '<optgroup label="Werke">'+SM_WERKE.map(w=>
+    `<option value="${esc(w)}"${w===cur?' selected':''}>${esc(w)}</option>`).join('')+'</optgroup>';
+}
 function rebuildSMSelect(){
   const sel=document.querySelector('#formS [name="schachtmeister"]');
   const cur=sel.value;
-  sel.innerHTML='<option value="">-- bitte wählen --</option>'+schachtmeister.map(s=>`<option${s.name===cur?' selected':''}>${esc(s.name)}</option>`).join('');
+  sel.innerHTML='<option value="">-- bitte wählen --</option>'
+    +schachtmeister.map(s=>`<option${s.name===cur?' selected':''}>${esc(s.name)}</option>`).join('')
+    +smWerkOpts(cur);
   // refresh phone chip
   const sm=schachtmeister.find(s=>s.name===sel.value);
   const chip=document.getElementById('smPhoneChip');
@@ -2403,6 +2429,11 @@ function renderSMModal(){
     const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name||b.addr||'')}</option>`).join('');
     return `<div class="sm-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:10px 4px">
       <div style="display:flex;align-items:center;gap:8px;width:100%">
+        <span style="font-size:10px;font-weight:800;color:var(--ink3);min-width:20px;font-variant-numeric:tabular-nums">${i+1}.</span>
+        <span style="display:flex;flex-direction:column;gap:1px">
+          <button onclick="moveSM(${i},-1)" title="Nach oben" ${i===0?'disabled':''} style="background:none;border:none;color:${i===0?'var(--line2)':'var(--ink3)'};font-size:10px;line-height:1;padding:1px 3px;cursor:${i===0?'default':'pointer'}">▲</button>
+          <button onclick="moveSM(${i},1)" title="Nach unten" ${i===schachtmeister.length-1?'disabled':''} style="background:none;border:none;color:${i===schachtmeister.length-1?'var(--line2)':'var(--ink3)'};font-size:10px;line-height:1;padding:1px 3px;cursor:${i===schachtmeister.length-1?'default':'pointer'}">▼</button>
+        </span>
         <span style="font-weight:700;flex:1" title="${esc(s.name)}">${esc(s.name)}</span>
         <span class="ph">${esc(s.phone||'—')}</span>
         <span class="ph" title="Zugangs-PIN fürs Bestell-Terminal">${s.pin?'PIN '+esc(s.pin):'kein PIN'}</span>
@@ -2419,6 +2450,18 @@ function renderSMModal(){
     </div>`;
   }).join('');
 }
+// Reihenfolge bestimmt die Sortierung der Tagesübersicht
+window.moveSM=function(i,d){
+  const j=i+d;
+  if(j<0||j>=schachtmeister.length)return;
+  const arr=[...schachtmeister];
+  [arr[i],arr[j]]=[arr[j],arr[i]];
+  schachtmeister=arr;
+  renderSMModal();
+  smRef.set(smClean(schachtmeister))
+    .then(()=>{rebuildSMSelect();if(activeTab()==='overview')renderOv();})
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
 function openSMModal(){document.getElementById('smModal').classList.add('show');renderSMModal();}
 function closeSMModal(){document.getElementById('smModal').classList.remove('show');}
 function addSM(){
@@ -2650,6 +2693,8 @@ let stFzgZeilen=[];
 // ===== LADEPLATZ (Motorwagen / Anhänger) =====
 // Eine Tour kann auf dem ganzen Fahrzeug, nur auf dem Motorwagen oder nur auf dem Anhänger liegen.
 const TEIL_LBL={MW:'MW',ANH:'Anh.'};
+// In der schmalen Material-Spalte der Tagesübersicht reicht die Kurzform
+function matKurz(m){ return m==='Strassenbaustoffe'?'Str.-Baustoffe':(m||''); }
 function teilPrefix(t){ return (t&&TEIL_LBL[t.teil])?TEIL_LBL[t.teil]+': ':''; }
 // Tour-Indizes einer Fahrzeugzeile (neu: tourIdxs[], alt: tourIdx)
 function zTours(z){
@@ -2675,6 +2720,12 @@ function tourFahrten(touren){
     }
   });
   return {list,nrOf};
+}
+// Sorte eines Auftrags fuer Tabellen/Export – Touren schlagen das obere Sorte-Feld
+function sorteText(o){
+  const ts=(o&&Array.isArray(o.touren))?o.touren.filter(t=>t&&t.sorte):[];
+  if(ts.length)return ts.map(t=>teilPrefix(t)+t.sorte).join(' + ');
+  return (o&&o.sorte)||'';
 }
 // Kurztext einer Tour, z.B. "MW: 0/45 · 3,5 t"
 function tourKurz(t){
@@ -3047,6 +3098,22 @@ document.getElementById('formF').addEventListener('submit',e=>{
   }).catch(err=>showToast('Fehler: '+err.message,'amber'));
 });
 
+// Eingabemaske zurücksetzen – praktisch, wenn ein Auftrag vom Vortag geöffnet wurde.
+// Schachtmeister, Baustelle und Datum bleiben stehen, alles andere wird geleert.
+window.stMaskeLeeren=function(){
+  const f=document.getElementById('formS'); if(!f)return;
+  ['auftragsnummer','uhrzeit','bemerkung'].forEach(n=>{ if(f.elements[n])f.elements[n].value=''; });
+  const mR=f.querySelector('[name="material"][value=""]'); if(mR)mR.checked=true;
+  if(typeof sorteClearS==='function')sorteClearS();
+  if(typeof sorteSyncS==='function')sorteSyncS();
+  const menge=document.getElementById('stMengeInput'); if(menge)menge.value='';
+  const uhrSel=document.getElementById('uhrzeitSelS'); if(uhrSel)uhrSel.value='';
+  clearTags('S');
+  stResetFzg();
+  stResetTouren();
+  showToast('Maske geleert','amber');
+};
+
 document.getElementById('formS').addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
   const matRS=f.querySelector('[name="material"]:checked');
@@ -3278,6 +3345,29 @@ function ordZeit(o){
 function pTime(s){if(!s)return 9999;const m=String(s).match(/(\d{1,2})[:.]?(\d{2})?/);if(!m)return 9999;return parseInt(m[1])*60+(m[2]?parseInt(m[2]):0)}
 
 // ===== VORTAG ÜBERNEHMEN =====
+// Tag leeren – mit Rückholmöglichkeit, solange die Seite offen bleibt
+let _ovUndo=null;
+window.ovLeeren=function(){
+  const liste=data.sundern.filter(o=>o.datum===ovDate);
+  if(!liste.length){showToast('Für diesen Tag gibt es keine Sundern-Aufträge','amber');return;}
+  const fAnz=data.fremd.filter(o=>o.abholung===ovDate).length;
+  if(!confirm('Alle '+liste.length+' Sundern-Auftr'+(liste.length===1?'ag':'äge')+' vom '+fmtDate(ovDate)+' löschen?'
+    +(fAnz?('\n\n'+(fAnz===1?'Der Fremdfirmen-Auftrag bleibt erhalten.':'Die '+fAnz+' Fremdfirmen-Aufträge bleiben erhalten.')):'')
+    +'\n\nDirekt danach kannst du es mit „Rückgängig" wieder zurückholen.'))return;
+  _ovUndo={datum:ovDate,orders:liste.map(o=>{const c={...o};delete c.id;return {id:o.id,data:c};})};
+  const upd={}; liste.forEach(o=>{upd[o.id]=null;});
+  sundernRef.update(upd)
+    .then(()=>{showToast(liste.length+(liste.length===1?' Auftrag':' Aufträge')+' gelöscht – Rückgängig möglich','amber');renderOv();})
+    .catch(e=>{_ovUndo=null;showToast('Fehler: '+e.message,'amber');});
+};
+window.ovUndoLeeren=function(){
+  if(!_ovUndo){showToast('Nichts zum Wiederherstellen','amber');return;}
+  const upd={}; _ovUndo.orders.forEach(x=>{upd[x.id]=x.data;});
+  const n=_ovUndo.orders.length;
+  sundernRef.update(upd)
+    .then(()=>{_ovUndo=null;showToast(n+(n===1?' Auftrag':' Aufträge')+' wiederhergestellt','success');renderOv();})
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
 window.ovVortag=function(){
   const prev=new Date(ovDate);
   prev.setDate(prev.getDate()-1);
@@ -3325,7 +3415,8 @@ window.ovInlineEdit=function(id,type){
   modal.id='oe-modal';
   modal.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;overflow-y:auto;padding:20px;box-sizing:border-box';
   const FZG=['3A-Zug','2A','3A','4A','Sattel','Trecker','Kipper','Tieflader','Betonmischer','Sonstiges'];
-  const smOpts=schachtmeister.map(s=>`<option value="${esc(s.name)}"${s.name===o.schachtmeister?' selected':''}>${esc(s.name)}</option>`).join('');
+  const smOpts=schachtmeister.map(s=>`<option value="${esc(s.name)}"${s.name===o.schachtmeister?' selected':''}>${esc(s.name)}</option>`).join('')
+    +smWerkOpts(o.schachtmeister||'');
   const bstOpts=baustellen.map(b=>`<option value="${esc(String(b.nr))}">${esc(b.nr)}${b.ks?' · KS '+esc(b.ks):''} – ${esc(b.name||b.addr||'')}</option>`).join('');
   const matOpts=['Asphalt','Strassenbaustoffe','Beton'].map(m=>`<label><input type="radio" name="oe_material" value="${m}"${(o.material||'')===''+m?' checked':''}> ${m==='Strassenbaustoffe'?'Straßenbaustoffe':m}</label>`).join('')
     +`<label><input type="radio" name="oe_material" value=""${(o.material||'')===''?' checked':''}> ⏸ Ohne Material</label>`;
@@ -3596,12 +3687,10 @@ function renderOv(){
   const d=new Date(ovDate);
   document.getElementById('ovWd').textContent=days[d.getDay()];
   document.getElementById('ovDb').textContent=String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
-  const smOrder=schachtmeister.map(s=>s.name);
+  const ub=document.getElementById('ovUndoBtn');
+  if(ub)ub.style.display=(_ovUndo&&_ovUndo.datum===ovDate)?'inline-flex':'none';
   const sl=data.sundern.filter(o=>o.datum===ovDate).sort((a,b)=>{
-    const ai=smOrder.indexOf(a.schachtmeister);
-    const bi=smOrder.indexOf(b.schachtmeister);
-    const aIdx=ai===-1?9999:ai;
-    const bIdx=bi===-1?9999:bi;
+    const aIdx=smSortIdx(a.schachtmeister), bIdx=smSortIdx(b.schachtmeister);
     if(aIdx!==bIdx)return aIdx-bIdx;
     return pTime(ordZeit(a))-pTime(ordZeit(b));
   });
@@ -3667,12 +3756,18 @@ function renderOv(){
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
     <div><div class="tg-label">Material</div>${(()=>{
       if(Array.isArray(o.touren)&&o.touren.length&&o.touren.some(t=>t.teil)){
-        return o.touren.filter(t=>t.mat||t.material).map(t=>{const m=t.mat||t.material;return '<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+(TEIL_LBL[t.teil]?esc(TEIL_LBL[t.teil])+' · ':'')+esc(m)+'</span>';}).join('');
+        return o.touren.filter(t=>t.mat||t.material).map(t=>{const m=t.mat||t.material;return '<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px" title="'+esc(m)+'">'+(TEIL_LBL[t.teil]?esc(TEIL_LBL[t.teil])+' · ':'')+esc(matKurz(m))+'</span>';}).join('');
       }
       const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);
       if(!mats.length)return '<span class="badge om" style="display:block">⏸ Ohne Material</span>';
-      return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
-    <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
+      return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px" title="'+esc(m)+'">'+esc(matKurz(m))+'</span>').join('');})()}</div>
+    <div><div class="tg-label">Sorte</div>${(()=>{
+      const ts=Array.isArray(o.touren)?o.touren.filter(t=>t&&t.sorte):[];
+      if(ts.length)return ts.map(t=>'<div style="font-size:12px;font-weight:700;line-height:1.35;margin-bottom:3px">'
+        +(TEIL_LBL[t.teil]?'<span style="display:inline-block;font-size:9px;font-weight:800;color:var(--blu);background:var(--blu-s);border-radius:3px;padding:0 4px;margin-right:4px;vertical-align:1px">'+esc(TEIL_LBL[t.teil])+'</span>':'')
+        +esc(t.sorte)+'</div>').join('');
+      return '<div style="font-size:12px;font-weight:700;line-height:1.4">'+esc(o.sorte||'—')+'</div>';
+    })()}</div>
     <div><div class="tg-label">Menge</div><div style="font-weight:700">${(()=>{
   const cleanNum=(v,mat)=>{const n=parseFloat(String(v||'').replace(/ *(t|m³|cbm)\s*$/i,''));return (n&&n>0)?(n+(mat==='Beton'?' m³':' t')):'';};
   // Touren vorhanden → alle Tour-Mengen anzeigen (0 ignorieren)
@@ -3714,12 +3809,18 @@ function renderOv(){
     <div><div class="tg-label">Fahrer / Fzg</div>${pills(o.vehicles)} ${pills(o.drivers)}</div>
     <div><div class="tg-label">Material</div>${(()=>{
       if(Array.isArray(o.touren)&&o.touren.length&&o.touren.some(t=>t.teil)){
-        return o.touren.filter(t=>t.mat||t.material).map(t=>{const m=t.mat||t.material;return '<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+(TEIL_LBL[t.teil]?esc(TEIL_LBL[t.teil])+' · ':'')+esc(m)+'</span>';}).join('');
+        return o.touren.filter(t=>t.mat||t.material).map(t=>{const m=t.mat||t.material;return '<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px" title="'+esc(m)+'">'+(TEIL_LBL[t.teil]?esc(TEIL_LBL[t.teil])+' · ':'')+esc(matKurz(m))+'</span>';}).join('');
       }
       const mats=Array.isArray(o.touren)&&o.touren.length>1?[...new Set(o.touren.map(t=>t.mat||t.material).filter(Boolean))]:[o.material].filter(Boolean);
       if(!mats.length)return '<span class="badge om" style="display:block">⏸ Ohne Material</span>';
-      return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px">'+esc(m)+'</span>').join('');})()}</div>
-    <div><div class="tg-label">Sorte</div><div style="font-size:12px;font-weight:700;line-height:1.4">${esc(o.sorte||'—')}</div></div>
+      return mats.map(m=>'<span class="badge '+(m==='Strassenbaustoffe'?'sb':m==='Beton'?'be':'')+'" style="display:block;margin-bottom:3px" title="'+esc(m)+'">'+esc(matKurz(m))+'</span>').join('');})()}</div>
+    <div><div class="tg-label">Sorte</div>${(()=>{
+      const ts=Array.isArray(o.touren)?o.touren.filter(t=>t&&t.sorte):[];
+      if(ts.length)return ts.map(t=>'<div style="font-size:12px;font-weight:700;line-height:1.35;margin-bottom:3px">'
+        +(TEIL_LBL[t.teil]?'<span style="display:inline-block;font-size:9px;font-weight:800;color:var(--blu);background:var(--blu-s);border-radius:3px;padding:0 4px;margin-right:4px;vertical-align:1px">'+esc(TEIL_LBL[t.teil])+'</span>':'')
+        +esc(t.sorte)+'</div>').join('');
+      return '<div style="font-size:12px;font-weight:700;line-height:1.4">'+esc(o.sorte||'—')+'</div>';
+    })()}</div>
     <div><div class="tg-label">Menge</div><div style="font-weight:700">${(()=>{
   const cleanNum=(v,mat)=>{const n=parseFloat(String(v||'').replace(/ *(t|m³|cbm)\s*$/i,''));return (n&&n>0)?(n+(mat==='Beton'?' m³':' t')):'';};
   // Touren vorhanden → alle Tour-Mengen anzeigen (0 ignorieren)
@@ -3773,17 +3874,17 @@ window.clearList=function(type){
 
 window.exportF=function(){
   const l=getFilt('fremd');if(!l.length){showToast('Keine Auftraege');return}
-  dlXlsx({'Fremdfirma':l.map(o=>({'Kunde':o.firmenname,'AuftrNr':o.auftragsnummerF,'Baustelle':o.baustelle,'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl||'','Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Datum':fmtDate(o.abholung),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}))},'Dispo_Fremdfirmen');showToast('Excel exportiert','success');
+  dlXlsx({'Fremdfirma':l.map(o=>({'Kunde':o.firmenname,'AuftrNr':o.auftragsnummerF,'Baustelle':o.baustelle,'Material':o.material,'Sorte':sorteText(o),'Menge':o.menge,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl||'','Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Datum':fmtDate(o.abholung),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}))},'Dispo_Fremdfirmen');showToast('Excel exportiert','success');
 };
 window.exportS=function(){
   const l=getFilt('sundern');if(!l.length){showToast('Keine Auftraege');return}
-  dlXlsx({'Sundern':l.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'Kostenstelle':ksFor(o),'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}))},'Dispo_Sundern');showToast('Excel exportiert','success');
+  dlXlsx({'Sundern':l.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'Kostenstelle':ksFor(o),'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':sorteText(o),'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}))},'Dispo_Sundern');showToast('Excel exportiert','success');
 };
 window.exportBoth=function(){
   if(!data.fremd.length&&!data.sundern.length){showToast('Keine Auftraege');return}
   const sheets={};
-  if(data.fremd.length)sheets['Fremdfirma']=data.fremd.map(o=>({'Kunde':o.firmenname,'AuftrNr':o.auftragsnummerF,'Baustelle':o.baustelle,'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl||'','Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Datum':fmtDate(o.abholung),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
-  if(data.sundern.length)sheets['Sundern']=data.sundern.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'Kostenstelle':ksFor(o),'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':o.sorte,'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
+  if(data.fremd.length)sheets['Fremdfirma']=data.fremd.map(o=>({'Kunde':o.firmenname,'AuftrNr':o.auftragsnummerF,'Baustelle':o.baustelle,'Material':o.material,'Sorte':sorteText(o),'Menge':o.menge,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl||'','Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Datum':fmtDate(o.abholung),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
+  if(data.sundern.length)sheets['Sundern']=data.sundern.map(o=>({'Schachtmeister':o.schachtmeister,'BstNr':o.baustellennummer,'Kostenstelle':ksFor(o),'AuftrNr':o.auftragsnummer,'Baustelle':o.baustelle,'Fzg-Typ':(o.vehicleTypes||[]).join(', '),'Anzahl':o.anzahl,'Fahrzeuge':(o.vehicles||[]).join(', '),'Fahrer':(o.drivers||[]).join(', '),'Material':o.material,'Sorte':sorteText(o),'Menge':o.menge,'Datum':fmtDate(o.datum),'Uhrzeit':o.uhrzeit,'Bemerkung':o.bemerkung}));
   dlXlsx(sheets,'Hilgenroth_Dispo');showToast('Gesamt-Export erstellt','success');
 };
 window.openTagesExportModal=function(){
@@ -3852,7 +3953,7 @@ window.exportTagesuebersicht=function(exportDatum){
         'Fahrzeuge':(o.vehicles||[]).join(', '),
         'Fahrer':(o.drivers||[]).join(', '),
         'Material':o.material||'',
-        'Sorte':o.sorte||'',
+        'Sorte':sorteText(o),
         'Menge':o.menge||'',
         'Tour-Zuweisung':'',
         'Touren':tourenStr,
@@ -3975,7 +4076,8 @@ function renderAlle(){
         <td class="tc-aufnr">${esc(o.auftragsnummerF)}</td>
         <td class="tc-bst">${esc(o.baustelle)}</td>
         <td class="tc-mat">${o.material?`<span class="badge ${o.material==='Strassenbaustoffe'?'sb':o.material==='Beton'?'be':''}">${esc(o.material)}</span>`:'<span class="badge om">⏸ Ohne</span>'}</td>
-        <td class="tc-sorte">${esc(o.sorte)}</td>
+        <td class="tc-sorte">${(()=>{const ts=Array.isArray(o.touren)?o.touren.filter(t=>t&&t.sorte):[];
+          return ts.length?esc(ts.map(t=>teilPrefix(t)+t.sorte).join(' + ')):esc(o.sorte||'');})()}</td>
         <td class="tc-menge">${esc(o.menge)}</td>
         <td class="tc-fzgt">${pills(o.vehicleTypes)}</td>
         <td class="tc-anz">${esc(o.anzahl)}</td>
@@ -4000,7 +4102,8 @@ function renderAlle(){
         <td class="tc-aufnr">${esc(o.auftragsnummer)}</td>
         <td class="tc-bst">${esc(o.baustelle)}</td>
         <td class="tc-mat">${o.material?`<span class="badge ${o.material==='Strassenbaustoffe'?'sb':o.material==='Beton'?'be':''}">${esc(o.material)}</span>`:'<span class="badge om">⏸ Ohne</span>'}</td>
-        <td class="tc-sorte">${esc(o.sorte)}</td>
+        <td class="tc-sorte">${(()=>{const ts=Array.isArray(o.touren)?o.touren.filter(t=>t&&t.sorte):[];
+          return ts.length?esc(ts.map(t=>teilPrefix(t)+t.sorte).join(' + ')):esc(o.sorte||'');})()}</td>
         <td class="tc-menge">${esc(o.menge)}</td>
         <td class="tc-fzgt">${pills(o.vehicleTypes)}</td>
         <td class="tc-anz">${esc(o.anzahl)}</td>
@@ -5577,6 +5680,28 @@ window.fbNav=function(d){
   const dp=document.getElementById('fbDate'); if(dp)dp.value=fbDate;
   renderFzgBest();
 };
+let _fbUndo=null;
+window.fbLeeren=function(){
+  const tag=fzgPlan[fbDate]||{};
+  const zeilen=Object.values(tag).reduce((a,v)=>a+fbNorm(v).length,0);
+  if(!zeilen){showToast('Für diesen Tag ist nichts geplant','amber');return;}
+  if(!confirm('Die komplette Fahrzeugplanung vom '+fmtDate(fbDate)+' löschen?\n\n'
+    +zeilen+(zeilen===1?' Zeile':' Zeilen')+' bei '+Object.keys(tag).length+(Object.keys(tag).length===1?' Schachtmeister.':' Schachtmeistern.')
+    +'\n\nDirekt danach kannst du es mit „Rückgängig" wieder zurückholen.'))return;
+  _fbUndo={datum:fbDate,plan:JSON.parse(JSON.stringify(tag))};
+  delete fzgPlan[fbDate];
+  fzgPlanRef.child(fbDate).remove()
+    .then(()=>{showToast('Fahrzeugplanung gelöscht – Rückgängig möglich','amber');renderFzgBest();})
+    .catch(e=>{_fbUndo=null;showToast('Fehler: '+e.message,'amber');});
+};
+window.fbUndoLeeren=function(){
+  if(!_fbUndo){showToast('Nichts zum Wiederherstellen','amber');return;}
+  const d=_fbUndo.datum, plan=_fbUndo.plan;
+  fzgPlan[d]=plan;
+  fzgPlanRef.child(d).set(plan)
+    .then(()=>{_fbUndo=null;showToast('Fahrzeugplanung wiederhergestellt','success');renderFzgBest();})
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
 window.fbVortag=function(){
   const v=new Date(fbDate+'T12:00:00'); v.setDate(v.getDate()-1);
   const vd=v.toISOString().slice(0,10);
@@ -5702,6 +5827,8 @@ function renderFzgBest(){
   const kzOpts='<option value="">+ Kennzeichen…</option>'+(fleet.vehicles||[]).map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
 
   fbFilterBtnSync();
+  const fub=document.getElementById('fbUndoBtn');
+  if(fub)fub.style.display=(_fbUndo&&_fbUndo.datum===fbDate)?'inline-flex':'none';
   const sichtbar=fbNurVerplant?schachtmeister.filter(sm=>fbAnzSM(sm.name)>0):schachtmeister;
   if(fbNurVerplant&&!sichtbar.length){
     grid.innerHTML='<div class="fb-empty"><div class="ico">🚛</div><h3>Noch niemand verplant</h3>'
