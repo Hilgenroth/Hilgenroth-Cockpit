@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Azubis · Rudolf Hilgenroth</title>
+<style>
+:root{
+  --red:#c8102e; --red-l:#fee2e2; --ink:#1a1d21; --muted:#6b7280;
+  --line:#e3e5e9; --bg:#f4f5f7; --white:#fff; --slate:#4b5563;
+  --betrieb:#16a34a;  --betrieb-l:#dcfce7;
+  --schule:#1d4ed8;   --schule-l:#dbeafe;
+  --ueba:#b45309;     --ueba-l:#fef3c7;
+  --urlaub:#6d28d9;   --urlaub-l:#ede9fe;
+  --krank:#b91c1c;    --krank-l:#fee2e2;
+  --pruefung:#0f766e; --pruefung-l:#ccfbf1;
+  --frei:#9ca3af;     --frei-l:#f1f3f5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;
+     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+     -webkit-text-size-adjust:100%}
+
+/* ── Kopf ── */
+.nav{background:var(--white);border-bottom:1px solid var(--line);display:flex;
+     align-items:center;gap:4px;padding:0 14px;position:sticky;top:0;z-index:40;overflow-x:auto}
+.nav::-webkit-scrollbar{display:none}
+.navb{background:none;border:0;padding:15px 14px;font-size:14px;font-weight:600;color:var(--muted);
+      cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;font-family:inherit}
+.navb.on{color:var(--red);border-bottom-color:var(--red)}
+.sync{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);
+      padding-right:4px;white-space:nowrap}
+.sdot{width:7px;height:7px;border-radius:50%;background:#d1d5db}
+.sdot.on{background:var(--betrieb)}
+
+.wrap{padding:16px;max-width:1700px;margin:0 auto}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.pht{font-size:20px;font-weight:700;margin:0}
+.phs{font-size:12.5px;color:var(--muted);margin-top:2px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.btn{border:1px solid var(--line);background:var(--white);border-radius:8px;padding:9px 14px;
+     font-size:13.5px;font-weight:600;cursor:pointer;color:var(--ink);font-family:inherit;min-height:40px}
+.btn:hover{background:#f8f9fb}
+.btn.p{background:var(--red);border-color:var(--red);color:#fff}
+.btn.p:hover{background:#a50d26}
+.btn.sm{padding:6px 10px;min-height:34px;font-size:12.5px}
+.fs,.fi{border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;
+        background:var(--white);color:var(--ink);font-family:inherit;min-height:40px;width:100%}
+.fs:focus,.fi:focus{outline:none;border-color:var(--red)}
+
+/* ── Kennzahlen ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.st{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.st-l{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.st-v{font-size:21px;font-weight:700;margin-top:3px}
+.st-n{font-size:11.5px;color:var(--muted);margin-top:1px}
+
+.card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.card h2{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--red);
+         margin:0 0 12px;font-weight:700}
+
+/* ── Legende ── */
+.leg{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--slate);margin-bottom:12px}
+.leg i{display:inline-block;width:13px;height:13px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+
+/* ── Jahresraster ── */
+.gw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--white)}
+.grid{border-collapse:separate;border-spacing:0;font-size:11px;min-width:100%}
+.grid th,.grid td{padding:0;border-bottom:1px solid var(--line)}
+.grid tr:last-child td{border-bottom:0}
+.gn{position:sticky;left:0;z-index:3;background:var(--white);border-right:1px solid var(--line);
+    padding:7px 11px!important;min-width:188px;max-width:188px;text-align:left}
+thead .gn{z-index:5}
+.gn-n{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gn-b{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.gm{background:#f8f9fb;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--muted);text-align:center;padding:5px 2px!important;border-right:1px solid var(--line)}
+.gkw{background:#fbfcfd;font-size:9.5px;color:var(--muted);text-align:center;padding:3px 0!important;
+     width:17px;min-width:17px;border-right:1px solid #eef0f3}
+.gc{width:17px;min-width:17px;height:30px;border-right:1px solid #eef0f3;cursor:pointer;position:relative}
+.gc:hover{outline:2px solid var(--red);outline-offset:-2px;z-index:2}
+.gjahr{font-size:9.5px;color:var(--muted);text-align:center;background:var(--white);padding:2px 0!important}
+
+/* ── Monatsraster ── */
+.mw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--white)}
+.mtab{border-collapse:separate;border-spacing:0;font-size:11.5px;min-width:100%}
+.mtab th,.mtab td{border-bottom:1px solid var(--line);padding:0}
+.mtab tr:last-child td{border-bottom:0}
+.md{width:30px;min-width:30px;height:34px;border-right:1px solid #eef0f3;text-align:center;cursor:pointer}
+.md.we{background:#f8f9fb}
+.mh{background:#f8f9fb;font-size:10px;font-weight:700;color:var(--muted);text-align:center;
+    padding:5px 0!important;width:30px;min-width:30px;border-right:1px solid var(--line)}
+.mh.we{color:#b0b5bd}
+.mh-d{font-size:12px;color:var(--ink)}
+
+/* ── Heute ── */
+.heute{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.hbox{border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+.hbox h3{margin:0 0 7px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+.hbox ul{margin:0;padding-left:17px}
+.hbox li{font-size:13px;margin-bottom:2px}
+.hbox .leer{font-size:12.5px;color:var(--muted);font-style:italic}
+
+/* ── Listen ── */
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center;
+     padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.row:last-child{border-bottom:0}
+.row-n{font-weight:700;font-size:14px}
+.row-s{font-size:12px;color:var(--muted)}
+.chip{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+      padding:2px 8px;border-radius:5px;margin-left:7px;white-space:nowrap}
+.ib{width:34px;height:34px;border:1px solid var(--line);background:var(--white);border-radius:7px;
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--slate);padding:0}
+.ib:hover{border-color:var(--red);color:var(--red)}
+.ib svg{width:15px;height:15px;stroke-width:2;fill:none;stroke:currentColor}
+.empty{text-align:center;padding:42px 16px;color:var(--muted)}
+.empty p{margin:6px 0 0;font-size:13.5px}
+
+/* ── Dialog ── */
+.bd{display:none;position:fixed;inset:0;background:rgba(17,20,24,.42);z-index:90;
+    align-items:flex-start;justify-content:center;padding:28px 14px;overflow-y:auto}
+.bd.on{display:flex}
+.bdm{background:var(--white);border-radius:12px;padding:22px;width:560px;max-width:100%;
+     box-shadow:0 10px 36px rgba(0,0,0,.16)}
+.bdt{font-size:16px;font-weight:700;margin-bottom:16px}
+.fr{margin-bottom:12px}
+.fr label{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+          color:var(--muted);margin-bottom:5px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ma{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.ma .links{margin-right:auto}
+.hint{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0}
+
+@media (max-width:760px){
+  .wrap{padding:12px}
+  .bd{padding:0;align-items:stretch}
+  .bdm{border-radius:0;min-height:100%;padding:16px}
+  .gn{min-width:132px;max-width:132px;padding:6px 8px!important}
+  .pht{font-size:17px}
+}
+@media print{
+  .nav,.bar,.leg,.sync{display:none!important}
+  body{background:#fff}
+  .gw{overflow:visible;border:0}
+  .grid{font-size:8px}
+  .gc,.gkw{width:12px;min-width:12px}
+  @page{size:A4 landscape;margin:10mm}
+}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <button class="navb on" data-tab="jahr">Jahresübersicht</button>
+  <button class="navb" data-tab="monat">Monat</button>
+  <button class="navb" data-tab="heute">Heute</button>
+  <button class="navb" data-tab="verwaltung">Azubis verwalten</button>
+  <div class="sync"><span class="sdot" id="sdot"></span><span id="slbl">offline</span></div>
+</div>
+
+<div class="wrap" id="main"></div>
+
+<!-- Azubi anlegen / bearbeiten -->
+<div class="bd" id="bd-azubi">
+  <div class="bdm">
+    <div class="bdt" id="az-titel">Azubi anlegen</div>
+    <div class="fr"><label>Name *</label>
+      <input class="fi" id="az-name" placeholder="z.B. Schramme Justin"></div>
+    <div class="fr2">
+      <div class="fr"><label>Ausbildungsberuf</label>
+        <select class="fs" id="az-beruf" onchange="azVorlagen()">
+          <option>Straßenbauer</option>
+          <option>Baugeräteführer</option>
+          <option>Sonstiges</option>
+        </select>
+      </div>
+      <div class="fr"><label>Lehrjahr</label>
+        <select class="fs" id="az-lj" onchange="azVorlagen()">
+          <option value="1">1. Lehrjahr</option>
+          <option value="2">2. Lehrjahr</option>
+          <option value="3">3. Lehrjahr</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr" id="az-gr-wrap"><label>Gruppe</label>
+      <select class="fs" id="az-gruppe"></select>
+    </div>
+    <div class="fr"><label>Notiz</label>
+      <input class="fi" id="az-notiz" placeholder="z.B. Unterbringung im Gästehaus"></div>
+    <div class="fr" id="az-plan-wrap">
+      <label>Blockplan übernehmen</label>
+      <select class="fs" id="az-plan"></select>
+      <p class="hint" id="az-plan-hint"></p>
+    </div>
+    <div class="ma">
+      <button class="btn links" id="az-del" onclick="azLoeschen()" style="display:none">Löschen</button>
+      <button class="btn" onclick="zu('bd-azubi')">Abbrechen</button>
+      <button class="btn p" onclick="azSpeichern()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zeitraum -->
+<div class="bd" id="bd-zeit">
+  <div class="bdm">
+    <div class="bdt" id="zt-titel">Zeitraum eintragen</div>
+    <div class="fr"><label>Azubi</label><select class="fs" id="zt-azubi"></select></div>
+    <div class="fr"><label>Art</label>
+      <select class="fs" id="zt-art">
+        <option value="betrieb">Betrieb</option>
+        <option value="schule">Berufsschule</option>
+        <option value="ueba">Überbetrieblich (bbz / ABZ)</option>
+        <option value="urlaub">Urlaub</option>
+        <option value="krank">Krank</option>
+        <option value="pruefung">Prüfung</option>
+      </select>
+    </div>
+    <div class="fr2">
+      <div class="fr"><label>Von</label><input class="fi" type="date" id="zt-von"></div>
+      <div class="fr"><label>Bis</label><input class="fi" type="date" id="zt-bis"></div>
+    </div>
+    <div class="fr"><label>Bemerkung</label>
+      <input class="fi" id="zt-text" placeholder="z.B. Vermessung / Simulatoren"></div>
+    <div class="ma">
+      <button class="btn links" id="zt-del" onclick="ztLoeschen()" style="display:none">Löschen</button>
+      <button class="btn" onclick="zu('bd-zeit')">Abbrechen</button>
+      <button class="btn p" onclick="ztSpeichern()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════
+//  Datenbank
+// ══════════════════════════════════════════════════════════
+let db=null, AZ=null, ZT=null;
+try{
+  if(typeof firebase!=='undefined'){
+    if(!firebase.apps.length){
+      firebase.initializeApp({
+        apiKey:"AIzaSyAuU6mF5p5JQ5qvwLVbYUGc1v-HoQ8ZUMw",
+        authDomain:"dispo-hellefeld.firebaseapp.com",
+        databaseURL:"https://dispo-hellefeld-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId:"dispo-hellefeld",
+        storageBucket:"dispo-hellefeld.firebasestorage.app",
+        messagingSenderId:"34994251645",
+        appId:"1:34994251645:web:2f8a076d385bb245354e14"
+      });
+    }
+    db=firebase.database();
+    AZ=db.ref('azubis/personen');
+    ZT=db.ref('azubis/zeiten');
+  }
+}catch(e){ console.warn('Firebase:', e.message); }
+
+let azubis={}, zeiten={}, curTab='jahr', azKey=null, ztKey=null;
+let monatZeiger=new Date();
+
+const ARTEN={
+  betrieb: {label:'Betrieb',                    farbe:'var(--betrieb)',  hell:'var(--betrieb-l)'},
+  schule:  {label:'Berufsschule',               farbe:'var(--schule)',   hell:'var(--schule-l)'},
+  ueba:    {label:'Überbetrieblich (bbz / ABZ)',farbe:'var(--ueba)',     hell:'var(--ueba-l)'},
+  urlaub:  {label:'Urlaub',                     farbe:'var(--urlaub)',   hell:'var(--urlaub-l)'},
+  krank:   {label:'Krank',                      farbe:'var(--krank)',    hell:'var(--krank-l)'},
+  pruefung:{label:'Prüfung',                    farbe:'var(--pruefung)', hell:'var(--pruefung-l)'}
+};
+const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const MON_K =['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+// ══════════════════════════════════════════════════════════
+//  Blockpläne 2026/2027 aus den Plänen der Bildungsträger
+// ══════════════════════════════════════════════════════════
+// bbz der Kreishandwerkerschaft Märkischer Kreis, Iserlohn (Stand 07.11.2025)
+const PLAENE={
+  'Straßenbauer|1|': {
+    quelle:'bbz Iserlohn · Stufenausbildung Bau · 1. Ausbildungsjahr 2026/2027',
+    bloecke:[
+      ['2026-08-01','2026-09-25','betrieb',''],
+      ['2026-09-28','2026-10-16','ueba','bbz · 3 Wochen'],
+      ['2026-10-19','2026-10-30','betrieb',''],
+      ['2026-11-02','2026-11-20','schule',''],
+      ['2026-11-23','2026-12-04','betrieb',''],
+      ['2026-12-07','2026-12-18','ueba','bbz · 2 Wochen'],
+      ['2026-12-21','2027-01-08','betrieb',''],
+      ['2027-01-11','2027-01-29','schule',''],
+      ['2027-02-01','2027-02-26','ueba','bbz · 4 Wochen'],
+      ['2027-03-01','2027-03-19','schule',''],
+      ['2027-03-22','2027-03-25','betrieb',''],
+      ['2027-03-30','2027-04-23','ueba','bbz · 4 Wochen'],
+      ['2027-04-26','2027-06-04','betrieb',''],
+      ['2027-06-07','2027-07-02','schule',''],
+      ['2027-07-05','2027-07-31','betrieb','']
+    ]},
+  'Straßenbauer|2|Gruppe 1': {
+    quelle:'bbz Iserlohn · 2. Ausbildungsjahr 2026/2027 · Gruppe 1',
+    bloecke:[
+      ['2026-08-01','2026-08-21','betrieb',''],
+      ['2026-08-24','2026-09-04','ueba','bbz · 2 Wochen'],
+      ['2026-09-07','2026-09-18','betrieb',''],
+      ['2026-09-21','2026-09-25','betrieb',''],
+      ['2026-09-28','2026-10-16','schule',''],
+      ['2026-10-19','2026-11-13','ueba','bbz · 4 Wochen'],
+      ['2026-11-16','2026-12-04','betrieb',''],
+      ['2026-12-07','2026-12-31','betrieb',''],
+      ['2027-01-04','2027-01-22','ueba','bbz · 3 Wochen'],
+      ['2027-01-25','2027-01-29','betrieb',''],
+      ['2027-02-01','2027-02-26','schule',''],
+      ['2027-03-01','2027-03-25','betrieb',''],
+      ['2027-03-30','2027-04-02','betrieb',''],
+      ['2027-04-05','2027-04-23','schule',''],
+      ['2027-04-26','2027-04-30','ueba','bbz · 1 Woche'],
+      ['2027-05-03','2027-05-07','betrieb',''],
+      ['2027-05-10','2027-05-14','ueba','bbz · 1 Woche'],
+      ['2027-05-18','2027-06-04','schule',''],
+      ['2027-06-07','2027-07-31','betrieb','']
+    ]},
+  'Straßenbauer|2|Gruppe 2': {
+    quelle:'bbz Iserlohn · 2. Ausbildungsjahr 2026/2027 · Gruppe 2',
+    bloecke:[
+      ['2026-08-01','2026-08-21','betrieb',''],
+      ['2026-08-24','2026-09-04','betrieb',''],
+      ['2026-09-07','2026-09-18','ueba','bbz · 2 Wochen'],
+      ['2026-09-21','2026-09-25','betrieb',''],
+      ['2026-09-28','2026-10-16','schule',''],
+      ['2026-10-19','2026-11-13','betrieb',''],
+      ['2026-11-16','2026-12-04','ueba','bbz · 3 Wochen'],
+      ['2026-12-07','2026-12-31','betrieb',''],
+      ['2027-01-04','2027-01-22','betrieb',''],
+      ['2027-01-25','2027-01-29','betrieb',''],
+      ['2027-02-01','2027-02-26','schule',''],
+      ['2027-03-01','2027-03-25','ueba','bbz · 4 Wochen'],
+      ['2027-03-30','2027-04-02','betrieb',''],
+      ['2027-04-05','2027-04-23','schule',''],
+      ['2027-04-26','2027-04-30','ueba','bbz · 1 Woche'],
+      ['2027-05-03','2027-05-07','betrieb',''],
+      ['2027-05-10','2027-05-14','ueba','bbz · 1 Woche'],
+      ['2027-05-18','2027-06-04','schule',''],
+      ['2027-06-07','2027-07-31','betrieb','']
+    ]},
+  'Straßenbauer|3|': {
+    quelle:'bbz Iserlohn · 3. Ausbildungsjahr 2026/2027',
+    bloecke:[
+      ['2026-08-01','2026-09-04','betrieb',''],
+      ['2026-09-07','2026-09-25','schule',''],
+      ['2026-09-28','2026-11-20','betrieb',''],
+      ['2026-11-23','2026-12-18','schule',''],
+      ['2026-12-21','2027-04-23','betrieb',''],
+      ['2027-04-26','2027-05-14','schule',''],
+      ['2027-05-18','2027-06-11','betrieb',''],
+      ['2027-06-14','2027-07-09','ueba','bbz · 4 Wochen'],
+      ['2027-07-12','2027-07-31','betrieb','']
+    ]},
+  // ABZ Oberhausen (Stand 07.05.2026) - nur die überbetrieblichen Zeiten.
+  // Die Berufsschulblöcke am Hans-Schwier-Berufskolleg bitte ergänzen.
+  'Baugeräteführer|1|Gruppe A': {
+    quelle:'ABZ Oberhausen · 1. Ausbildungsjahr · Gruppe A', grund:true,
+    bloecke:[
+      ['2026-08-03','2026-08-28','ueba','GL-Metall · 4,0 Wo.'],
+      ['2026-09-28','2026-10-16','ueba','Vermessung / Simulatoren · 3,0 Wo.'],
+      ['2026-10-19','2026-10-30','ueba','Bautechnik · 2,0 Wo.'],
+      ['2027-04-05','2027-04-30','ueba','Pneumatik / Hydraulik · 4,0 Wo.'],
+      ['2027-07-19','2027-07-30','ueba','Bautechnik · 2,0 Wo.']
+    ]},
+  'Baugeräteführer|1|Gruppe B': {
+    quelle:'ABZ Oberhausen · 1. Ausbildungsjahr · Gruppe B', grund:true,
+    bloecke:[
+      ['2026-08-31','2026-09-25','ueba','Pneumatik / Hydraulik · 4,0 Wo.'],
+      ['2026-10-19','2026-10-30','ueba','Bautechnik · 2,0 Wo.'],
+      ['2026-11-23','2026-12-23','ueba','GL-Metall · 4,5 Wo.'],
+      ['2027-03-22','2027-04-09','ueba','Vermessung / Simulatoren · 3,0 Wo.'],
+      ['2027-07-19','2027-07-30','ueba','Bautechnik · 2,0 Wo.']
+    ]},
+  'Baugeräteführer|1|Gruppe C': {
+    quelle:'ABZ Oberhausen · 1. Ausbildungsjahr · Gruppe C', grund:true,
+    bloecke:[
+      ['2026-08-31','2026-09-25','ueba','GL-Metall · 4,0 Wo.'],
+      ['2026-10-19','2026-10-30','ueba','Bautechnik · 2,0 Wo.'],
+      ['2027-02-01','2027-02-19','ueba','Vermessung / Simulatoren · 3,0 Wo.'],
+      ['2027-05-03','2027-06-04','ueba','Pneumatik / Hydraulik · 4,0 Wo.'],
+      ['2027-07-19','2027-07-30','ueba','Bautechnik · 2,0 Wo.']
+    ]},
+  'Baugeräteführer|2|Gruppe A': {
+    quelle:'ABZ Oberhausen · 2. Ausbildungsjahr · Gruppe A', grund:true,
+    bloecke:[
+      ['2026-08-03','2026-08-28','ueba','ZUMBAU Bagger/Lader · 4,0 Wo.'],
+      ['2026-10-19','2026-11-13','ueba','Schweiß-Lehrgang · 4,0 Wo.'],
+      ['2026-11-23','2026-12-23','ueba','ZUMBAU Krane · 4,5 Wo.'],
+      ['2027-01-18','2027-01-22','pruefung','Vorbereitung Zwischenprüfung · 1,0 Wo.']
+    ]},
+  'Baugeräteführer|2|Gruppe B': {
+    quelle:'ABZ Oberhausen · 2. Ausbildungsjahr · Gruppe B', grund:true,
+    bloecke:[
+      ['2026-08-31','2026-09-25','ueba','ZUMBAU Bagger/Lader · 4,0 Wo.'],
+      ['2026-10-19','2026-11-13','ueba','ZUMBAU Krane · 4,0 Wo.'],
+      ['2027-01-04','2027-01-08','pruefung','Vorbereitung Zwischenprüfung · 1,0 Wo.'],
+      ['2027-03-08','2027-04-02','ueba','Schweiß-Lehrgang · 4,0 Wo.']
+    ]},
+  'Baugeräteführer|2|Gruppe C': {
+    quelle:'ABZ Oberhausen · 2. Ausbildungsjahr · Gruppe C', grund:true,
+    bloecke:[
+      ['2026-11-23','2026-12-23','ueba','Schweiß-Lehrgang · 4,5 Wo.'],
+      ['2027-01-11','2027-01-15','pruefung','Vorbereitung Zwischenprüfung · 1,0 Wo.'],
+      ['2027-03-08','2027-04-02','ueba','ZUMBAU Bagger/Lader · 4,0 Wo.'],
+      ['2027-04-26','2027-05-21','ueba','ZUMBAU Krane · 4,0 Wo.']
+    ]},
+  'Baugeräteführer|3|Gruppe A': {
+    quelle:'ABZ Oberhausen · 3. Ausbildungsjahr · Gruppe A', grund:true,
+    bloecke:[
+      ['2026-08-03','2026-08-21','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 3,0 Wo.'],
+      ['2027-01-04','2027-01-22','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 3,0 Wo.'],
+      ['2027-06-07','2027-06-11','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 1,0 Wo.']
+    ]},
+  'Baugeräteführer|3|Gruppe B': {
+    quelle:'ABZ Oberhausen · 3. Ausbildungsjahr · Gruppe B', grund:true,
+    bloecke:[
+      ['2026-10-12','2026-10-30','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 3,0 Wo.'],
+      ['2027-02-01','2027-02-19','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 3,0 Wo.'],
+      ['2027-06-14','2027-06-18','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 1,0 Wo.']
+    ]},
+  'Baugeräteführer|3|Gruppe C': {
+    quelle:'ABZ Oberhausen · 3. Ausbildungsjahr · Gruppe C', grund:true,
+    bloecke:[
+      ['2026-11-02','2026-11-20','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 3,0 Wo.'],
+      ['2027-04-05','2027-04-23','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 3,0 Wo.'],
+      ['2027-06-21','2027-06-25','ueba','Baumaschinen-Technik / Vorb. Abschlussprüfung · 1,0 Wo.']
+    ]}
+};
+const GRUPPEN={
+  'Straßenbauer|1':[''],
+  'Straßenbauer|2':['Gruppe 1','Gruppe 2'],
+  'Straßenbauer|3':[''],
+  'Baugeräteführer|1':['Gruppe A','Gruppe B','Gruppe C'],
+  'Baugeräteführer|2':['Gruppe A','Gruppe B','Gruppe C'],
+  'Baugeräteführer|3':['Gruppe A','Gruppe B','Gruppe C'],
+  'Sonstiges|1':[''],'Sonstiges|2':[''],'Sonstiges|3':['']
+};
+
+// Ausbildungsjahr: 01.08.2026 bis 31.07.2027
+const JAHR_VON=new Date(2026,7,1), JAHR_BIS=new Date(2027,6,31);
+
+// ══════════════════════════════════════════════════════════
+//  Hilfen
+// ══════════════════════════════════════════════════════════
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function vonIso(s){ const t=String(s||'').split('-'); return new Date(+t[0],(+t[1])-1,+t[2]); }
+function fmt(s){ if(!s)return '–'; const d=vonIso(s);
+  return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear(); }
+function plus(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function montagVon(d){ const x=new Date(d); const w=(x.getDay()+6)%7; x.setDate(x.getDate()-w); x.setHours(0,0,0,0); return x; }
+function kw(d){
+  const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  x.setUTCDate(x.getUTCDate()+4-(x.getUTCDay()||7));
+  const start=new Date(Date.UTC(x.getUTCFullYear(),0,1));
+  return Math.ceil(((x-start)/86400000+1)/7);
+}
+function heuteIso(){ return iso(new Date()); }
+
+// Welche Art hat ein Azubi an diesem Tag? Spätere Einträge gewinnen,
+// damit Urlaub oder Krank einen Blockplan überschreiben können.
+function artAn(azubiId, datumIso){
+  let treffer=null, besteTs=-1;
+  Object.keys(zeiten).forEach(function(k){
+    const z=zeiten[k];
+    if(!z||z.azubiId!==azubiId)return;
+    if(datumIso<z.von||datumIso>z.bis)return;
+    const ts=z.ts||0;
+    if(ts>=besteTs){ besteTs=ts; treffer={key:k,z:z}; }
+  });
+  return treffer;
+}
+
+function azListe(){
+  return Object.entries(azubis).filter(function(e){return e[1]&&e[1].name;})
+    .sort(function(a,b){
+      const l=(a[1].lehrjahr||0)-(b[1].lehrjahr||0);
+      if(l)return l;
+      const be=(a[1].beruf||'').localeCompare(b[1].beruf||'');
+      if(be)return be;
+      return (a[1].name||'').localeCompare(b[1].name||'','de');
+    });
+}
+
+// ══════════════════════════════════════════════════════════
+//  Ansichten
+// ══════════════════════════════════════════════════════════
+function draw(){
+  const m=document.getElementById('main');
+  document.querySelectorAll('.navb').forEach(function(b){
+    b.classList.toggle('on', b.dataset.tab===curTab); });
+  if(curTab==='jahr') m.innerHTML=htmlJahr();
+  else if(curTab==='monat') m.innerHTML=htmlMonat();
+  else if(curTab==='heute') m.innerHTML=htmlHeute();
+  else m.innerHTML=htmlVerwaltung();
+}
+
+function kopf(titel, unter, knoepfe){
+  return '<div class="ph"><div><div class="pht">'+titel+'</div>'+
+    (unter?'<div class="phs">'+unter+'</div>':'')+'</div>'+
+    '<div class="bar">'+(knoepfe||'')+'</div></div>';
+}
+
+function statKacheln(){
+  const h=heuteIso();
+  const liste=azListe();
+  const zaehl={betrieb:0,schule:0,ueba:0,sonst:0};
+  liste.forEach(function(e){
+    const t=artAn(e[0],h);
+    if(!t) zaehl.sonst++;
+    else if(t.z.art==='betrieb') zaehl.betrieb++;
+    else if(t.z.art==='schule') zaehl.schule++;
+    else if(t.z.art==='ueba') zaehl.ueba++;
+    else zaehl.sonst++;
+  });
+  return '<div class="stats">'+
+    kachel('Azubis', liste.length, 'im Ausbildungsjahr 2026/2027')+
+    kachel('Heute im Betrieb', zaehl.betrieb, '', 'var(--betrieb)')+
+    kachel('Heute Berufsschule', zaehl.schule, '', 'var(--schule)')+
+    kachel('Heute überbetrieblich', zaehl.ueba, 'bbz / ABZ', 'var(--ueba)')+
+    '</div>';
+}
+function kachel(l,v,n,farbe){
+  return '<div class="st"><div class="st-l">'+l+'</div>'+
+    '<div class="st-v"'+(farbe?' style="color:'+farbe+'"':'')+'>'+v+'</div>'+
+    (n?'<div class="st-n">'+n+'</div>':'')+'</div>';
+}
+
+function legende(){
+  return '<div class="leg">'+Object.keys(ARTEN).map(function(a){
+    return '<span><i style="background:'+ARTEN[a].farbe+'"></i>'+ARTEN[a].label+'</span>';
+  }).join('')+'<span><i style="background:var(--frei-l);border:1px solid var(--line)"></i>nicht hinterlegt</span></div>';
+}
+
+// ── Jahresübersicht: eine Zeile je Azubi, eine Spalte je Kalenderwoche ──
+function htmlJahr(){
+  const liste=azListe();
+  let h=kopf('Azubis', 'Ausbildungsjahr 2026/2027 · August 2026 bis Juli 2027',
+      '<button class="btn" onclick="window.print()">Drucken</button>'+
+      '<button class="btn" onclick="ztOeffnen()">+ Zeitraum</button>'+
+      '<button class="btn p" onclick="azOeffnen()">+ Azubi</button>');
+  h+=statKacheln();
+  if(!liste.length) return h+leer();
+  h+=legende();
+
+  // Wochen aufbauen
+  const wochen=[];
+  let w=montagVon(JAHR_VON);
+  while(w<=JAHR_BIS){ wochen.push(new Date(w)); w=plus(w,7); }
+
+  // Monatsköpfe
+  let mKopf='', i=0;
+  while(i<wochen.length){
+    const mo=wochen[i].getMonth(), ja=wochen[i].getFullYear();
+    let n=0;
+    while(i+n<wochen.length && wochen[i+n].getMonth()===mo && wochen[i+n].getFullYear()===ja) n++;
+    mKopf+='<th class="gm" colspan="'+n+'">'+MON_K[mo]+' '+String(ja).slice(2)+'</th>';
+    i+=n;
+  }
+
+  h+='<div class="gw"><table class="grid">'+
+     '<thead><tr><th class="gn gm" style="text-align:left">Name</th>'+mKopf+'</tr>'+
+     '<tr><th class="gn gkw" style="text-align:left">KW</th>'+
+       wochen.map(function(d){return '<th class="gkw">'+kw(d)+'</th>';}).join('')+
+     '</tr></thead><tbody>';
+
+  liste.forEach(function(e){
+    const id=e[0], a=e[1];
+    h+='<tr><td class="gn"><div class="gn-n">'+esc(a.name)+'</div>'+
+       '<div class="gn-b">'+esc(a.beruf||'')+' · '+(a.lehrjahr||'?')+'. Lj.'+
+       (a.gruppe?' · '+esc(a.gruppe):'')+'</div></td>';
+    wochen.forEach(function(mon){
+      h+='<td class="gc" style="background:'+wochenHintergrund(id,mon)+'" '+
+         'title="'+esc(wochenText(id,mon))+'" data-woche="'+iso(mon)+'" data-azubi="'+id+'"></td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<p class="hint">Auf eine Woche tippen, um einen Zeitraum einzutragen oder zu ändern. '+
+     'Urlaub und Krank überschreiben den Blockplan.</p>';
+  return h;
+}
+
+// Hintergrund einer Woche: ein Farbverlauf über Montag bis Freitag,
+// damit auch geteilte Wochen stimmen.
+function wochenHintergrund(id, montag){
+  const f=[];
+  for(let t=0;t<5;t++){
+    const d=plus(montag,t);
+    if(d<JAHR_VON||d>JAHR_BIS){ f.push('var(--frei-l)'); continue; }
+    const tr=artAn(id,iso(d));
+    f.push(tr?ARTEN[tr.z.art].farbe:'var(--frei-l)');
+  }
+  if(f.every(function(x){return x===f[0];})) return f[0];
+  const st=[];
+  f.forEach(function(c,n){ st.push(c+' '+(n*20)+'%', c+' '+((n+1)*20)+'%'); });
+  return 'linear-gradient(90deg,'+st.join(',')+')';
+}
+function wochenText(id, montag){
+  const namen=[];
+  for(let t=0;t<5;t++){
+    const tr=artAn(id,iso(plus(montag,t)));
+    const s=tr?(ARTEN[tr.z.art].label+(tr.z.text?' – '+tr.z.text:'')):'nicht hinterlegt';
+    if(namen.indexOf(s)<0) namen.push(s);
+  }
+  return 'KW '+kw(montag)+' ab '+fmt(iso(montag))+': '+namen.join(' / ');
+}
+
+// ── Monatsansicht ──
+function htmlMonat(){
+  const liste=azListe();
+  const jahr=monatZeiger.getFullYear(), mon=monatZeiger.getMonth();
+  const tage=new Date(jahr,mon+1,0).getDate();
+  let h=kopf('Monat', MONATE[mon]+' '+jahr,
+      '<button class="btn sm" onclick="monatWechsel(-1)">&larr;</button>'+
+      '<button class="btn sm" onclick="monatWechsel(0)">Heute</button>'+
+      '<button class="btn sm" onclick="monatWechsel(1)">&rarr;</button>'+
+      '<button class="btn p" onclick="ztOeffnen()">+ Zeitraum</button>');
+  if(!liste.length) return h+leer();
+  h+=legende();
+
+  const WT=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  let kopfz='';
+  for(let t=1;t<=tage;t++){
+    const d=new Date(jahr,mon,t), we=(d.getDay()===0||d.getDay()===6);
+    kopfz+='<th class="mh'+(we?' we':'')+'">'+WT[(d.getDay()+6)%7]+
+           '<div class="mh-d">'+t+'</div></th>';
+  }
+  h+='<div class="mw"><table class="mtab"><thead><tr>'+
+     '<th class="gn mh" style="text-align:left">Name</th>'+kopfz+'</tr></thead><tbody>';
+  liste.forEach(function(e){
+    const id=e[0], a=e[1];
+    h+='<tr><td class="gn"><div class="gn-n">'+esc(a.name)+'</div>'+
+       '<div class="gn-b">'+esc(a.beruf||'')+' · '+(a.lehrjahr||'?')+'. Lj.</div></td>';
+    for(let t=1;t<=tage;t++){
+      const d=new Date(jahr,mon,t), ds=iso(d), we=(d.getDay()===0||d.getDay()===6);
+      const tr=artAn(id,ds);
+      const bg=tr?ARTEN[tr.z.art].farbe:(we?'#f1f3f5':'var(--frei-l)');
+      h+='<td class="md'+(we?' we':'')+'" data-tag="'+ds+'" data-azubi="'+id+'" '+
+         'style="background:'+bg+'" title="'+esc(fmt(ds)+': '+(tr?ARTEN[tr.z.art].label+(tr.z.text?' – '+tr.z.text:''):'nicht hinterlegt'))+'"></td>';
+    }
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+function monatWechsel(n){
+  if(n===0) monatZeiger=new Date();
+  else monatZeiger=new Date(monatZeiger.getFullYear(),monatZeiger.getMonth()+n,1);
+  draw();
+}
+
+// ── Heute ──
+function htmlHeute(){
+  const liste=azListe();
+  const hIso=heuteIso();
+  let h=kopf('Heute', fmt(hIso), '<button class="btn p" onclick="ztOeffnen()">+ Zeitraum</button>');
+  h+=statKacheln();
+  if(!liste.length) return h+leer();
+
+  const topf={}; Object.keys(ARTEN).forEach(function(a){ topf[a]=[]; });
+  topf.offen=[];
+  liste.forEach(function(e){
+    const tr=artAn(e[0],hIso);
+    if(tr) topf[tr.z.art].push({a:e[1], t:tr.z.text});
+    else topf.offen.push({a:e[1], t:''});
+  });
+
+  h+='<div class="card"><h2>Wo ist heute wer?</h2><div class="heute">';
+  Object.keys(ARTEN).forEach(function(art){
+    h+='<div class="hbox" style="background:'+ARTEN[art].hell+';border-color:'+ARTEN[art].farbe+'33">'+
+       '<h3 style="color:'+ARTEN[art].farbe+'">'+ARTEN[art].label+' ('+topf[art].length+')</h3>';
+    h+= topf[art].length
+      ? '<ul>'+topf[art].map(function(x){
+          return '<li>'+esc(x.a.name)+(x.t?' <span style="color:var(--muted);font-size:12px">· '+esc(x.t)+'</span>':'')+'</li>';
+        }).join('')+'</ul>'
+      : '<div class="leer">niemand</div>';
+    h+='</div>';
+  });
+  if(topf.offen.length){
+    h+='<div class="hbox"><h3 style="color:var(--muted)">Nicht hinterlegt ('+topf.offen.length+')</h3><ul>'+
+       topf.offen.map(function(x){return '<li>'+esc(x.a.name)+'</li>';}).join('')+'</ul></div>';
+  }
+  h+='</div></div>';
+
+  // Was steht als Nächstes an?
+  const kommend=[];
+  Object.keys(zeiten).forEach(function(k){
+    const z=zeiten[k];
+    if(!z||!z.von||z.von<=hIso)return;
+    if(z.art==='betrieb')return;
+    const a=azubis[z.azubiId];
+    if(!a)return;
+    kommend.push({von:z.von,bis:z.bis,art:z.art,text:z.text,name:a.name,key:k});
+  });
+  kommend.sort(function(a,b){return a.von.localeCompare(b.von);});
+  h+='<div class="card"><h2>Als Nächstes</h2>';
+  if(!kommend.length) h+='<p class="hint">Nichts eingetragen.</p>';
+  else h+=kommend.slice(0,12).map(function(z){
+    return '<div class="row"><div><span class="row-n">'+esc(z.name)+'</span>'+
+      '<span class="chip" style="background:'+ARTEN[z.art].hell+';color:'+ARTEN[z.art].farbe+'">'+
+      ARTEN[z.art].label+'</span>'+
+      '<div class="row-s">'+fmt(z.von)+' – '+fmt(z.bis)+(z.text?' · '+esc(z.text):'')+'</div></div>'+
+      '<button class="ib" onclick="ztOeffnen(\''+z.key+'\')" title="Bearbeiten">'+
+      '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>'+
+      '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button></div>';
+  }).join('');
+  h+='</div>';
+  return h;
+}
+
+// ── Verwaltung ──
+function htmlVerwaltung(){
+  const liste=azListe();
+  let h=kopf('Azubis verwalten', liste.length+' Auszubildende',
+      '<button class="btn" onclick="ztOeffnen()">+ Zeitraum</button>'+
+      '<button class="btn p" onclick="azOeffnen()">+ Azubi</button>');
+  if(!liste.length) return h+leer();
+
+  [1,2,3].forEach(function(lj){
+    const teil=liste.filter(function(e){return (+e[1].lehrjahr||0)===lj;});
+    h+='<div class="card"><h2>'+lj+'. Lehrjahr · '+teil.length+'</h2>';
+    if(!teil.length){ h+='<p class="hint">Keine Azubis.</p></div>'; return; }
+    teil.forEach(function(e){
+      const id=e[0], a=e[1];
+      const mein=Object.entries(zeiten).filter(function(x){return x[1]&&x[1].azubiId===id;})
+        .sort(function(x,y){return (x[1].von||'').localeCompare(y[1].von||'');});
+      h+='<div class="row"><div><span class="row-n">'+esc(a.name)+'</span>'+
+        '<span class="chip" style="background:var(--red-l);color:var(--red)">'+esc(a.beruf||'')+'</span>'+
+        (a.gruppe?'<span class="chip" style="background:#f1f3f5;color:var(--slate)">'+esc(a.gruppe)+'</span>':'')+
+        '<div class="row-s">'+mein.length+' Zeiträume'+(a.notiz?' · '+esc(a.notiz):'')+'</div></div>'+
+        '<div style="display:flex;gap:6px">'+
+        '<button class="ib" onclick="azOeffnen(\''+id+'\')" title="Bearbeiten">'+
+        '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>'+
+        '<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>'+
+        '<button class="ib" onclick="ztOeffnen(null,\''+id+'\')" title="Zeitraum hinzufügen">'+
+        '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'+
+        '</button></div></div>';
+      if(mein.length){
+        h+='<div style="padding:2px 0 10px 2px">'+mein.map(function(x){
+          const z=x[1];
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;'+
+            'padding:5px 0;font-size:12.5px;border-bottom:1px dashed var(--line)">'+
+            '<span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;'+
+            'background:'+ARTEN[z.art].farbe+';margin-right:7px;vertical-align:-1px"></i>'+
+            fmt(z.von)+' – '+fmt(z.bis)+' · '+ARTEN[z.art].label+
+            (z.text?' <span style="color:var(--muted)">· '+esc(z.text)+'</span>':'')+'</span>'+
+            '<button class="btn sm" onclick="ztOeffnen(\''+x[0]+'\')">Ändern</button></div>';
+        }).join('')+'</div>';
+      }
+    });
+    h+='</div>';
+  });
+  return h;
+}
+
+function leer(){
+  return '<div class="card"><div class="empty">'+
+    '<p><b>Noch keine Azubis angelegt.</b></p>'+
+    '<p>Über <b>+ Azubi</b> anlegen – Blockplan für Straßenbauer und Baugeräteführer '+
+    'ist hinterlegt und wird automatisch eingetragen.</p>'+
+    '<p style="margin-top:14px"><button class="btn p" onclick="azOeffnen()">+ Azubi anlegen</button></p>'+
+    '</div></div>';
+}
+
+// ══════════════════════════════════════════════════════════
+//  Azubi anlegen / ändern
+// ══════════════════════════════════════════════════════════
+function auf(id){ document.getElementById(id).classList.add('on'); }
+function zu(id){ document.getElementById(id).classList.remove('on'); }
+
+function azOeffnen(key){
+  azKey=key||null;
+  const a=key?azubis[key]:null;
+  document.getElementById('az-titel').textContent=key?'Azubi bearbeiten':'Azubi anlegen';
+  document.getElementById('az-name').value=a?a.name||'':'';
+  document.getElementById('az-beruf').value=a?a.beruf||'Straßenbauer':'Straßenbauer';
+  document.getElementById('az-lj').value=a?String(a.lehrjahr||1):'1';
+  document.getElementById('az-notiz').value=a?a.notiz||'':'';
+  document.getElementById('az-del').style.display=key?'':'none';
+  document.getElementById('az-plan-wrap').style.display=key?'none':'';
+  azVorlagen(a?a.gruppe||'':'');
+  auf('bd-azubi');
+}
+
+function azVorlagen(vorauswahl){
+  const beruf=document.getElementById('az-beruf').value;
+  const lj=document.getElementById('az-lj').value;
+  const gr=GRUPPEN[beruf+'|'+lj]||[''];
+  const sel=document.getElementById('az-gruppe');
+  sel.innerHTML=gr.map(function(g){
+    return '<option value="'+esc(g)+'">'+(g||'— keine Gruppeneinteilung —')+'</option>';
+  }).join('');
+  if(vorauswahl) sel.value=vorauswahl;
+  document.getElementById('az-gr-wrap').style.display=(gr.length>1||gr[0])?'':'none';
+  azPlanHinweis();
+}
+function azPlanHinweis(){
+  const p=aktuellerPlan();
+  const sel=document.getElementById('az-plan');
+  sel.innerHTML='<option value="ja">Blockplan übernehmen</option><option value="nein">Leer lassen</option>';
+  const hint=document.getElementById('az-plan-hint');
+  if(p){
+    sel.value='ja';
+    hint.textContent=p.quelle+' · '+p.bloecke.length+' Zeiträume werden eingetragen'+
+      (p.grund?', die übrige Zeit als Betrieb. Die Berufsschulblöcke bitte ergänzen.':'.');
+  } else {
+    sel.value='nein';
+    hint.textContent='Für diese Kombination ist kein Plan hinterlegt – Zeiträume bitte von Hand eintragen.';
+  }
+}
+function aktuellerPlan(){
+  const beruf=document.getElementById('az-beruf').value;
+  const lj=document.getElementById('az-lj').value;
+  const gruppe=document.getElementById('az-gruppe').value||'';
+  return PLAENE[beruf+'|'+lj+'|'+gruppe]||null;
+}
+document.getElementById('az-gruppe').addEventListener('change', azPlanHinweis);
+
+function azSpeichern(){
+  const name=document.getElementById('az-name').value.trim();
+  if(!name){ alert('Bitte einen Namen eingeben.'); return; }
+  const e={ name:name,
+    beruf:document.getElementById('az-beruf').value,
+    lehrjahr:parseInt(document.getElementById('az-lj').value,10)||1,
+    gruppe:document.getElementById('az-gruppe').value||'',
+    notiz:document.getElementById('az-notiz').value.trim(),
+    ts:Date.now() };
+
+  if(azKey){
+    if(AZ) AZ.child(azKey).update(e);
+    azubis[azKey]=Object.assign({},azubis[azKey],e);
+  } else {
+    const k=AZ?AZ.push().key:('a_'+Date.now());
+    if(AZ) AZ.child(k).set(e);
+    azubis[k]=e;
+    if(document.getElementById('az-plan').value==='ja'){
+      const p=aktuellerPlan();
+      // Enthaelt der Plan nur die ueberbetrieblichen Bloecke, liegt Betrieb
+      // als Grundlage darunter - sonst waere das halbe Jahr unbelegt.
+      if(p&&p.grund){
+        const gz={ azubiId:k, von:'2026-08-01', bis:'2027-07-31', art:'betrieb',
+                   text:'', ts:1 };
+        const gk=ZT?ZT.push().key:('z_'+Date.now()+'_g');
+        if(ZT) ZT.child(gk).set(gz);
+        zeiten[gk]=gz;
+      }
+      if(p) p.bloecke.forEach(function(b,n){
+        const z={ azubiId:k, von:b[0], bis:b[1], art:b[2], text:b[3], ts:Date.now()+n };
+        const zk=ZT?ZT.push().key:('z_'+Date.now()+'_'+n);
+        if(ZT) ZT.child(zk).set(z);
+        zeiten[zk]=z;
+      });
+    }
+  }
+  zu('bd-azubi'); draw();
+}
+
+function azLoeschen(){
+  if(!azKey)return;
+  const a=azubis[azKey];
+  if(!confirm('"'+((a&&a.name)||'Azubi')+'" mit allen Zeiträumen löschen?'))return;
+  Object.keys(zeiten).forEach(function(k){
+    if(zeiten[k]&&zeiten[k].azubiId===azKey){ if(ZT)ZT.child(k).remove(); delete zeiten[k]; }
+  });
+  if(AZ) AZ.child(azKey).remove();
+  delete azubis[azKey];
+  zu('bd-azubi'); draw();
+}
+
+// ══════════════════════════════════════════════════════════
+//  Zeitraum
+// ══════════════════════════════════════════════════════════
+function ztOeffnen(key, azubiVor, vonVor){
+  ztKey=key||null;
+  const z=key?zeiten[key]:null;
+  document.getElementById('zt-titel').textContent=key?'Zeitraum ändern':'Zeitraum eintragen';
+  const sel=document.getElementById('zt-azubi');
+  sel.innerHTML=azListe().map(function(e){
+    return '<option value="'+e[0]+'">'+esc(e[1].name)+' · '+(e[1].lehrjahr||'?')+'. Lj.</option>';
+  }).join('');
+  if(!azListe().length){ alert('Bitte zuerst einen Azubi anlegen.'); return; }
+  sel.value=z?z.azubiId:(azubiVor||sel.value);
+  document.getElementById('zt-art').value=z?z.art:'urlaub';
+  document.getElementById('zt-von').value=z?z.von:(vonVor||heuteIso());
+  document.getElementById('zt-bis').value=z?z.bis:(vonVor?iso(plus(vonIso(vonVor),4)):heuteIso());
+  document.getElementById('zt-text').value=z?z.text||'':'';
+  document.getElementById('zt-del').style.display=key?'':'none';
+  auf('bd-zeit');
+}
+
+function ztSpeichern(){
+  const von=document.getElementById('zt-von').value;
+  const bis=document.getElementById('zt-bis').value;
+  if(!von||!bis){ alert('Bitte Von und Bis ausfüllen.'); return; }
+  if(bis<von){ alert('Das Enddatum liegt vor dem Startdatum.'); return; }
+  const z={ azubiId:document.getElementById('zt-azubi').value,
+            art:document.getElementById('zt-art').value,
+            von:von, bis:bis,
+            text:document.getElementById('zt-text').value.trim(),
+            ts:Date.now() };
+  if(ztKey){ if(ZT)ZT.child(ztKey).update(z); zeiten[ztKey]=Object.assign({},zeiten[ztKey],z); }
+  else { const k=ZT?ZT.push().key:('z_'+Date.now()); if(ZT)ZT.child(k).set(z); zeiten[k]=z; }
+  zu('bd-zeit'); draw();
+}
+
+function ztLoeschen(){
+  if(!ztKey)return;
+  if(!confirm('Zeitraum löschen?'))return;
+  if(ZT) ZT.child(ztKey).remove();
+  delete zeiten[ztKey];
+  zu('bd-zeit'); draw();
+}
+
+// ══════════════════════════════════════════════════════════
+//  Ereignisse
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll('.navb').forEach(function(b){
+  b.addEventListener('click', function(){ curTab=b.dataset.tab; window.scrollTo(0,0); draw(); });
+});
+document.querySelectorAll('.bd').forEach(function(b){
+  b.addEventListener('click', function(ev){ if(ev.target===b) b.classList.remove('on'); });
+});
+document.addEventListener('keydown', function(ev){
+  if(ev.key==='Escape') document.querySelectorAll('.bd.on').forEach(function(b){b.classList.remove('on');});
+});
+document.addEventListener('click', function(ev){
+  const z=ev.target.closest ? ev.target.closest('[data-woche]') : null;
+  if(z){ ztTreffer(z.dataset.azubi, z.dataset.woche); return; }
+  const t=ev.target.closest ? ev.target.closest('[data-tag]') : null;
+  if(t){ ztTreffer(t.dataset.azubi, t.dataset.tag); }
+});
+function ztTreffer(azubiId, datum){
+  const tr=artAn(azubiId,datum);
+  if(tr) ztOeffnen(tr.key);
+  else ztOeffnen(null, azubiId, datum);
+}
+
+function sync(on){
+  document.getElementById('sdot').className='sdot'+(on?' on':'');
+  document.getElementById('slbl').textContent=on?'synchronisiert':'offline';
+}
+
+if(db){
+  try{
+    db.ref('.info/connected').on('value', function(s){ sync(!!s.val()); });
+    AZ.on('value', function(s){ azubis=s.val()||{}; draw(); }, function(e){ console.warn('Azubis:', e.message); });
+    ZT.on('value', function(s){ zeiten=s.val()||{}; draw(); }, function(e){ console.warn('Zeiten:', e.message); });
+  }catch(e){ console.warn(e); }
+}
+draw();
+</script>
+</body>
+</html>
