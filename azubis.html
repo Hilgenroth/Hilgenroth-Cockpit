@@ -11,8 +11,6 @@
   --betrieb:#16a34a;  --betrieb-l:#dcfce7;
   --schule:#1d4ed8;   --schule-l:#dbeafe;
   --ueba:#b45309;     --ueba-l:#fef3c7;
-  --urlaub:#6d28d9;   --urlaub-l:#ede9fe;
-  --krank:#b91c1c;    --krank-l:#fee2e2;
   --pruefung:#0f766e; --pruefung-l:#ccfbf1;
   --frei:#9ca3af;     --frei-l:#f1f3f5;
 }
@@ -89,10 +87,10 @@ thead .gn{z-index:5}
 .mtab th,.mtab td{border-bottom:1px solid var(--line);padding:0}
 .mtab tr:last-child td{border-bottom:0}
 .md{width:30px;min-width:30px;height:34px;border-right:1px solid #eef0f3;text-align:center;cursor:pointer}
-.md.we{background:#f8f9fb}
+.md.we{background:#fff}
 .mh{background:#f8f9fb;font-size:10px;font-weight:700;color:var(--muted);text-align:center;
     padding:5px 0!important;width:30px;min-width:30px;border-right:1px solid var(--line)}
-.mh.we{color:#b0b5bd}
+.mh.we{color:#b0b5bd;background:#fff}
 .mh-d{font-size:12px;color:var(--ink)}
 
 /* ── Heute ── */
@@ -212,8 +210,6 @@ thead .gn{z-index:5}
         <option value="betrieb">Betrieb</option>
         <option value="schule">Berufsschule</option>
         <option value="ueba">Überbetrieblich (bbz / ABZ)</option>
-        <option value="urlaub">Urlaub</option>
-        <option value="krank">Krank</option>
         <option value="pruefung">Prüfung</option>
       </select>
     </div>
@@ -264,10 +260,9 @@ const ARTEN={
   betrieb: {label:'Betrieb',                    farbe:'var(--betrieb)',  hell:'var(--betrieb-l)'},
   schule:  {label:'Berufsschule',               farbe:'var(--schule)',   hell:'var(--schule-l)'},
   ueba:    {label:'Überbetrieblich (bbz / ABZ)',farbe:'var(--ueba)',     hell:'var(--ueba-l)'},
-  urlaub:  {label:'Urlaub',                     farbe:'var(--urlaub)',   hell:'var(--urlaub-l)'},
-  krank:   {label:'Krank',                      farbe:'var(--krank)',    hell:'var(--krank-l)'},
   pruefung:{label:'Prüfung',                    farbe:'var(--pruefung)', hell:'var(--pruefung-l)'}
 };
+function artInfo(a){ return ARTEN[a]||{label:String(a||'unbekannt'),farbe:'var(--frei)',hell:'var(--frei-l)'}; }
 const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const MON_K =['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
@@ -532,7 +527,7 @@ function kachel(l,v,n,farbe){
 
 function legende(){
   return '<div class="leg">'+Object.keys(ARTEN).map(function(a){
-    return '<span><i style="background:'+ARTEN[a].farbe+'"></i>'+ARTEN[a].label+'</span>';
+    return '<span><i style="background:'+artInfo(a).farbe+'"></i>'+artInfo(a).label+'</span>';
   }).join('')+'<span><i style="background:var(--frei-l);border:1px solid var(--line)"></i>nicht hinterlegt</span></div>';
 }
 
@@ -581,7 +576,7 @@ function htmlJahr(){
   });
   h+='</tbody></table></div>';
   h+='<p class="hint">Auf eine Woche tippen, um einen Zeitraum einzutragen oder zu ändern. '+
-     'Urlaub und Krank überschreiben den Blockplan.</p>';
+     'Ein später eingetragener Zeitraum überschreibt den Blockplan.</p>';
   return h;
 }
 
@@ -593,7 +588,7 @@ function wochenHintergrund(id, montag){
     const d=plus(montag,t);
     if(d<JAHR_VON||d>JAHR_BIS){ f.push('var(--frei-l)'); continue; }
     const tr=artAn(id,iso(d));
-    f.push(tr?ARTEN[tr.z.art].farbe:'var(--frei-l)');
+    f.push(tr?artInfo(tr.z.art).farbe:'var(--frei-l)');
   }
   if(f.every(function(x){return x===f[0];})) return f[0];
   const st=[];
@@ -604,7 +599,7 @@ function wochenText(id, montag){
   const namen=[];
   for(let t=0;t<5;t++){
     const tr=artAn(id,iso(plus(montag,t)));
-    const s=tr?(ARTEN[tr.z.art].label+(tr.z.text?' – '+tr.z.text:'')):'nicht hinterlegt';
+    const s=tr?(artInfo(tr.z.art).label+(tr.z.text?' – '+tr.z.text:'')):'nicht hinterlegt';
     if(namen.indexOf(s)<0) namen.push(s);
   }
   return 'KW '+kw(montag)+' ab '+fmt(iso(montag))+': '+namen.join(' / ');
@@ -639,9 +634,10 @@ function htmlMonat(){
     for(let t=1;t<=tage;t++){
       const d=new Date(jahr,mon,t), ds=iso(d), we=(d.getDay()===0||d.getDay()===6);
       const tr=artAn(id,ds);
-      const bg=tr?ARTEN[tr.z.art].farbe:(we?'#f1f3f5':'var(--frei-l)');
+      // Samstag und Sonntag bleiben weiss - auch wenn Betrieb hinterlegt ist
+      const bg=we?'#fff':(tr?artInfo(tr.z.art).farbe:'var(--frei-l)');
       h+='<td class="md'+(we?' we':'')+'" data-tag="'+ds+'" data-azubi="'+id+'" '+
-         'style="background:'+bg+'" title="'+esc(fmt(ds)+': '+(tr?ARTEN[tr.z.art].label+(tr.z.text?' – '+tr.z.text:''):'nicht hinterlegt'))+'"></td>';
+         'style="background:'+bg+'" title="'+esc(fmt(ds)+': '+(we?'Wochenende':(tr?artInfo(tr.z.art).label+(tr.z.text?' – '+tr.z.text:''):'nicht hinterlegt')))+'"></td>';
     }
     h+='</tr>';
   });
@@ -672,8 +668,8 @@ function htmlHeute(){
 
   h+='<div class="card"><h2>Wo ist heute wer?</h2><div class="heute">';
   Object.keys(ARTEN).forEach(function(art){
-    h+='<div class="hbox" style="background:'+ARTEN[art].hell+';border-color:'+ARTEN[art].farbe+'33">'+
-       '<h3 style="color:'+ARTEN[art].farbe+'">'+ARTEN[art].label+' ('+topf[art].length+')</h3>';
+    h+='<div class="hbox" style="background:'+artInfo(art).hell+';border-color:'+artInfo(art).farbe+'33">'+
+       '<h3 style="color:'+artInfo(art).farbe+'">'+artInfo(art).label+' ('+topf[art].length+')</h3>';
     h+= topf[art].length
       ? '<ul>'+topf[art].map(function(x){
           return '<li>'+esc(x.a.name)+(x.t?' <span style="color:var(--muted);font-size:12px">· '+esc(x.t)+'</span>':'')+'</li>';
@@ -702,8 +698,8 @@ function htmlHeute(){
   if(!kommend.length) h+='<p class="hint">Nichts eingetragen.</p>';
   else h+=kommend.slice(0,12).map(function(z){
     return '<div class="row"><div><span class="row-n">'+esc(z.name)+'</span>'+
-      '<span class="chip" style="background:'+ARTEN[z.art].hell+';color:'+ARTEN[z.art].farbe+'">'+
-      ARTEN[z.art].label+'</span>'+
+      '<span class="chip" style="background:'+artInfo(z.art).hell+';color:'+artInfo(z.art).farbe+'">'+
+      artInfo(z.art).label+'</span>'+
       '<div class="row-s">'+fmt(z.von)+' – '+fmt(z.bis)+(z.text?' · '+esc(z.text):'')+'</div></div>'+
       '<button class="ib" onclick="ztOeffnen(\''+z.key+'\')" title="Bearbeiten">'+
       '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>'+
@@ -746,8 +742,8 @@ function htmlVerwaltung(){
           return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;'+
             'padding:5px 0;font-size:12.5px;border-bottom:1px dashed var(--line)">'+
             '<span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;'+
-            'background:'+ARTEN[z.art].farbe+';margin-right:7px;vertical-align:-1px"></i>'+
-            fmt(z.von)+' – '+fmt(z.bis)+' · '+ARTEN[z.art].label+
+            'background:'+artInfo(z.art).farbe+';margin-right:7px;vertical-align:-1px"></i>'+
+            fmt(z.von)+' – '+fmt(z.bis)+' · '+artInfo(z.art).label+
             (z.text?' <span style="color:var(--muted)">· '+esc(z.text)+'</span>':'')+'</span>'+
             '<button class="btn sm" onclick="ztOeffnen(\''+x[0]+'\')">Ändern</button></div>';
         }).join('')+'</div>';
@@ -885,7 +881,7 @@ function ztOeffnen(key, azubiVor, vonVor){
   }).join('');
   if(!azListe().length){ alert('Bitte zuerst einen Azubi anlegen.'); return; }
   sel.value=z?z.azubiId:(azubiVor||sel.value);
-  document.getElementById('zt-art').value=z?z.art:'urlaub';
+  document.getElementById('zt-art').value=z?z.art:'schule';
   document.getElementById('zt-von').value=z?z.von:(vonVor||heuteIso());
   document.getElementById('zt-bis').value=z?z.bis:(vonVor?iso(plus(vonIso(vonVor),4)):heuteIso());
   document.getElementById('zt-text').value=z?z.text||'':'';
