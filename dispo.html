@@ -160,6 +160,12 @@ td strong{color:var(--ink);font-weight:700}
 .fleet-mgmt{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px}
 .fleet-col h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .fleet-list{max-height:280px;overflow-y:auto;border:1px solid var(--line);border-radius:var(--rs);background:var(--surf)}
+.tp-switch{display:inline-flex;background:var(--surf);border:1px solid var(--line);border-radius:100px;padding:2px;gap:2px}
+.tp-switch button{background:none;border:none;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink3);padding:5px 12px;border-radius:100px;cursor:pointer;white-space:nowrap}
+.tp-switch button.on{background:var(--ink);color:#fff}
+.tp-sec{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--surf);border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);position:sticky;left:0}
+.tp-sec span{font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink3)}
+.tp-row.tp-fremd .tp-veh-plate{color:var(--amb)}
 .fleet-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600}
 .fleet-item:last-child{border-bottom:none}
 .fleet-item button{background:none;color:var(--brand);font-size:16px;font-weight:700;width:24px;height:24px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;border:none;cursor:pointer}
@@ -1363,6 +1369,11 @@ td strong{color:var(--ink);font-weight:700}
       <input type="date" id="tpDate" class="ndp" style="color:var(--ink);background:white;border-color:var(--line)" onchange="renderTourenplan()">
       <button class="nb nb-i" onclick="tpNav(1)" style="background:var(--ink);color:white;border-color:var(--ink)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
       <button class="nb" onclick="tpNav('today')" style="background:var(--brand);border-color:var(--brand);color:white">Heute</button>
+      <div class="tp-switch" id="tpSwitch">
+        <button type="button" onclick="tpSetModus('eigene')" data-m="eigene">🏠 Eigene</button>
+        <button type="button" onclick="tpSetModus('fremd')" data-m="fremd">🤝 Fremde</button>
+        <button type="button" onclick="tpSetModus('gesamt')" data-m="gesamt">Gesamt</button>
+      </div>
     </div>
     <div id="tpDateLabel" style="font-size:16px;font-weight:800;letter-spacing:-.01em"></div>
     <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
@@ -1949,7 +1960,7 @@ let data={fremd:[],sundern:[]};
 let schachtmeister=[...DFLT_SM];
 let baustellen=[...DFLT_BST];
 let tags={FV:[],FD:[],SV:[],SD:[],ST:[],FT:[]};
-let fleet={vehicles:[...DFLT_V],drivers:[...DFLT_D]};
+let fleet={vehicles:[...DFLT_V],drivers:[...DFLT_D],fremd:[]};
 let editingId={fremd:null,sundern:null};
 let ovDate='';
 
@@ -2173,7 +2184,12 @@ authReady.then(()=>{
       fleet.vehicles=v.vehicles;
       fleet.drivers=v.drivers||[...DFLT_D];
     }
+    // Fremdfahrzeuge (Subunternehmer) – Firebase speichert leere Arrays als null
+    let fr=v&&v.fremd;
+    if(fr&&!Array.isArray(fr)&&typeof fr==='object')fr=Object.values(fr);
+    fleet.fremd=Array.isArray(fr)?fr.filter(Boolean):[];
     rebuildSelects();
+    if(activeTab()==='tourenplan')renderTourenplan();
     stRenderFzg(); // Fahrzeug-Selects in Sundern-Zeilen aktualisieren
   });
 
@@ -2617,21 +2633,52 @@ function renderFleetModal(){
   const vl=document.getElementById('fleetVL');
   const dl=document.getElementById('fleetDL');
   if(!vl||!dl)return;
-  vl.innerHTML=fleet.vehicles.map((v,i)=>`<div class="fleet-item"><span>${esc(v)}</span><button onclick="removeFI('vehicle',${i})">×</button></div>`).join('')||'<div class="fleet-item" style="color:var(--muted);font-style:italic">Noch keine Fahrzeuge</div>';
-  dl.innerHTML=fleet.drivers.map((d,i)=>`<div class="fleet-item"><span>${esc(d)}</span><button onclick="removeFI('driver',${i})">×</button></div>`).join('')||'<div class="fleet-item" style="color:var(--muted);font-style:italic">Noch keine Fahrer</div>';
+  vl.innerHTML=fleet.vehicles.map((v,i)=>{
+    const fr=istFremdFzg(v);
+    return `<div class="fleet-item"><span>${esc(v)}</span>
+      <span style="display:flex;align-items:center;gap:4px">
+        <button type="button" onclick="toggleFremd('vehicle',${i})" title="${fr?'Fremdfahrzeug (Subunternehmer) – klicken für eigenes Fahrzeug':'Eigenes Fahrzeug – klicken für Fremdfahrzeug'}"
+          style="background:${fr?'var(--amb-s)':'var(--grn-s)'};color:${fr?'var(--amb)':'var(--grn)'};border:1px solid ${fr?'var(--amb)':'#5DCAA5'};font-size:10px;font-weight:800;padding:2px 8px;border-radius:100px;cursor:pointer;font-family:inherit;width:auto;height:auto">${fr?'🤝 fremd':'🏠 eigen'}</button>
+        <button onclick="removeFI('vehicle',${i})">×</button>
+      </span></div>`;
+  }).join('')||'<div class="fleet-item" style="color:var(--muted);font-style:italic">Noch keine Fahrzeuge</div>';
+  dl.innerHTML=fleet.drivers.map((d,i)=>{
+    const fr=istFremdFzg(d);
+    return `<div class="fleet-item"><span>${esc(d)}</span>
+      <span style="display:flex;align-items:center;gap:4px">
+        <button type="button" onclick="toggleFremd('driver',${i})" title="${fr?'Fremdes Fahrzeug / Subunternehmer – klicken für eigenen Fahrer':'Eigener Fahrer – klicken für Subunternehmer'}"
+          style="background:${fr?'var(--amb-s)':'var(--grn-s)'};color:${fr?'var(--amb)':'var(--grn)'};border:1px solid ${fr?'var(--amb)':'#5DCAA5'};font-size:10px;font-weight:800;padding:2px 8px;border-radius:100px;cursor:pointer;font-family:inherit;width:auto;height:auto">${fr?'🤝 fremd':'🏠 eigen'}</button>
+        <button onclick="removeFI('driver',${i})">×</button>
+      </span></div>`;
+  }).join('')||'<div class="fleet-item" style="color:var(--muted);font-style:italic">Noch keine Fahrer</div>';
 }
+function fleetSpeichern(){
+  const fr=(fleet.fremd||[]).filter(v=>fleet.vehicles.includes(v)||fleet.drivers.includes(v));
+  fleet.fremd=fr;
+  return fleetRef.set({vehicles:fleet.vehicles,drivers:fleet.drivers,fremd:fr.length?fr:null});
+}
+function istFremdFzg(v){ return (fleet.fremd||[]).some(x=>String(x)===String(v)); }
+window.toggleFremd=function(art,i){
+  const v=(art==='driver'?fleet.drivers:fleet.vehicles)[i]; if(!v)return;
+  const liste=(fleet.fremd||[]).filter(x=>String(x)!==String(v));
+  if(!istFremdFzg(v))liste.push(v);
+  fleet.fremd=liste;
+  fleetRef.set({vehicles:fleet.vehicles,drivers:fleet.drivers,fremd:liste.length?liste:null})
+    .then(()=>{renderFleetModal();if(activeTab()==='tourenplan')renderTourenplan();})
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
 window.addFI=function(type){
   const input=document.getElementById(type==='vehicle'?'newV':'newD');
   const val=input.value.trim();if(!val)return;
   if(type==='vehicle'){if(!fleet.vehicles.includes(val))fleet.vehicles.push(val)}
   else{if(!fleet.drivers.includes(val))fleet.drivers.push(val)}
   input.value='';
-  fleetRef.set(fleet).then(()=>{rebuildSelects();renderFleetModal();showToast(type==='vehicle'?'Fahrzeug hinzugefügt':'Fahrer hinzugefügt','success')});
+  fleetSpeichern().then(()=>{rebuildSelects();renderFleetModal();showToast(type==='vehicle'?'Fahrzeug hinzugefügt':'Fahrer hinzugefügt','success')});
 }
 window.removeFI=function(type,idx){
   if(type==='vehicle')fleet.vehicles.splice(idx,1);
   else fleet.drivers.splice(idx,1);
-  fleetRef.set(fleet).then(()=>{rebuildSelects();renderFleetModal();showToast('Entfernt','amber')});
+  fleetSpeichern().then(()=>{rebuildSelects();renderFleetModal();showToast('Entfernt','amber')});
 }
 
 // ===== TAGS =====
@@ -3119,9 +3166,10 @@ document.getElementById('formS').addEventListener('submit',e=>{
   const matRS=f.querySelector('[name="material"]:checked');
   // DOM-Werte synchronisieren bevor Submit
   stSyncFromDom();
-  // Touren ohne Sorte fallen weg – Zuweisungen der Fahrzeuge dabei auf die neuen Indizes umschreiben
+  // Eine Tour zählt, sobald Sorte ODER Material drinsteht – eine Menge ist nie Pflicht.
+  // Leere Touren fallen weg, die Fahrzeug-Zuweisungen werden auf die neuen Indizes umgeschrieben.
   const gueltTouren=[]; const idxMap={};
-  stTouren.forEach((t,i)=>{ if(t.sorte){ idxMap[i]=gueltTouren.length; gueltTouren.push(t); } });
+  stTouren.forEach((t,i)=>{ if(t.sorte||t.mat){ idxMap[i]=gueltTouren.length; gueltTouren.push(t); } });
   // Material ist optional – Fahrzeuge koennen auch ohne Ladung auf der Baustelle stehen
   const fzgDetails=stFzgZeilen.map(z=>{
     const o2={...z};
@@ -3131,9 +3179,13 @@ document.getElementById('formS').addEventListener('submit',e=>{
   const fzgLabel=stFzgZeilen.length>0?stFzgZeilen.map(z=>z.anz+'× '+z.typ).join(', '):'';
   const mengeWert=f.sMenge?f.sMenge.value.trim():'';
   const menge=mengeWert?String(parseFloat(mengeWert)):(gueltTouren.length>0?gueltTouren.map(t=>t.menge?String(parseFloat(t.menge)):'').filter(Boolean).join(' + '):'');
+  // Material/Sorte aus den Touren übernehmen, wenn unten nichts ausgewählt wurde
+  const tourMats=[...new Set(gueltTouren.map(t=>t.mat).filter(Boolean))];
+  const tourMaterial=tourMats.length===1?tourMats[0]:(tourMats.length>1?'Gemischt':'');
   const sorte=(()=>{
     const sel=f.sSorte?f.sSorte.value.trim():'';
-    return sel;
+    if(sel)return sel;
+    return gueltTouren.length===1?(gueltTouren[0].sorte||''):'';
   })();
   const order={
     schachtmeister:f.schachtmeister.value,
@@ -3145,9 +3197,9 @@ document.getElementById('formS').addEventListener('submit',e=>{
     anzahl:stFzgZeilen.reduce((s,z)=>s+z.anz,0)||'',
     vehicles:[...tags.SV],
     drivers:[...tags.SD],
-    material:matRS?matRS.value:(gueltTouren.length>1?'Gemischt':''),    sorte:sorte,
+    material:matRS&&matRS.value?matRS.value:tourMaterial,    sorte:sorte,
     menge:menge,
-    touren:(gueltTouren.length>1||gueltTouren.some(t=>t.teil))?gueltTouren:null,
+    touren:gueltTouren.length?gueltTouren:null,
     datum:f.datum.value,
     uhrzeit:f.uhrzeit.value.trim(),
     bemerkung:f.bemerkung.value.trim(),
@@ -3677,6 +3729,13 @@ window.ovInlineSave=function(id,type){
     updates.auftragsnummer=document.getElementById('oe_auftrnr')?.value.trim()||'';
     if(typeof window._oeGetVehicles==='function')updates.vehicles=window._oeGetVehicles();
     if(typeof window._oeGetDrivers==='function')updates.drivers=window._oeGetDrivers();
+    // Bei genau einer Tour die Änderung dort mitführen – sonst würde die Anzeige
+    // weiter die alte Tour zeigen, weil Touren Vorrang vor den oberen Feldern haben
+    let tn=o.touren;
+    if(tn&&!Array.isArray(tn)&&typeof tn==='object')tn=Object.values(tn);
+    if(Array.isArray(tn)&&tn.length===1){
+      updates.touren=[{...tn[0],mat:updates.material||tn[0].mat||'',sorte:updates.sorte||'',menge:updates.menge||''}];
+    }
   }
   ref.child(id).update(updates)
     .then(()=>{document.getElementById('oe-modal')?.remove();showToast('Gespeichert','success');})
@@ -4559,11 +4618,30 @@ window.tpEditOrder=function(type,id){
   document.querySelector('[data-tab="'+(type==='sundern'?'sundern':'fremd')+'"]').click();
 };
 
+// Eigene Fahrzeuge / Fremdfahrzeuge (Subunternehmer) / beides
+// Lazy auslesen – _tabUser wird weiter unten im Script gesetzt
+let tpModus=null;
+function tpModusKey(){ try{ return 'tpModus_'+_tabUser; }catch(e){ return 'tpModus_default'; } }
+function tpModusGet(){
+  if(tpModus===null){ try{ tpModus=localStorage.getItem(tpModusKey())||'gesamt'; }catch(e){ tpModus='gesamt'; } }
+  return tpModus;
+}
+window.tpSetModus=function(m){
+  tpModus=m;
+  try{localStorage.setItem(tpModusKey(),m)}catch(e){}
+  renderTourenplan();
+};
+function tpSwitchSync(){
+  const m=tpModusGet();
+  document.querySelectorAll('#tpSwitch button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+}
+
 function renderTourenplan(){
   if(!document.getElementById('tpDate').value)document.getElementById('tpDate').value=todayISO;
   const d=new Date(tpDate);
   document.getElementById('tpDateLabel').textContent=
     days[d.getDay()]+', '+String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
+  tpSwitchSync();
 
   const sOrders=data.sundern.filter(o=>o.datum===tpDate);
   const fOrders=data.fremd.filter(o=>o.abholung===tpDate);
@@ -4572,11 +4650,11 @@ function renderTourenplan(){
     ...fOrders.map(o=>({...o,_type:'fremd',_id:o.id}))
   ];
 
-  // Group orders by vehicle
+  // Aufträge den Kennzeichen zuordnen
   const vehMap={};
-  fleet.vehicles.forEach(v=>{vehMap[v]=[];});
+  (fleet.vehicles||[]).forEach(v=>{vehMap[v]=[];});
+  (fleet.drivers||[]).filter(istFremdFzg).forEach(d=>{ if(!vehMap[d])vehMap[d]=[]; });
   const unassigned=[];
-
   allOrders.forEach(o=>{
     const paare=tpFzgPaare(o);
     if(!paare.length){unassigned.push(o);return;}
@@ -4586,16 +4664,31 @@ function renderTourenplan(){
     });
   });
 
-  // Build HTML
   const hours=[];
   for(let h=TP_START;h<=TP_END;h++)hours.push(h);
+  const gitter=hours.slice(0,-1).map(h=>`<div class="tp-grid-line" style="left:${(h-TP_START)*TP_W}px"></div>`).join('');
+
+  const zeile=(veh,orders,fremd)=>`<div class="tp-row${fremd?' tp-fremd':''}">
+      <div class="tp-veh-name">
+        <div class="tp-veh-plate">${fremd?'🤝 ':''}${esc(veh)}</div>
+        <div class="tp-veh-type">${orders.length?orders.length+' Auftrag'+(orders.length>1?'e':''):'Frei'}</div>
+      </div>
+      <div class="tp-timeline" style="width:${(TP_END-TP_START)*TP_W}px">
+        ${gitter}
+        ${orders.map(o=>tpBlock(o,tpParseHour(o._zeit||o.uhrzeit)||8,2)).join('')}
+      </div>
+    </div>`;
+
+  const alleKz=Object.keys(vehMap);
+  const eigene=alleKz.filter(v=>!istFremdFzg(v));
+  const fremde=alleKz.filter(v=>istFremdFzg(v));
 
   let html='<div class="tp-header-row">';
   html+='<div class="tp-veh-col">Fahrzeug</div><div class="tp-time-col">';
   hours.forEach(h=>html+=`<div class="tp-hour">${String(h).padStart(2,'0')}:00</div>`);
   html+='</div></div>';
 
-  // Unassigned row
+  // Aufträge ohne Fahrzeug
   if(unassigned.length){
     html+=`<div class="tp-row tp-unassigned-row">
       <div class="tp-veh-name">
@@ -4603,26 +4696,26 @@ function renderTourenplan(){
         <div class="tp-veh-type">${unassigned.length} Auftrag${unassigned.length>1?'e':''} ohne Fahrzeug</div>
       </div>
       <div class="tp-timeline" style="width:${(TP_END-TP_START)*TP_W}px">
-        ${hours.slice(0,-1).map(h=>`<div class="tp-grid-line" style="left:${(h-TP_START)*TP_W}px"></div>`).join('')}
+        ${gitter}
         ${unassigned.map((o,i)=>tpBlock(o,i*2.5+TP_START,1.8)).join('')}
       </div>
     </div>`;
   }
 
-  // Vehicle rows
-  Object.entries(vehMap).forEach(([veh,orders])=>{
-    const driverInfo=fleet.drivers.find?.(d=>d.includes(veh.split('-')[0]))||'';
-    html+=`<div class="tp-row">
-      <div class="tp-veh-name">
-        <div class="tp-veh-plate">${esc(veh)}</div>
-        <div class="tp-veh-type">${orders.length?orders.length+' Auftrag'+(orders.length>1?'e':''):'Frei'}</div>
-      </div>
-      <div class="tp-timeline" style="width:${(TP_END-TP_START)*TP_W}px">
-        ${hours.slice(0,-1).map(h=>`<div class="tp-grid-line" style="left:${(h-TP_START)*TP_W}px"></div>`).join('')}
-        ${orders.map(o=>tpBlock(o,tpParseHour(o._zeit||o.uhrzeit)||8,2)).join('')}
-      </div>
-    </div>`;
-  });
+  const zaehl=list=>list.reduce((a,v)=>a+vehMap[v].length,0);
+  const abschnitt=(titel,list)=>`<div class="tp-sec">${titel}<span>· ${list.length} Fahrzeug${list.length===1?'':'e'} · ${zaehl(list)} ${zaehl(list)===1?'Auftrag':'Aufträge'}</span></div>`;
+
+  const modus=tpModusGet();
+  if(modus==='eigene'){
+    html+=eigene.map(v=>zeile(v,vehMap[v],false)).join('');
+  } else if(modus==='fremd'){
+    html+=fremde.length
+      ? fremde.map(v=>zeile(v,vehMap[v],true)).join('')
+      : '<div class="tp-sec">Keine Fremdfahrzeuge hinterlegt<span>· im Fuhrpark ein Fahrzeug auf „🤝 fremd“ stellen</span></div>';
+  } else {
+    if(eigene.length){ html+=abschnitt('🏠 Eigene Fahrzeuge',eigene)+eigene.map(v=>zeile(v,vehMap[v],false)).join(''); }
+    if(fremde.length){ html+=abschnitt('🤝 Fremdfahrzeuge',fremde)+fremde.map(v=>zeile(v,vehMap[v],true)).join(''); }
+  }
 
   document.getElementById('tpInner').innerHTML=html;
   document.getElementById('tpDetail').style.display='none';
@@ -4645,6 +4738,16 @@ function tpFzgPaare(o){
   });
   toArr(o.vehicles).forEach(v=>{
     if(!map.has(v))map.set(v,{veh:v,zeit:(o.uhrzeit||'').trim(),typ:'',hinweis:''});
+  });
+  // Subunternehmer stehen oft als Fahrer-Eintrag ("Roth RW 500 Paul") statt als Kennzeichen
+  toArr(o.fahrzeugDetails).forEach(z=>{
+    toArr(z&&z.drivers).filter(istFremdFzg).forEach(d=>{
+      const alt=map.get(d);
+      if(!alt||(!alt.zeit&&z.uhrzeit))map.set(d,{veh:d,zeit:(z.uhrzeit||o.uhrzeit||'').trim(),typ:z.typ||'',hinweis:z.hinweis||''});
+    });
+  });
+  toArr(o.drivers).filter(istFremdFzg).forEach(d=>{
+    if(!map.has(d))map.set(d,{veh:d,zeit:(o.uhrzeit||'').trim(),typ:'',hinweis:''});
   });
   return [...map.values()];
 }
