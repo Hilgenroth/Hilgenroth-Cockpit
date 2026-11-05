@@ -1034,9 +1034,21 @@ function ffRebuildSorteSuche(i){
   const mat=touren[i]?touren[i].material:'';
   const liste=ffGetSorteListe(mat);
   const filtered=q.trim()?liste.filter(s=>s.toLowerCase().includes(q.toLowerCase())):liste;
-  box.innerHTML=filtered.map(s=>'<div onclick="ffSelectSorte('+i+','+JSON.stringify(s)+')" style="padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer">'+s+'</div>').join('')
-    +(q.trim()?'<div onclick="ffSelectSorte('+i+','+JSON.stringify(q.trim())+')" style="padding:10px 12px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)">✎ „'+q.trim()+'“ verwenden</div>':'');
-  box.style.display=filtered.length||q.trim()?'block':'none';
+  // Einträge als echte Elemente bauen – ein onclick-Attribut zerbricht an Sorten
+  // mit Anführungszeichen, und pointerdown greift vor dem Verlassen des Feldes
+  box.innerHTML='';
+  const zeile=(val,frei)=>{
+    const d=document.createElement('div');
+    d.style.cssText=frei
+      ? 'padding:10px 12px;font-size:12px;color:var(--ink3);cursor:pointer;border-top:1px solid var(--line)'
+      : 'padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600;cursor:pointer';
+    d.textContent=frei?('✎ „'+val+'“ verwenden'):val;
+    d.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();ffSelectSorte(i,val);});
+    box.appendChild(d);
+  };
+  filtered.forEach(v=>zeile(v,false));
+  if(q.trim()&&!filtered.some(v=>v.toLowerCase()===q.trim().toLowerCase()))zeile(q.trim(),true);
+  box.style.display=(filtered.length||q.trim())?'block':'none';
 }
 window.ffSelectSorte=function(i,val){
   touren[i].sorte=val;
@@ -1071,8 +1083,8 @@ function renderTouren(){
         <input id="ffSorteInp${i}" type="text" placeholder="Sorte suchen oder tippen…" autocomplete="off"
           oninput="touren[${i}].sorte=this.value;ffRebuildSorteSuche(${i})"
           onfocus="ffRebuildSorteSuche(${i})" value="">
-        <div id="ffSorteChip${i}" style="display:${t.sorte?'flex':'none'};align-items:center;justify-content:space-between;margin-top:4px;background:#e8f0fe;color:#1a73e8;font-weight:700;font-size:13px;padding:8px 12px;border-radius:8px">
-          <span id="ffSorteChipTxt${i}">${esc(t.sorte)}</span>
+        <div id="ffSorteChip${i}" style="display:${t.sorte?'flex':'none'};position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;align-items:center;justify-content:space-between;gap:8px;background:#e8f0fe;color:#1a73e8;font-weight:700;font-size:13px;padding:0 12px;border-radius:8px;border:1px solid #c3d8f7">
+          <span id="ffSorteChipTxt${i}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.sorte)}</span>
           <button type="button" onclick="ffClearSorte(${i})" style="background:none;border:none;color:inherit;font-size:18px;cursor:pointer;line-height:1;padding:0">x</button>
         </div>
         <div id="ffSorteBox${i}" style="display:none;position:absolute;z-index:99;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:8px;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.12)"></div>
