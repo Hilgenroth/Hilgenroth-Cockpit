@@ -277,6 +277,13 @@ td strong{color:var(--ink);font-weight:700}
 .sorten-row .row-btns .del-btn:hover{background:var(--brand-s);color:var(--brand);border-color:var(--brand)}
 .sorten-head{display:grid;grid-template-columns:1fr 110px 80px 90px 60px;gap:8px;padding:6px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);background:var(--surf);border-bottom:1px solid var(--line)}
 .modal.xl{max-width:700px}
+.modal.xxl{max-width:1180px}
+.modal.xxl,.modal.xl{max-height:92vh;overflow-y:auto}
+.sortenGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:16px;align-items:stretch}
+.sortenGrid>div{display:flex;flex-direction:column;min-width:0}
+.sortenGrid .sortenListe{flex:1 1 auto;border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:46vh;overflow-y:auto;overflow-x:hidden;margin-bottom:8px}
+@media(max-width:1240px){.modal.xxl{max-width:96vw}}
+@media(max-width:860px){.sortenGrid{grid-template-columns:1fr}.sortenGrid .sortenListe{max-height:30vh}}
 
 
 .maps-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#4285F4;color:white;border-radius:var(--rs);font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;margin-top:4px;transition:all .15s}
@@ -1842,31 +1849,31 @@ td strong{color:var(--ink);font-weight:700}
 </div>
 
 <div class="mb" id="auftragssortenModal" onclick="if(event.target===this)closeAuftragsSortenModal()">
-  <div class="modal xl">
+  <div class="modal xxl">
     <h2>Auftragssorten verwalten</h2>
     <p>Sorten für Auftragsformulare – getrennt nach Materialtyp. Beim Ausfüllen eines Auftrags erscheinen diese als Dropdown-Auswahl.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="sortenGrid">
       <div>
         <div class="pt" style="margin-bottom:8px">🟤 Asphalt-Sorten</div>
-        <div id="asphaltSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+        <div id="asphaltSortenList" class="sortenListe"></div>
         <div style="display:flex;gap:6px">
-          <input type="text" id="newAsphaltSorte" placeholder="z.B. AC 8 TS" style="flex:1">
+          <input type="text" id="newAsphaltSorte" placeholder="z.B. AC 8 TS" style="flex:1;min-width:0">
           <button class="btn-s" onclick="addAuftragsSorte('asphalt')">+</button>
         </div>
       </div>
       <div>
         <div class="pt" style="margin-bottom:8px">🟢 Straßenbaustoffe-Sorten</div>
-        <div id="strasseSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+        <div id="strasseSortenList" class="sortenListe"></div>
         <div style="display:flex;gap:6px">
-          <input type="text" id="newStrasseSorte" placeholder="z.B. RC 0/56" style="flex:1">
+          <input type="text" id="newStrasseSorte" placeholder="z.B. RC 0/56" style="flex:1;min-width:0">
           <button class="btn-s" onclick="addAuftragsSorte('strasse')">+</button>
         </div>
       </div>
       <div>
         <div class="pt" style="margin-bottom:8px">🔵 Beton-Sorten</div>
-        <div id="betonSortenList" style="border:1px solid var(--line);border-radius:var(--rs);padding:8px;min-height:80px;max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
+        <div id="betonSortenList" class="sortenListe"></div>
         <div style="display:flex;gap:6px">
-          <input type="text" id="newBetonSorte" placeholder="z.B. C25/30" style="flex:1">
+          <input type="text" id="newBetonSorte" placeholder="z.B. C25/30" style="flex:1;min-width:0">
           <button class="btn-s" onclick="addAuftragsSorte('beton')">+</button>
         </div>
       </div>
@@ -5468,7 +5475,7 @@ function renderAuftragsSortenModal(){
       ? '<div style="color:var(--muted);font-size:12px;padding:6px">Noch keine Sorten</div>'
       : arr.map((s,i)=>
           '<div style="display:flex;align-items:center;gap:6px;padding:5px 4px;border-bottom:1px solid var(--line)">'
-          +'<input id="sorte_'+key+'_'+i+'" value="'+esc(s)+'" style="flex:1;padding:4px 8px;border:1px solid var(--line);border-radius:var(--rs);font-size:12px;font-family:inherit;background:var(--surf)">'
+          +'<input id="sorte_'+key+'_'+i+'" value="'+esc(s)+'" title="'+esc(s)+'" style="flex:1;min-width:0;padding:4px 8px;border:1px solid var(--line);border-radius:var(--rs);font-size:12px;font-family:inherit;background:var(--surf)">'
           +'<button onclick="saveAuftragsSorte(\''+key+'\','+i+')" title="Speichern" style="background:var(--grn);color:#fff;border:none;border-radius:var(--rs);padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">✓</button>'
           +'<button onclick="removeAuftragsSorte(\''+key+'\','+i+')" title="Löschen" style="background:none;border:none;color:var(--brand);font-size:16px;cursor:pointer;width:24px;height:24px;border-radius:4px">×</button>'
           +'</div>'
