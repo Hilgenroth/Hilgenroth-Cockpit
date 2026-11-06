@@ -1964,13 +1964,24 @@ let fleet={vehicles:[...DFLT_V],drivers:[...DFLT_D],fremd:[]};
 let editingId={fremd:null,sundern:null};
 let ovDate='';
 
-const today=new Date();
+// Datum IMMER aus der lokalen Zeit bilden – toISOString() rechnet in UTC um
+// und liefert in Deutschland nachts (00:00–01:00 bzw. 00:00–02:00) den Vortag.
+function isoLocal(d){
+  d=d instanceof Date?d:new Date(d);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function isoPlus(iso,tage){const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+tage);return isoLocal(d);}
+
+let today=new Date();
 const days=['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
-const todayISO=today.toISOString().split('T')[0];
+let todayISO=isoLocal(today);
 ovDate=todayISO;
 
-document.getElementById('todayWd').textContent=days[today.getDay()];
-document.getElementById('todayDt').textContent=String(today.getDate()).padStart(2,'0')+'.'+String(today.getMonth()+1).padStart(2,'0')+'.'+today.getFullYear();
+function kopfDatumSetzen(){
+  document.getElementById('todayWd').textContent=days[today.getDay()];
+  document.getElementById('todayDt').textContent=String(today.getDate()).padStart(2,'0')+'.'+String(today.getMonth()+1).padStart(2,'0')+'.'+today.getFullYear();
+}
+kopfDatumSetzen();
 document.querySelector('#formF [name="abholung"]').value=todayISO;
 document.querySelector('#formS [name="datum"]').value=todayISO;
 document.getElementById('fltDF').value=todayISO;
@@ -3374,9 +3385,9 @@ function renderS(){
 // ===== OVERVIEW =====
 window.navOv=function(d){
   if(d==='today')ovDate=todayISO;
-  else if(d==='yesterday'){const x=new Date();x.setDate(x.getDate()-1);ovDate=x.toISOString().split('T')[0]}
-  else if(d==='tomorrow'){const x=new Date();x.setDate(x.getDate()+1);ovDate=x.toISOString().split('T')[0]}
-  else if(typeof d==='number'){const x=new Date(ovDate);x.setDate(x.getDate()+d);ovDate=x.toISOString().split('T')[0]}
+  else if(d==='yesterday'){ovDate=isoPlus(todayISO,-1)}
+  else if(d==='tomorrow'){ovDate=isoPlus(todayISO,1)}
+  else if(typeof d==='number'){ovDate=isoPlus(ovDate,d)}
   document.getElementById('ovDp').value=ovDate;renderOv();
 };
 document.getElementById('ovDp').addEventListener('change',e=>{ovDate=e.target.value;renderOv()});
@@ -3421,9 +3432,7 @@ window.ovUndoLeeren=function(){
     .catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
 window.ovVortag=function(){
-  const prev=new Date(ovDate);
-  prev.setDate(prev.getDate()-1);
-  const prevDate=prev.toISOString().split('T')[0];
+  const prevDate=isoPlus(ovDate,-1);
   const vortagAuftraege=data.sundern.filter(o=>o.datum===prevDate);
   if(!vortagAuftraege.length){showToast('Keine Sundern-Aufträge am Vortag','amber');return;}
   const bereits=data.sundern.filter(o=>o.datum===ovDate).length;
@@ -4065,7 +4074,7 @@ window.exportTagesuebersicht=function(exportDatum){
 function dlXlsx(sheets,base){
   const wb=XLSX.utils.book_new();
   Object.entries(sheets).forEach(([n,rows])=>{const ws=XLSX.utils.json_to_sheet(rows);const cw=Object.keys(rows[0]||{}).map(k=>({wch:Math.max(k.length+2,14)}));ws['!cols']=cw;XLSX.utils.book_append_sheet(wb,ws,n)});
-  XLSX.writeFile(wb,`${base}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  XLSX.writeFile(wb,`${base}_${isoLocal(new Date())}.xlsx`);
 }
 
 // ===== ALLE AUFTRÄGE =====
@@ -4589,7 +4598,7 @@ let tpActiveBlock=null;
 
 function tpNav(d){
   if(d==='today'){tpDate=todayISO;}
-  else{const x=new Date(tpDate);x.setDate(x.getDate()+d);tpDate=x.toISOString().split('T')[0];}
+  else{tpDate=isoPlus(tpDate,d);}
   document.getElementById('tpDate').value=tpDate;
   renderTourenplan();
 }
@@ -5778,8 +5787,8 @@ function fbFilterBtnSync(){
 window.fbSetDate=function(v){ if(v){fbDate=v;renderFzgBest();} };
 window.fbNav=function(d){
   if(d==='today')fbDate=todayISO;
-  else if(d==='tomorrow'){const t=new Date();t.setDate(t.getDate()+1);fbDate=t.toISOString().slice(0,10);}
-  else {const t=new Date(fbDate+'T12:00:00');t.setDate(t.getDate()+d);fbDate=t.toISOString().slice(0,10);}
+  else if(d==='tomorrow'){fbDate=isoPlus(todayISO,1);}
+  else {fbDate=isoPlus(fbDate,d);}
   const dp=document.getElementById('fbDate'); if(dp)dp.value=fbDate;
   renderFzgBest();
 };
@@ -5806,8 +5815,7 @@ window.fbUndoLeeren=function(){
     .catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
 window.fbVortag=function(){
-  const v=new Date(fbDate+'T12:00:00'); v.setDate(v.getDate()-1);
-  const vd=v.toISOString().slice(0,10);
+  const vd=isoPlus(fbDate,-1);
   const quelle=fzgPlan[vd]||{};
   const anz=Object.values(quelle).reduce((a,z)=>a+fbNorm(z).length,0);
   if(!anz){showToast('Für den '+fmtDate(vd)+' ist nichts geplant','amber');return;}
@@ -7122,11 +7130,56 @@ document.getElementById("baustelleSelect").addEventListener("change", async func
   }
 });
 
+// ===== TAGESWECHSEL =====
+// Die Seite bleibt oft ueber Nacht offen. Ohne diese Pruefung zeigt sie
+// am naechsten Morgen immer noch das Datum vom Vortag an.
+(function(){
+  function feldSetzen(id,alt,neu){
+    const el=document.getElementById(id);
+    if(el&&(!el.value||el.value===alt))el.value=neu;
+  }
+  function formSetzen(sel,alt,neu){
+    const el=document.querySelector(sel);
+    if(el&&(!el.value||el.value===alt))el.value=neu;
+  }
+  function sicher(fn){try{if(typeof fn==='function')fn()}catch(e){}}
+  function pruefen(){
+    const jetzt=new Date();
+    const neuISO=isoLocal(jetzt);
+    if(neuISO===todayISO)return;
+    const alt=todayISO;
+    today=jetzt; todayISO=neuISO;
+    kopfDatumSetzen();
+
+    // Eingabemasken und Filter zuerst, damit ein Render-Fehler nichts blockiert
+    formSetzen('#formF [name="abholung"]',alt,neuISO);
+    formSetzen('#formS [name="datum"]',alt,neuISO);
+    feldSetzen('fltDF',alt,neuISO);
+    feldSetzen('fltDS',alt,neuISO);
+    feldSetzen('tagesExportDatum',alt,neuISO);
+
+    // Ansichten, die auf "heute" standen, wandern mit
+    // Jeder Block einzeln abgesichert, damit ein Fehler die anderen nicht aufhaelt
+    sicher(function(){ if(ovDate===alt){ovDate=neuISO;feldSetzen('ovDp',alt,neuISO);renderOv();} });
+    sicher(function(){ if(tpDate===alt){tpDate=neuISO;feldSetzen('tpDate',alt,neuISO);renderTourenplan();} });
+    sicher(function(){ if(fbDate===alt){fbDate=neuISO;feldSetzen('fbDate',alt,neuISO);renderFzgBest();} });
+    sicher(function(){ renderF(); });
+    sicher(function(){ renderS(); });
+
+    if(typeof showToast==='function')
+      showToast('Neuer Tag \u2013 die \u00dcbersicht steht jetzt auf '+(typeof fmtDate==='function'?fmtDate(neuISO):neuISO),'success');
+  }
+  setInterval(pruefen,30000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)pruefen()});
+  window.addEventListener('focus',pruefen);
+})();
+
 // ===== INIT =====
 initMap();
 setTimeout(()=>{ if(map) map.invalidateSize(); }, 200);
 loadSuppliers();
 renderBaustellenSelect();
+
 
 </script>
 </body>
