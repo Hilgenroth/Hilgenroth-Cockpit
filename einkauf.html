@@ -134,6 +134,31 @@ tr:hover .ra{opacity:1;}
 
 .empty{padding:36px;text-align:center;color:var(--muted);}
 .empty svg{width:34px;height:34px;stroke:var(--muted);margin-bottom:10px;opacity:.3;display:block;margin:0 auto 10px;}
+
+/* ── Preisjahr ── */
+.jahrbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.jahrlbl{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+         color:var(--muted);margin-right:3px}
+.jahrpill{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;
+          font-size:13px;font-weight:600;cursor:pointer;color:var(--slate);font-family:inherit;
+          min-height:34px;display:inline-flex;align-items:center;gap:6px}
+.jahrpill span{font-size:10.5px;font-weight:700;background:#f1f3f5;color:var(--muted);
+               border-radius:20px;padding:1px 7px}
+.jahrpill:hover{border-color:var(--red);color:var(--red)}
+.jahrpill.on{background:var(--red);border-color:var(--red);color:#fff}
+.jahrpill.on span{background:rgba(255,255,255,.22);color:#fff}
+.jahrpill.neu{color:var(--red);border-style:dashed}
+
+/* ── Lieferantenpflege in der Preistabelle ── */
+.mx-lief{white-space:nowrap}
+.mx-akt{display:inline-flex;gap:3px;margin-left:8px;opacity:0;transition:opacity .12s;vertical-align:-6px}
+tr:hover .mx-akt{opacity:1}
+.mx-akt .ib{width:26px;height:26px;padding:0}
+.mx-akt .ib svg{width:12px;height:12px}
+.mx-z{cursor:pointer}
+.mx-z:hover{outline:2px solid var(--red);outline-offset:-2px}
+.mx-leer:hover{color:var(--red)!important}
+@media (max-width:760px){ .mx-akt{opacity:1} }
 </style>
 </head>
 <body>
@@ -188,8 +213,22 @@ tr:hover .ra{opacity:1;}
       <div class="fr" style="margin:0"><label>EK-Preis</label><input class="fi" id="mat-preis" placeholder="z.B. 15,70"></div>
       <div class="fr" style="margin:0"><label>Einheit</label><select class="fs" id="mat-ein"><option>€/t</option><option>€/m³</option><option>€/kg</option><option>€/l</option><option>€/Stk</option><option>Auf Anfrage</option></select></div>
     </div>
+    <div class="fr" style="margin-top:10px"><label>Preisjahr</label>
+      <input class="fi" id="mat-jahr" placeholder="2026" inputmode="numeric" maxlength="4"></div>
     <div class="fr" style="margin-top:10px"><label>Notiz</label><input class="fi" id="mat-not" placeholder="z.B. inkl. EKZ"></div>
     <div class="ma"><button class="btn btn-g" onclick="closeM('bd-mat')">Abbrechen</button><button class="btn btn-p" onclick="saveMat()">Speichern</button></div>
+  </div>
+</div>
+
+<div class="bd" id="bd-jahr">
+  <div class="md">
+    <div class="mdt">Neues Preisjahr</div>
+    <div class="fr"><label>Jahr *</label>
+      <input class="fi" id="jh-jahr" inputmode="numeric" maxlength="4" placeholder="2027" oninput="jhHinweis()"></div>
+    <div class="fr"><label>Startwerte</label>
+      <select class="fs" id="jh-von" onchange="jhHinweis()"></select></div>
+    <p id="jh-hint" style="font-size:12px;color:var(--muted);line-height:1.5;margin:4px 0 0"></p>
+    <div class="ma"><button class="btn btn-g" onclick="closeM('bd-jahr')">Abbrechen</button><button class="btn btn-p" onclick="saveJahr()">Anlegen</button></div>
   </div>
 </div>
 
@@ -341,6 +380,55 @@ const SLIEF=[
 // ── State ──
 let mats={}, liefs={}, projs={}, hist={};
 let curTab='preise', curKat='alle', curLief=null, curProj=null;
+
+// ── Preisjahr ──────────────────────────────────────────────
+// Alle Preise ohne Jahresangabe stammen aus 2026.
+const JAHR_STD='2026';
+let curJahr = (function(){ try{ return localStorage.getItem('ek_jahr')||JAHR_STD; }catch(e){ return JAHR_STD; } })();
+function jahrVon(v){ return String((v&&v.jahr)||JAHR_STD); }
+function setJahr(j){
+  curJahr=String(j);
+  try{ localStorage.setItem('ek_jahr',curJahr); }catch(e){}
+  draw();
+}
+function alleJahre(){
+  const s={}; s[JAHR_STD]=1; s[curJahr]=1;
+  Object.values(mats).forEach(function(v){ if(v&&v.material) s[jahrVon(v)]=1; });
+  return Object.keys(s).sort();
+}
+function matsImJahr(jahr){
+  const j=String(jahr||curJahr);
+  return Object.entries(mats).filter(function(e){ return e[1]&&e[1].material&&jahrVon(e[1])===j; });
+}
+// Preis desselben Lieferanten/Materials im Vorjahr - fuer den Vergleich
+function vorjahrPreis(lief, material){
+  const vj=String((parseInt(curJahr,10)||0)-1);
+  const t=Object.values(mats).find(function(v){
+    return v&&jahrVon(v)===vj&&v.material===material&&normName(v.lieferant)===normName(lief);
+  });
+  return t?t.preis:'';
+}
+function deltaHtml(neuPreis, altPreis){
+  const a=pnum(altPreis), n=pnum(neuPreis);
+  if(!a||!n||a<=0) return '';
+  const d=(n-a)/a*100;
+  if(Math.abs(d)<0.05) return '<div style="font-size:9px;color:var(--muted);line-height:1.2">±0 %</div>';
+  const rot=d>0;
+  return '<div style="font-size:9px;line-height:1.2;color:'+(rot?'#dc2626':'#16a34a')+'">'+
+         (rot?'+':'')+d.toFixed(1).replace('.',',')+' %</div>';
+}
+function jahrLeiste(){
+  const js=alleJahre();
+  return '<div class="jahrbar">'+
+    '<span class="jahrlbl">Preisjahr</span>'+
+    js.map(function(j){
+      const n=matsImJahr(j).length;
+      return '<button class="jahrpill'+(j===curJahr?' on':'')+'" onclick="setJahr(\''+j+'\')">'+
+             j+' <span>'+n+'</span></button>';
+    }).join('')+
+    '<button class="jahrpill neu" onclick="openJahr()">+ Jahr</button>'+
+    '</div>';
+}
 let matKey=null, liefKey=null, projKey=null, ppKey=null;
 let sq=''; // Suchquery — persistent
 
@@ -397,7 +485,7 @@ function draw(){
 // ── PREISE ──
 function drawPreise(){
   const main=document.getElementById('main');
-  let rows=Object.entries(mats).filter(([k,v])=>v&&v.material);
+  let rows=matsImJahr(curJahr);
   if(curKat!=='alle') rows=rows.filter(([k,v])=>v.kategorie===curKat);
 
   const isSearch=sq.length>=2;
@@ -422,6 +510,7 @@ function drawPreise(){
         <button class="btn btn-p" onclick="openMat()">+ Material</button>
     </div>
   </div>
+  ${jahrLeiste()}
   <div class="sbar" style="position:relative">
     <div class="swrap" style="max-width:100%;flex:1;max-width:360px">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -434,14 +523,21 @@ function drawPreise(){
   if(curKat==='Gesteinskörnung & Sand' && !isSearch){
     const matOrder = ['Sand 0/2', 'Sand 0/5', '1/3', '0/5L-Bettung', '2/5', '0/8', '2/8', '5/8', '0/11', '8/11', '0/16', '8/16', '11/16', '0/22', '5/22', '16/22', '16/32', '22/32', '0/32', '0/45', 'STS 0/45'];
     // Alle Lieferanten die Gesteinskörnung haben
-    const gsRows = Object.entries(mats).filter(([k,v])=>v&&v.kategorie==='Gesteinskörnung & Sand');
+    const gsRows = matsImJahr(curJahr).filter(([k,v])=>v.kategorie==='Gesteinskörnung & Sand');
     // Lieferanten: normalisiert zusammenfassen (verhindert Doppeleinträge bei leicht unterschiedl. Namen)
     const liefMap = {}; // normName → erster realer Name
     gsRows.forEach(([k,v])=>{
       const nm = normName(v.lieferant);
       if(!liefMap[nm]) liefMap[nm] = v.lieferant;
     });
-    const liefs = Object.values(liefMap).sort();
+    // Auch angelegte Lieferanten ohne Preise auffuehren - sonst kaeme man
+    // in einem neuen Jahr nie dazu, den ersten Preis einzutragen.
+    Object.values(liefs).forEach(function(l){
+      if(!l||!l.name||l.kategorie!=='Gesteinskörnung & Sand')return;
+      const nm=normName(l.name);
+      if(!liefMap[nm]) liefMap[nm]=l.name;
+    });
+    const liefNamen = Object.values(liefMap).sort(function(a,b){return a.localeCompare(b,'de');});
     
     html += `<div style="overflow-x:auto"><table class="tbl" style="min-width:900px">
       <thead><tr>
@@ -449,16 +545,23 @@ function drawPreise(){
         ${matOrder.map(m=>`<th style="text-align:center;white-space:nowrap;font-size:10px;cursor:pointer;transition:.12s" onclick="goSorte('${esc(m)}')" title="Alle Preise für ${esc(m)}">${esc(m)}<br><span style="font-size:8px;color:var(--muted);font-weight:400">▼ Vergleich</span></th>`).join('')}
       </tr></thead>
       <tbody>
-        ${liefs.map(lief=>{
+        ${liefNamen.map(lief=>{
           const liefRows = gsRows.filter(([k,v])=>normName(v.lieferant)===normName(lief));
           return `<tr>
-            <td style="font-weight:600;position:sticky;left:0;background:var(--white);z-index:1;cursor:pointer;color:var(--red)" onclick="goLief('${esc(lief)}')">${esc(lief)}</td>
+            <td class="mx-lief" style="font-weight:600;position:sticky;left:0;background:var(--white);z-index:1">
+              <span style="cursor:pointer;color:var(--red)" onclick="goLief('${esc(lief)}')">${esc(lief)}</span>
+              <span class="mx-akt">
+                <button class="ib e" title="Lieferant bearbeiten" onclick="event.stopPropagation();liefBearbeiten('${esc(lief)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+                <button class="ib d" title="Lieferant löschen" onclick="event.stopPropagation();liefEntfernen('${esc(lief)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+              </span>
+            </td>
             ${matOrder.map(mat=>{
               const entry = liefRows.find(([k,v])=>v.material===mat);
               const preis = entry?fmtPreis(entry[1].preis):'';
+              const vj = vorjahrPreis(lief, mat);
               return preis
-                ? `<td style="text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:700;color:var(--green)">${esc(preis)}</td>`
-                : `<td style="text-align:center;color:var(--line)">–</td>`;
+                ? `<td class="mx-z" style="text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:700;color:var(--green)" title="${esc(lief+' · '+mat+' · '+curJahr+(vj?'  (Vorjahr '+fmtPreis(vj)+')':''))}" onclick="openMat('${entry[0]}')">${esc(preis)}${deltaHtml(entry[1].preis, vj)}</td>`
+                : `<td class="mx-z mx-leer" style="text-align:center;color:var(--line)" title="${esc(lief+' · '+mat+' · Preis eintragen')}" onclick="neuerPreis('${esc(lief)}','${esc(mat)}')">–</td>`;
             }).join('')}
           </tr>`;
         }).join('')}
@@ -529,7 +632,7 @@ function goLief(name){curLief=name;curTab='lief';document.getElementById('nt-lie
 function drawLief(){
   const main=document.getElementById('main');
   if(curLief){
-    const items=Object.entries(mats).filter(([k,v])=>v&&matchLief(curLief,v.lieferant));
+    const items=matsImJahr(curJahr).filter(([k,v])=>matchLief(curLief,v.lieferant));
     const lf=Object.values(liefs).find(l=>l&&l.name===curLief)||{};
     let html=`<div class="back" onclick="curLief=null;drawLief()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>Zurück</div>
     <div class="ph"><div><div class="pht">${esc(curLief)}</div>
@@ -543,8 +646,9 @@ function drawLief(){
       </div>
     </div>
     <button class="btn btn-p" onclick="openMat(null,'${esc(curLief)}')">+ Preis hinzufügen</button></div>
+    ${jahrLeiste()}
     <div class="twrap"><table class="tbl"><thead><tr><th>Material</th><th>Kategorie</th><th>EK-Preis</th><th>Einheit</th><th>Notiz</th><th></th></tr></thead><tbody>`;
-    if(!items.length) html+=`<tr><td colspan="6"><div class="empty"><p>Noch keine Preise eingetragen.</p></div></td></tr>`;
+    if(!items.length) html+=`<tr><td colspan="6"><div class="empty"><p>Für ${esc(curJahr)} sind noch keine Preise eingetragen.</p></div></td></tr>`;
     items.forEach(([k,v])=>{
       html+=`<tr><td style="font-weight:500">${esc(v.material)}</td><td><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span></td>
         <td class="${v.preis?'p-val':'p-afr'}">${v.preis?fmtPreis(v.preis)+(v.einheit!=='Auf Anfrage'?' '+esc(v.einheit):''):'Auf Anfrage'}</td>
@@ -559,10 +663,10 @@ function drawLief(){
     main.innerHTML=html; return;
   }
   const items=Object.entries(liefs).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
-  let html=`<div class="ph"><div class="pht">Lieferanten</div><button class="btn btn-p" onclick="openLief()">+ Lieferant</button></div><div class="lgrid">`;
+  let html=`<div class="ph"><div class="pht">Lieferanten</div><button class="btn btn-p" onclick="openLief()">+ Lieferant</button></div>${jahrLeiste()}<div class="lgrid">`;
   items.forEach(([k,v])=>{
     if(!v||!v.name) return;
-    const cnt=Object.values(mats).filter(m=>m&&matchLief(v.name,m.lieferant)).length;
+    const cnt=matsImJahr(curJahr).filter(e=>matchLief(v.name,e[1].lieferant)).length;
     html+=`<div class="lcard" onclick="goLief('${esc(v.name)}')">
       <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(v.name)}</div>
       <div style="display:flex;align-items:center;gap:6px"><span class="badge ${ktag(v.kategorie)}">${esc(v.kategorie)}</span><span style="font-size:11px;color:var(--muted)">${cnt} Preis${cnt!==1?'e':''}</span></div>
@@ -770,11 +874,13 @@ function openMat(key,forLief){
     document.getElementById('mat-preis').value=v.preis||'';
     document.getElementById('mat-ein').value=v.einheit||'€/t';
     document.getElementById('mat-not').value=v.notiz||'';
+    document.getElementById('mat-jahr').value=jahrVon(v);
   } else {
     fillLS('mat-lief', forLief||'');
     ['mat-mat','mat-preis','mat-not'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('mat-kat').value='Gesteinskörnung & Sand';
     document.getElementById('mat-ein').value='€/t';
+    document.getElementById('mat-jahr').value=curJahr;
   }
   const _d=document.getElementById('sorten-drop');if(_d)_d.style.display='none';
   openM('bd-mat');
@@ -783,7 +889,8 @@ function saveMat(){
   const m=document.getElementById('mat-mat').value.trim();
   const l=document.getElementById('mat-lief').value;
   if(!l||!m){alert('Lieferant und Material sind Pflichtfelder.');return;}
-  const e={lieferant:l,material:m,kategorie:document.getElementById('mat-kat').value,preis:document.getElementById('mat-preis').value.trim(),einheit:document.getElementById('mat-ein').value,notiz:document.getElementById('mat-not').value.trim(),ts:Date.now()};
+  const jr=String(document.getElementById('mat-jahr').value||'').trim();
+  const e={lieferant:l,material:m,kategorie:document.getElementById('mat-kat').value,preis:document.getElementById('mat-preis').value.trim(),einheit:document.getElementById('mat-ein').value,notiz:document.getElementById('mat-not').value.trim(),jahr:(/^\d{4}$/.test(jr)?jr:curJahr),ts:Date.now()};
   if(matKey){
     const old=mats[matKey];
     if(old&&old.preis&&old.preis!==e.preis){
@@ -797,7 +904,8 @@ function saveMat(){
   } else {
     const k=(MR?MR.push().key:'_'+Date.now());MR&&MR.child(k).set(e);mats[k]=e;
   }
-  closeM('bd-mat'); draw();
+  closeM('bd-mat');
+  if(e.jahr && e.jahr!==curJahr) setJahr(e.jahr); else draw();
 }
 function delMat(k){if(!confirm('Löschen?'))return;MR&&MR.child(k).remove();delete mats[k];draw();}
 
@@ -831,11 +939,141 @@ function saveLief(){
     apMob:document.getElementById('lf-ap-mob').value.trim(),
     apMail:document.getElementById('lf-ap-mail').value.trim(),
   };
-  if(liefKey){LR&&LR.child(liefKey).update(e);liefs[liefKey]={...liefs[liefKey],...e};}
+  if(liefKey){
+    const altName=(liefs[liefKey]||{}).name||'';
+    LR&&LR.child(liefKey).update(e);liefs[liefKey]={...liefs[liefKey],...e};
+    // Umbenennen muss auf die Preise durchschlagen, sonst haengen sie
+    // am alten Namen und der Lieferant taucht doppelt auf.
+    if(altName && altName!==name){
+      let n=0;
+      Object.keys(mats).forEach(function(mk){
+        const v=mats[mk];
+        if(v && normName(v.lieferant)===normName(altName)){
+          MR&&MR.child(mk).update({lieferant:name});
+          mats[mk].lieferant=name; n++;
+        }
+      });
+      Object.keys(hist).forEach(function(hk){
+        const v=hist[hk];
+        if(v && normName(v.lieferant)===normName(altName)){
+          HR&&HR.child(hk).update({lieferant:name});
+          hist[hk].lieferant=name;
+        }
+      });
+      if(curLief && normName(curLief)===normName(altName)) curLief=name;
+      if(n) setTimeout(function(){ alert(n+' Preise wurden auf "'+name+'" umgestellt.'); },60);
+    }
+  }
   else{const k=(LR?LR.push().key:'_'+Date.now());LR&&LR.child(k).set(e);liefs[k]=e;}
   closeM('bd-lief'); draw();
 }
-function delLief(k){if(!confirm('Löschen?'))return;LR&&LR.child(k).remove();delete liefs[k];draw();}
+function delLief(k){
+  const l=liefs[k];
+  if(!l){return;}
+  liefEntfernen(l.name);
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  Preisjahr anlegen und Preise übernehmen
+// ══════════════════════════════════════════════════════════
+function openJahr(){
+  const js=alleJahre();
+  const vorschlag=String(Math.max.apply(null,js.map(function(x){return parseInt(x,10)||0;}))+1);
+  document.getElementById('jh-jahr').value=vorschlag;
+  const sel=document.getElementById('jh-von');
+  sel.innerHTML='<option value="">— leer anfangen —</option>'+
+    js.slice().reverse().map(function(j){
+      return '<option value="'+j+'">Preise aus '+j+' übernehmen ('+matsImJahr(j).length+')</option>';
+    }).join('');
+  sel.value=js.length?js[js.length-1]:'';
+  jhHinweis();
+  openM('bd-jahr');
+}
+function jhHinweis(){
+  const von=document.getElementById('jh-von').value;
+  const ziel=String(document.getElementById('jh-jahr').value||'').trim();
+  const el=document.getElementById('jh-hint');
+  if(!von){ el.textContent='Das neue Jahr startet ohne Preise.'; return; }
+  const schon=ziel?matsImJahr(ziel).length:0;
+  el.textContent=matsImJahr(von).length+' Preise aus '+von+' werden nach '+(ziel||'…')+' kopiert'+
+    (schon?' – dort liegen bereits '+schon+' Preise, die bleiben unverändert.':'.')+
+    ' Danach kannst du sie einzeln anpassen.';
+}
+function saveJahr(){
+  const ziel=String(document.getElementById('jh-jahr').value||'').trim();
+  if(!/^\d{4}$/.test(ziel)){ alert('Bitte eine Jahreszahl mit vier Stellen eingeben.'); return; }
+  const von=document.getElementById('jh-von').value;
+  if(von){
+    matsImJahr(von).forEach(function(e){
+      const v=e[1];
+      const schonDa=matsImJahr(ziel).some(function(x){
+        return x[1].material===v.material && normName(x[1].lieferant)===normName(v.lieferant);
+      });
+      if(schonDa) return;
+      const n={lieferant:v.lieferant, material:v.material, kategorie:v.kategorie,
+               preis:v.preis||'', einheit:v.einheit||'€/t', notiz:v.notiz||'',
+               jahr:ziel, ts:Date.now()};
+      const k=(MR?MR.push().key:'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6));
+      if(MR) MR.child(k).set(n).catch(function(){});
+      mats[k]=n;
+    });
+  }
+  closeM('bd-jahr');
+  setJahr(ziel);
+}
+
+// ══════════════════════════════════════════════════════════
+//  Lieferanten aus der Preistabelle heraus pflegen
+// ══════════════════════════════════════════════════════════
+// Liefert den Schlüssel in liefs - und legt den Lieferanten an,
+// falls er bisher nur in den Preisen vorkam.
+function liefSchluessel(name){
+  let k=Object.keys(liefs).find(function(x){
+    return liefs[x] && normName(liefs[x].name)===normName(name);
+  });
+  if(k) return k;
+  const kat=(Object.values(mats).find(function(v){
+    return v && normName(v.lieferant)===normName(name);
+  })||{}).kategorie || 'Gesteinskörnung & Sand';
+  const e={name:name, kategorie:kat, notiz:'', apName:'', apTel:'', apMob:'', apMail:''};
+  k=(LR?LR.push().key:'_'+Date.now());
+  if(LR) LR.child(k).set(e).catch(function(){});
+  liefs[k]=e;
+  return k;
+}
+function liefBearbeiten(name){ openLief(liefSchluessel(name)); }
+
+function liefEntfernen(name){
+  const k=Object.keys(liefs).find(function(x){
+    return liefs[x] && normName(liefs[x].name)===normName(name);
+  });
+  const preise=Object.entries(mats).filter(function(e){
+    return e[1] && normName(e[1].lieferant)===normName(name);
+  });
+  if(!confirm('"'+name+'" löschen?'+(preise.length?'\n\nDazu gehören '+preise.length+' Preise.':''))) return;
+  let auchPreise=false;
+  if(preise.length){
+    auchPreise=confirm('Die '+preise.length+' Preise ebenfalls löschen?\n\n'+
+      'OK = alles löschen · Abbrechen = nur den Lieferanten entfernen, Preise bleiben stehen');
+  }
+  if(auchPreise){
+    preise.forEach(function(e){ if(MR)MR.child(e[0]).remove(); delete mats[e[0]]; });
+  }
+  if(k){ if(LR)LR.child(k).remove(); delete liefs[k]; }
+  if(curLief && normName(curLief)===normName(name)) curLief=null;
+  draw();
+}
+
+// Preis direkt aus der Tabelle heraus anlegen
+function neuerPreis(lief, material){
+  openMat(null, lief);
+  document.getElementById('mat-mat').value=material;
+  document.getElementById('mat-kat').value='Gesteinskörnung & Sand';
+  const jf=document.getElementById('mat-jahr');
+  if(jf) jf.value=curJahr;
+  setTimeout(function(){ const p=document.getElementById('mat-preis'); if(p)p.focus(); },120);
+}
 
 // ── Projekt CRUD ──
 function openProj(key){
@@ -1153,7 +1391,7 @@ function cleanXLVal(v){
 }
 
 function saveImportEntry(lieferant, material, kategorie, preis, einheit, notiz){
-  const e = {lieferant, material, kategorie, preis, einheit, notiz, ts:Date.now()};
+  const e = {lieferant, material, kategorie, preis, einheit, notiz, jahr:curJahr, ts:Date.now()};
   const k = (MR?MR.push().key:'_'+Date.now());
   MR&&MR.child(k).set(e).catch(()=>{});
   mats[k] = e;
