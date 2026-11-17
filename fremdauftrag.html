@@ -184,6 +184,25 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .ord-h strong{font-size:14px;font-weight:800}
 .badge{padding:3px 9px;border-radius:100px;font-size:9px;font-weight:800;text-transform:uppercase;
   letter-spacing:.06em;background:var(--grn-s);color:var(--grn);white-space:nowrap}
+.badge.st-versendet{background:var(--amb-s);color:var(--amb)}
+.badge.st-bestaetigt{background:var(--blu-s);color:var(--blu)}
+.badge.st-im_system{background:var(--grn-s);color:var(--grn)}
+.steps{display:flex;align-items:flex-start;gap:0;margin:10px 0 2px}
+.steps .sp{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;text-align:center}
+.steps .sp::before,.steps .sp::after{content:'';position:absolute;top:6px;height:2px;background:var(--line2)}
+.steps .sp::before{left:0;right:50%;margin-right:7px}
+.steps .sp::after{left:50%;right:0;margin-left:7px}
+.steps .sp:first-child::before,.steps .sp:last-child::after{display:none}
+.steps .sp .dot{width:13px;height:13px;border-radius:50%;background:#fff;border:2px solid var(--line2);
+  position:relative;z-index:1;flex-shrink:0}
+.steps .sp .lb{font-size:9.5px;font-weight:700;color:var(--muted);line-height:1.25;letter-spacing:.01em}
+.steps .sp.done .dot{background:var(--grn);border-color:var(--grn)}
+.steps .sp.done::before{background:var(--grn)}
+.steps .sp.done .lb{color:var(--ink2)}
+.steps .sp.now .dot{background:var(--blu);border-color:var(--blu);box-shadow:0 0 0 3px var(--blu-s)}
+.steps .sp.now .lb{color:var(--blu);font-weight:800}
+/* Verbindungslinie durchgehend einfaerben, nicht nur die rechte Haelfte */
+.steps .sp:has(+ .sp.done)::after{background:var(--grn)}
 .ord small{display:block;font-size:12px;color:var(--ink3);font-weight:600;line-height:1.6}
 .empty{padding:26px 10px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
 .ord-notiz{margin-top:8px;background:var(--grn-s);color:var(--grn);border-radius:var(--rs);
@@ -480,9 +499,12 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
           Ohne PIN kann sich eine Firma nicht anmelden. 4–6 Ziffern, je Firma verschieden.
         </div>
         <div id="admFFList" class="ffbst-list" style="max-height:220px"></div>
-        <div class="ffbst-add" style="grid-template-columns:1fr 110px auto">
+        <div class="ffbst-add" style="grid-template-columns:1fr 110px">
           <input type="text" id="admFFName" placeholder="Firmenname">
           <input type="tel" id="admFFPin" placeholder="PIN" inputmode="numeric" maxlength="6">
+        </div>
+        <div class="ffbst-add" style="grid-template-columns:1fr auto;margin-top:8px">
+          <input type="email" id="admFFMail" placeholder="E-Mail (für Lieferschein-Zuordnung)">
           <button type="button" class="btn-s" onclick="admAddFF()">+ Anlegen</button>
         </div>
       </div>
@@ -696,10 +718,11 @@ function archDaten(){
         status:o.fremdArt==='lieferung'?'Lieferung':'Abholung', createdAt:o.createdAt||0, link:''};
     });
   } else {
-    list=lieferscheine.filter(l=>!l.firma||l.firma===meineFF).map(l=>({
+    // strikt: eine Firma sieht ausschließlich ihre eigenen Lieferscheine
+    list=lieferscheine.filter(l=>l.firma&&l.firma===meineFF).map(l=>({
       datum:l.datum||l.lieferdatum||'', titel:(l.nr?'LS '+l.nr+' · ':'')+(l.material||l.sorte||'Lieferschein'),
       menge:l.menge||'', bst:(l.bstNr?l.bstNr+' – ':'')+(l.bstName||l.baustelle||''),
-      zusatz:[l.lieferant,l.kennzeichen,l.bemerkung].filter(Boolean).join(' · '),
+      zusatz:[l.lieferant,l.kennzeichen,l.dateiname,l.bemerkung].filter(Boolean).join(' · '),
       status:l.status||'', createdAt:l.createdAt||0, link:l.pdfUrl||l.url||''
     }));
   }
@@ -747,7 +770,7 @@ window.archExport=function(){
     .map(r=>r.map(f=>'"'+String(f==null?'':f).replace(/"/g,'""')+'"').join(';')).join('\r\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  a.download=(archArt==='best'?'Auftraege_':'Lieferscheine_')+new Date().toISOString().slice(0,10)+'.csv';
+  a.download=(archArt==='best'?'Auftraege_':'Lieferscheine_')+isoLocal(new Date())+'.csv';
   document.body.appendChild(a);a.click();a.remove();
   toast('CSV heruntergeladen','success');
 };
@@ -1166,6 +1189,7 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
     drivers:[...tags.FD],
     bemerkung:document.getElementById('bemerkung').value.trim(),
     quelle:'terminal',
+    status:'versendet',
     createdAt:firebase.database.ServerValue.TIMESTAMP
   };
 
@@ -1191,6 +1215,7 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
       uebernommen:true,
       beauftragt:false,
       erledigt:false,
+      status:'versendet',
       createdAt:firebase.database.ServerValue.TIMESTAMP
     })
   ]).then(()=>{
@@ -1214,6 +1239,30 @@ document.getElementById('ordForm').addEventListener('submit',function(e){
   }
 });
 
+// ===== AUFTRAGSSTATUS =====
+// versendet -> bestaetigt -> im_system. Aeltere Auftraege ohne Status gelten als
+// erledigt, damit beim Kunden nichts ploetzlich wieder auf "versendet" springt.
+const ST_SCHRITTE=[
+  {key:'versendet',  kurz:'Antrag versendet',  lang:'Antrag versendet'},
+  {key:'bestaetigt', kurz:'Bestätigt',         lang:'Auftrag bestätigt'},
+  {key:'im_system',  kurz:'Im System',         lang:'Im System'}
+];
+function ordStatus(o){
+  const s=String((o&&o.status)||'').trim();
+  return ST_SCHRITTE.some(x=>x.key===s) ? s : 'im_system';
+}
+function statusBadge(o){
+  const st=ordStatus(o);
+  const t=ST_SCHRITTE.find(x=>x.key===st);
+  return '<span class="badge st-'+st+'">'+esc(t?t.lang:st)+'</span>';
+}
+function statusSteps(o){
+  const i=ST_SCHRITTE.findIndex(x=>x.key===ordStatus(o));
+  return '<div class="steps">'+ST_SCHRITTE.map((x,n)=>
+    '<div class="sp'+(n<i?' done':'')+(n===i?' done now':'')+'">'
+    +'<div class="dot"></div><div class="lb">'+esc(x.kurz)+'</div></div>').join('')+'</div>';
+}
+
 // ===== EIGENE AUFTRÄGE =====
 function renderMeine(){
   renderArchiv();
@@ -1234,7 +1283,8 @@ function renderMeine(){
       ? '<small>Fahrzeuge: '+esc(o.vehicleTypes.join(', '))+'</small>' : '';
     const label=esc(o.sorte||'')+(o.baustelle?' · '+esc(o.baustelle):'');
     return '<div class="ord"><div class="ord-h"><strong>'+esc(o.baustelle||'Auftrag')+'</strong>'
-    +'<span class="badge">Im System</span></div>'
+    +statusBadge(o)+'</div>'
+    +statusSteps(o)
     +tourHtml
     +'<small>Abholung: '+fmtDatum(o.abholung)+(o.uhrzeit?' · '+esc(o.uhrzeit):'')+'</small>'
     +fzgHtml
@@ -1279,18 +1329,20 @@ function showAdminContent(){
 // ===== FREMDFIRMEN & PIN =====
 function ffSpeichern(liste){
   fremdfirmen=liste;
-  return ffRef.set(liste.map(f=>({name:f.name,pin:f.pin||''})));
+  return ffRef.set(liste.map(f=>({name:f.name,pin:f.pin||'',email:f.email||''})));
 }
 function renderAdminFFList(){
   const box=document.getElementById('admFFList');
   if(!box||!adminUnlocked)return;
   box.innerHTML=fremdfirmen.length
     ? fremdfirmen.map((f,i)=>
-        '<div class="ffbst-row" style="grid-template-columns:1fr 86px 28px 28px">'
-        +'<span class="nm">'+esc(f.name)+'</span>'
+        '<div class="ffbst-row" style="grid-template-columns:1fr 86px 28px 28px;align-items:start">'
+        +'<span class="nm" style="white-space:normal">'+esc(f.name)
+          +'<span style="display:block;font-size:10px;font-weight:600;color:'+(f.email?'var(--ink3)':'#c9a227')+';overflow:hidden;text-overflow:ellipsis">'
+          +(f.email?'✉ '+esc(f.email):'✉ keine E-Mail – Lieferscheine nicht zuordenbar')+'</span></span>'
         +(f.pin?'<span class="nr">PIN '+esc(f.pin)+'</span>'
                :'<span class="nr" style="color:var(--brand)">kein PIN</span>')
-        +'<button type="button" onclick="admFFPinSetzen('+i+')" title="PIN ändern">✎</button>'
+        +'<button type="button" onclick="admFFBearbeiten('+i+')" title="PIN und E-Mail ändern">✎</button>'
         +'<button type="button" onclick="admFFDel('+i+')" title="Entfernen" style="color:var(--brand)">×</button>'
         +'</div>').join('')
     : '<div class="ffbst-leer">Noch keine Fremdfirma angelegt.</div>';
@@ -1302,21 +1354,29 @@ window.admAddFF=function(){
   if(!/^\d{4,6}$/.test(pin)){toast('PIN mit 4–6 Ziffern eingeben','amber');return;}
   if(fremdfirmen.some(f=>String(f.pin)===pin)){toast('Diesen PIN gibt es schon','amber');return;}
   if(fremdfirmen.some(f=>f.name.toLowerCase()===name.toLowerCase())){toast('Firma gibt es schon','amber');return;}
-  ffSpeichern([...fremdfirmen,{name,pin}]).then(()=>{
+  const email=(document.getElementById('admFFMail')?.value||'').trim().toLowerCase();
+  ffSpeichern([...fremdfirmen,{name,pin,email}]).then(()=>{
     document.getElementById('admFFName').value='';
     document.getElementById('admFFPin').value='';
+    document.getElementById('admFFMail').value='';
     renderAdminFFList(); toast('Firma angelegt','success');
   }).catch(e=>toast('Fehler: '+e.message,'amber'));
 };
-window.admFFPinSetzen=function(i){
+window.admFFBearbeiten=function(i){
   const f=fremdfirmen[i]; if(!f)return;
   const pin=prompt('PIN für '+f.name+' (4–6 Ziffern):',f.pin||'');
   if(pin===null)return;
   const p=pin.trim();
   if(!/^\d{4,6}$/.test(p)){toast('PIN mit 4–6 Ziffern eingeben','amber');return;}
   if(fremdfirmen.some((x,j)=>j!==i&&String(x.pin)===p)){toast('Diesen PIN gibt es schon','amber');return;}
-  ffSpeichern(fremdfirmen.map((x,j)=>j===i?{...x,pin:p}:x))
-    .then(()=>{renderAdminFFList();toast('PIN gespeichert','success');})
+  const mail=prompt('E-Mail der Firma – an diese Adresse verschickt WDV die Lieferscheine.\nMehrere mit Komma trennen.',f.email||'');
+  if(mail===null)return;
+  const m=mail.trim().toLowerCase();
+  if(m&&!/^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/.test(m)){
+    toast('E-Mail-Adresse sieht nicht gültig aus','amber');return;
+  }
+  ffSpeichern(fremdfirmen.map((x,j)=>j===i?{...x,pin:p,email:m}:x))
+    .then(()=>{renderAdminFFList();toast('Gespeichert','success');})
     .catch(e=>toast('Fehler: '+e.message,'amber'));
 };
 window.admFFDel=function(i){
@@ -1350,10 +1410,17 @@ window.admAddBst=function(){
   }).catch(e=>toast('Fehler: '+e.message,'amber'));
 };
 
-// Datum-Vorgabe: morgen
+// Lokales Datum – toISOString() rechnet in UTC um und liefert nachts den Vortag
+function isoLocal(d){d=d instanceof Date?d:new Date(d);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// Datum-Vorgabe: morgen (wird beim Zurueckkehren auf die Seite aktualisiert)
 (function(){
-  const d=new Date(); d.setDate(d.getDate()+1);
-  document.getElementById('abholung').value=d.toISOString().slice(0,10);
+  function morgen(){const d=new Date();d.setDate(d.getDate()+1);return isoLocal(d);}
+  const el=document.getElementById('abholung');
+  let gesetzt=morgen(); el.value=gesetzt;
+  function pruefen(){const m=morgen();if(m!==gesetzt&&(!el.value||el.value===gesetzt)){el.value=m;}gesetzt=m;}
+  setInterval(pruefen,30000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)pruefen()});
+  window.addEventListener('focus',pruefen);
 })();
 </script>
 </body>
