@@ -4933,7 +4933,12 @@ function renderBest(){
     const istFremd=b.typ==='fremd';
     const cardCls=b.erledigt?'st-erledigt':(b.uebernommen||b.beauftragt)?'st-uebernommen':'';
     const badges=[];
-    if(istFremd)badges.push('<span class="best-badge bd-blu" title="Direkt über das Fremdfirmen-Terminal eingegangen">🌐 Fremdfirma</span>');
+    const ffSt=ffStatusOf(b);
+    if(istFremd){
+      badges.push('<span class="best-badge bd-blu" title="Direkt über das Fremdfirmen-Terminal eingegangen">🌐 Fremdfirma</span>');
+      badges.push('<span class="best-badge '+(ffSt==='im_system'?'bd-grn':ffSt==='bestaetigt'?'bd-blu':'')+'" '
+        +'title="Diesen Stand sieht die Firma in ihrem Terminal">'+esc(FF_ST[ffSt])+'</span>');
+    }
     if(b.erledigt)badges.push('<span class="best-badge bd-grn">Erledigt</span>');
     else{
       if(!istFremd&&!b.uebernommen&&!b.beauftragt)badges.push('<span class="best-badge">Offen</span>');
@@ -4969,6 +4974,7 @@ function renderBest(){
         +'</div>':'')
       +'<div class="best-acts">'
       +(istFremd?'<button class="btn-s" onclick="chatOpenForBestellung(\''+b.id+'\',\''+esc(b.material||'').replace(/'/g,"\\'")+' \\u00b7 '+esc(b.bstName||'').replace(/'/g,"\\'")+'\')">💬 Chat zu diesem Auftrag</button>':'')
+      +(istFremd&&!b.erledigt?'<button class="btn-s'+(ffSt==='versendet'?' brand':'')+'" title="Setzt den Auftrag im Terminal der Firma auf „Auftrag bestätigt\u201c" onclick="bestBestaetigen(\''+b.id+'\')">'+(ffSt==='versendet'?'Auftrag bestätigen':'✓ Auftrag bestätigt')+'</button>':'')
       +(!istFremd&&!b.erledigt?'<button class="btn-s'+(b.uebernommen?'':' brand')+'" onclick="bestUebernehmen(\''+b.id+'\')">'+(b.uebernommen?'↺ Erneut übernehmen':'In Auftragsliste übernehmen')+'</button>':'')
       +(!b.erledigt?'<button class="btn-s" onclick="bestToggleBeauftragt(\''+b.id+'\')">'+(b.beauftragt?'✓ In Auftrag gegeben':'Bestellung in Auftrag gegeben')+'</button>':'')
       +(!b.erledigt?'<button class="btn-s" onclick="bestSetErledigt(\''+b.id+'\',true)">Erledigt</button>':'<button class="btn-s" onclick="bestSetErledigt(\''+b.id+'\',false)">Wieder öffnen</button>')
@@ -4976,6 +4982,36 @@ function renderBest(){
       +'</div></div>';
   }).join('');
 }
+/* ===== STATUS, DEN DIE FREMDFIRMA IM TERMINAL SIEHT =====
+   versendet -> bestaetigt -> im_system.
+   Der Status steht an der Bestellung UND am Fremdauftrag (gleiche ID),
+   weil das Terminal nur den Knoten "fremd" liest. */
+const FF_ST={versendet:'Antrag versendet',bestaetigt:'Auftrag bestätigt',im_system:'Im System'};
+function ffStatusOf(b){
+  if(!b)return 'im_system';
+  const s=String(b.status||'').trim();
+  if(FF_ST[s])return s;
+  /* Altbestand ohne Statusfeld stand im Terminal schon immer auf "Im System" –
+     das bleibt so, damit beim Kunden nichts zurueckspringt. */
+  return 'im_system';
+}
+function ffStatusSchreiben(id,status){
+  const p=[bestRef.child(id).update({status:status})];
+  const b=bestellungen[id];
+  if(b&&b.typ==='fremd') p.push(fremdRef.child(id).update({status:status}).catch(()=>{}));
+  return Promise.all(p);
+}
+window.bestBestaetigen=function(id){
+  const b=bestellungen[id]; if(!b)return;
+  const neu = ffStatusOf(b)==='versendet' ? 'bestaetigt' : 'versendet';
+  /* Merker, damit "Wieder oeffnen" spaeter auf die Bestaetigung zurueckfaellt
+     und nicht ganz an den Anfang */
+  bestRef.child(id).update({bestaetigt:neu==='bestaetigt'}).catch(()=>{});
+  ffStatusSchreiben(id,neu)
+    .then(()=>showToast(neu==='bestaetigt'?'Auftrag bestätigt – die Firma sieht es im Terminal':'Bestätigung zurückgenommen','success'))
+    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+};
+
 window.bestSaveNotiz=function(id){
   const ta=document.getElementById('dnote_'+id);
   if(!ta)return;
@@ -4989,8 +5025,14 @@ window.bestSaveNotiz=function(id){
     .catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
 window.bestSetErledigt=function(id,val){
-  bestRef.child(id).update({erledigt:val})
-    .then(()=>showToast(val?'Als erledigt markiert':'Wieder geöffnet','success'))
+  const b=bestellungen[id];
+  /* Beim Wiederöffnen auf die vorige Stufe zurück, nicht ganz an den Anfang */
+  const status = val ? 'im_system' : ((b&&(b.bestaetigt||b.beauftragt)) ? 'bestaetigt' : 'versendet');
+  bestRef.child(id).update({erledigt:val,status:status})
+    .then(()=>{
+      if(b&&b.typ==='fremd') fremdRef.child(id).update({status:status}).catch(()=>{});
+      showToast(val?'Erledigt – steht bei der Firma jetzt auf „Im System"':'Wieder geöffnet','success');
+    })
     .catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
 window.bestToggleBeauftragt=function(id){
