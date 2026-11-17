@@ -4995,11 +4995,22 @@ function ffStatusOf(b){
      das bleibt so, damit beim Kunden nichts zurueckspringt. */
   return 'im_system';
 }
+/* Schreibt den Status in einem Rutsch an beide Stellen.
+   Der Fremdauftrag wird nur angefasst, wenn es ihn wirklich gibt – sonst
+   entstuende unter "fremd" eine leere Karteileiche. Rueckgabe: ob das
+   Terminal der Firma den neuen Stand sieht. */
 function ffStatusSchreiben(id,status){
-  const p=[bestRef.child(id).update({status:status})];
-  const b=bestellungen[id];
-  if(b&&b.typ==='fremd') p.push(fremdRef.child(id).update({status:status}).catch(()=>{}));
-  return Promise.all(p);
+  return fremdRef.child(id).once('value').then(snap=>{
+    const upd={};
+    upd['bestellungen/'+id+'/status']=status;
+    if(snap.exists()) upd['fremd/'+id+'/status']=status;
+    return db.ref().update(upd).then(()=>snap.exists());
+  });
+}
+function ffStatusToast(sichtbar,text){
+  showToast(sichtbar ? text
+    : 'Gespeichert – dieser Auftrag liegt aber nicht (mehr) unter „Fremdfirmen“, die Firma sieht den Stand daher nicht',
+    sichtbar?'success':'amber');
 }
 window.bestBestaetigen=function(id){
   const b=bestellungen[id]; if(!b)return;
@@ -5008,8 +5019,10 @@ window.bestBestaetigen=function(id){
      und nicht ganz an den Anfang */
   bestRef.child(id).update({bestaetigt:neu==='bestaetigt'}).catch(()=>{});
   ffStatusSchreiben(id,neu)
-    .then(()=>showToast(neu==='bestaetigt'?'Auftrag bestätigt – die Firma sieht es im Terminal':'Bestätigung zurückgenommen','success'))
-    .catch(e=>showToast('Fehler: '+e.message,'amber'));
+    .then(sichtbar=>ffStatusToast(sichtbar, neu==='bestaetigt'
+        ? 'Die Firma sieht jetzt: Auftrag bestätigt'
+        : 'Zurückgesetzt auf: Antrag versendet'))
+    .catch(e=>showToast('Status nicht gespeichert: '+e.message,'amber'));
 };
 
 window.bestSaveNotiz=function(id){
@@ -5028,10 +5041,12 @@ window.bestSetErledigt=function(id,val){
   const b=bestellungen[id];
   /* Beim Wiederöffnen auf die vorige Stufe zurück, nicht ganz an den Anfang */
   const status = val ? 'im_system' : ((b&&(b.bestaetigt||b.beauftragt)) ? 'bestaetigt' : 'versendet');
-  bestRef.child(id).update({erledigt:val,status:status})
+  bestRef.child(id).update({erledigt:val})
     .then(()=>{
-      if(b&&b.typ==='fremd') fremdRef.child(id).update({status:status}).catch(()=>{});
-      showToast(val?'Erledigt – steht bei der Firma jetzt auf „Im System"':'Wieder geöffnet','success');
+      if(!b||b.typ!=='fremd'){ showToast(val?'Als erledigt markiert':'Wieder geöffnet','success'); return; }
+      return ffStatusSchreiben(id,status).then(sichtbar=>ffStatusToast(sichtbar, val
+        ? 'Erledigt – die Firma sieht jetzt: Im System'
+        : 'Wieder geöffnet – die Firma sieht: '+FF_ST[status]));
     })
     .catch(e=>showToast('Fehler: '+e.message,'amber'));
 };
