@@ -284,6 +284,7 @@ const IC = {
   asphalt:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 17h18M3 17l3-11h12l3 11M8 6l-1 11M16 6l1 11M12 6v11"/></svg>`,
   beton:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M7 8V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3M7 13h4M13 16h4"/></svg>`,
   beton2:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 20h20M4 20V10l8-6 8 6v10"/><path d="M9 20v-5h6v5"/></svg>`,
+  betondispo:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 9h6v7H1z"/><path d="M8 16l1.6-7.5L19 6l2 9z"/><path d="M10.3 11.2l9.4-1.9M9.6 13.9l10.6-1.1"/><circle cx="4" cy="18.5" r="2"/><circle cx="17" cy="18.5" r="2"/><path d="M6 18.5h9"/></svg>`,
   bericht:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>`,
   chev:`<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>`,
   warn:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>`,
@@ -319,6 +320,7 @@ const SUBS_BY_TOOL = {
     'labor-bericht': {label:'Laborbericht-Prüfanalyse',  icon:'bericht',   file:'laborbericht.html'},
   },
   'he-beton': {
+    'beton-dispo':   {label:'Beton-Disposition',         icon:'betondispo', file:'beton-dispo.html'},
     'beton-pruefung':{label:'Betonpruefungen',            icon:'beton',     file:'beton.html'},
     'beton-kalk':    {label:'Beton-Kalkulation',         icon:'betonkalk', file:'beton-kalkulation.html'},
   }
@@ -707,7 +709,7 @@ function startCockpit(){
     hellefeld: TOOLS.hellefeld.filter(t=> darfTool(t, perms)),
   };
   // Beton-Subs
-  const betonSubs = ['beton-pruefung','beton-kalk'];
+  const betonSubs = ['beton-dispo','beton-pruefung','beton-kalk'];
   // Labor nur zeigen wenn mind. ein Sub erlaubt
   // (Labor selbst hat kein file, daher immer erlaubt wenn Labor-Reiter gewünscht)
 
