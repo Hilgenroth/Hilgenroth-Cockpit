@@ -71,6 +71,9 @@ body{background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;
 .kk-fav.on{color:#f59e0b}
 .kk-fav.on svg{fill:currentColor}
 
+.hinweis-arch{font-size:13px;color:var(--muted);padding:10px 0 2px}
+.kk.archiv{background:#fafbfc;border-style:dashed}
+.kk.archiv .kk-n,.kk.archiv .kk-t{opacity:.62}
 .leer{text-align:center;padding:46px 18px;color:var(--muted)}
 .leer b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
 
@@ -182,6 +185,7 @@ body.admin-offen .menub{background:var(--red);border-color:var(--red);color:#fff
     <div class="kopiert" id="dt-kopiert">Kostenstelle kopiert</div>
     <div class="ma">
       <button class="btn g links" id="dt-edit" onclick="bearbeitenAusDetail()">Bearbeiten</button>
+      <button class="btn g" id="dt-arch" onclick="archivUmschalten()">Abschließen</button>
       <button class="btn" onclick="zu('bd-det')">Schließen</button>
       <button class="btn p" onclick="nummerKopieren()">Nummer kopieren</button>
     </div>
@@ -196,6 +200,13 @@ body.admin-offen .menub{background:var(--red);border-color:var(--red);color:#fff
       <input class="fi" id="ks-nr" inputmode="numeric" placeholder="z.B. 70658"></div>
     <div class="fr"><label>Bezeichnung *</label>
       <input class="fi" id="ks-bez" placeholder="z.B. K 24 Meinkenbracht"></div>
+    <div class="fr"><label>Kategorie</label>
+      <select class="fi" id="ks-kat">
+        <option value="bau">Baustelle</option>
+        <option value="kunde">Kunde / Regie</option>
+        <option value="depo">Boden / Deponie</option>
+        <option value="betrieb">Betrieb</option>
+      </select></div>
     <div class="fr"><label>Straße</label>
       <input class="fi" id="ks-str" placeholder="z.B. Meinkenbrachter Straße (K24)"></div>
     <div class="fr"><label>Ort</label>
@@ -337,13 +348,22 @@ const ARTEN={
   depo:   {label:'Boden / Deponie',farbe:'var(--depo)',    hell:'var(--depo-l)'},
   betrieb:{label:'Betrieb',        farbe:'var(--betrieb)', hell:'var(--betrieb-l)'}
 };
-function artVon(ks){
+// Aus der Nummer geraten - nur als Vorschlag, wenn nichts hinterlegt ist
+function artRaten(ks){
   const n=String(ks||'');
   if(n==='70000'||n==='70102'||n.charAt(0)==='6') return 'betrieb';
   if(n.indexOf('89')===0) return 'kunde';
   if(n.indexOf('90')===0) return 'depo';
   if(n.indexOf('70')===0) return 'bau';
   return 'betrieb';
+}
+// Maßgeblich ist die beim Anlegen gewählte Kategorie
+function artVon(r){
+  if(r && typeof r === 'object'){
+    if(r.kat && ARTEN[r.kat]) return r.kat;
+    return artRaten(r.ks);
+  }
+  return artRaten(r);
 }
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
@@ -358,12 +378,14 @@ function ortKurz(o){ return String(o||'').replace(/\s*\(DE\)\s*$/,'').trim(); }
 // Alle Kostenstellen: Grundbestand, von der Datenbank überlagert
 function alle(){
   const m={};
-  STAMM.forEach(function(r){ m[r.ks]={ks:r.ks,bez:r.bez,str:r.str,ort:r.ort,ag:r.ag,quelle:'stamm'}; });
+  STAMM.forEach(function(r){ m[r.ks]={ks:r.ks,bez:r.bez,str:r.str,ort:r.ort,ag:r.ag,
+                                      kat:'',archiv:false,quelle:'stamm'}; });
   if(ausDB) Object.keys(ausDB).forEach(function(k){
     const v=ausDB[k];
     if(!v||!v.ks) return;
     if(v.geloescht){ delete m[v.ks]; return; }
-    m[v.ks]={ks:v.ks,bez:v.bez||'',str:v.str||'',ort:v.ort||'',ag:v.ag||'',quelle:'db',key:k};
+    m[v.ks]={ks:v.ks,bez:v.bez||'',str:v.str||'',ort:v.ort||'',ag:v.ag||'',
+             kat:v.kat||'', archiv:!!v.archiv, quelle:'db',key:k};
   });
   return Object.values(m).sort(function(a,b){
     return String(a.ks).localeCompare(String(b.ks),'de',{numeric:true});
@@ -379,9 +401,19 @@ function passt(r, begriffe){
 function gefiltert(){
   const begriffe=suche.toLowerCase().split(/\s+/).filter(Boolean);
   return alle().filter(function(r){
-    if(curFilter!=='alle' && artVon(r.ks)!==curFilter) return false;
+    if(curFilter==='archiv'){ if(!r.archiv) return false; }
+    else {
+      if(r.archiv) return false;                       // abgeschlossene bleiben draußen
+      if(curFilter!=='alle' && artVon(r)!==curFilter) return false;
+    }
     return passt(r, begriffe);
   });
+}
+// Abgeschlossene, die zur Suche passen - werden unten separat gezeigt
+function archivTreffer(){
+  if(curFilter==='archiv' || !suche) return [];
+  const begriffe=suche.toLowerCase().split(/\s+/).filter(Boolean);
+  return alle().filter(function(r){ return r.archiv && passt(r,begriffe); });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -417,27 +449,40 @@ function draw(){
     h+='<div class="sec">'+liste.length+' Treffer für „'+esc(suche)+'"</div>';
   }
 
-  if(!liste.length){
-    h+='<div class="leer"><b>Nichts gefunden</b>'+
+  const alt2=archivTreffer();
+  if(!liste.length && alt2.length){
+    // Nur Abgeschlossene passen - dann keine Fehlanzeige darüber
+    h+='<div class="hinweis-arch">Nur unter den abgeschlossenen Kostenstellen gefunden.</div>';
+  } else if(!liste.length){
+    h+= curFilter==='archiv' && !suche
+      ? '<div class="leer"><b>Keine abgeschlossenen Kostenstellen</b>'+
+        'Eine Kostenstelle schließt du im Detail über <b style="display:inline">Abschließen</b> ab. '+
+        'Sie verschwindet dann aus der Liste, bleibt aber auffindbar.</div>'
+      : '<div class="leer"><b>Nichts gefunden</b>'+
        'Suche nach Nummer, Baustelle, Straße, Ort oder Auftraggeber.<br>'+
        'Mehrere Wörter grenzen weiter ein, z.B. <b style="display:inline">Sundern Kanal</b>.</div>';
   } else {
     h+='<div class="grid">'+liste.map(karte).join('')+'</div>';
   }
+  if(alt2.length){
+    h+='<div class="sec"'+(liste.length?' style="margin-top:20px"':'')+'>Abgeschlossen <b>'+
+       alt2.length+'</b></div><div class="grid">'+alt2.map(karte).join('')+'</div>';
+  }
   m.innerHTML=h;
 }
 
 function karte(r){
-  const a=ARTEN[artVon(r.ks)];
+  const a=ARTEN[artVon(r)];
   const fav=favs.indexOf(r.ks)>=0;
   const zeile2=[r.str, ortKurz(r.ort)].filter(Boolean).join(' · ');
-  return '<div class="kk" data-ks="'+esc(r.ks)+'">'+
+  return '<div class="kk'+(r.archiv?' archiv':'')+'" data-ks="'+esc(r.ks)+'">'+
     '<div class="kk-n" style="color:'+a.farbe+'">'+esc(r.ks)+'</div>'+
     '<div class="kk-b">'+
       '<div class="kk-t">'+esc(r.bez||'ohne Bezeichnung')+'</div>'+
       (zeile2?'<div class="kk-s">'+esc(zeile2)+'</div>':'')+
       (r.ag?'<div class="kk-s">'+esc(r.ag)+'</div>':'')+
       '<span class="kk-tag" style="background:'+a.hell+';color:'+a.farbe+'">'+a.label+'</span>'+
+      (r.archiv?'<span class="kk-tag" style="background:#f1f3f5;color:var(--muted);margin-left:5px">Abgeschlossen</span>':'')+
     '</div>'+
     '<button class="kk-fav'+(fav?' on':'')+'" data-fav="'+esc(r.ks)+'" '+
       'title="'+(fav?'Favorit entfernen':'Als Favorit merken')+'">'+
@@ -449,12 +494,19 @@ function zeichnePills(){
   const basis=alle();
   const begriffe=suche.toLowerCase().split(/\s+/).filter(Boolean);
   const inSuche=basis.filter(function(r){ return passt(r,begriffe); });
+  const aktiv=inSuche.filter(function(r){ return !r.archiv; });
   const def=[['alle','Alle']].concat(Object.keys(ARTEN).map(function(k){ return [k,ARTEN[k].label]; }));
-  document.getElementById('pills').innerHTML=def.map(function(d){
-    const n=d[0]==='alle'?inSuche.length:inSuche.filter(function(r){return artVon(r.ks)===d[0];}).length;
+  let h=def.map(function(d){
+    const n=d[0]==='alle'?aktiv.length:aktiv.filter(function(r){return artVon(r)===d[0];}).length;
     return '<button class="pill'+(curFilter===d[0]?' on':'')+'" data-filter="'+d[0]+'">'+
            d[1]+' <span>'+n+'</span></button>';
   }).join('');
+  const arch=inSuche.filter(function(r){ return r.archiv; }).length;
+  if(arch||curFilter==='archiv'){
+    h+='<button class="pill'+(curFilter==='archiv'?' on':'')+'" data-filter="archiv">'+
+       'Abgeschlossen <span>'+arch+'</span></button>';
+  }
+  document.getElementById('pills').innerHTML=h;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -464,10 +516,11 @@ function detOeffnen(ks){
   const r=alle().find(function(x){return x.ks===ks;});
   if(!r) return;
   detKs=r;
-  const a=ARTEN[artVon(r.ks)];
+  const a=ARTEN[artVon(r)];
   let h='<div class="dt-n">'+esc(r.ks)+'</div>'+
     '<div class="dt-t">'+esc(r.bez||'ohne Bezeichnung')+'</div>'+
     '<span class="kk-tag" style="background:'+a.hell+';color:'+a.farbe+'">'+a.label+'</span>'+
+    (r.archiv?'<span class="kk-tag" style="background:#f1f3f5;color:var(--muted);margin-left:5px">Abgeschlossen</span>':'')+
     '<div style="margin-top:14px">';
   if(r.str) h+=zeile('Straße', r.str);
   if(r.ort) h+=zeile('Ort', ortKurz(r.ort));
@@ -481,6 +534,7 @@ function detOeffnen(ks){
   }
   document.getElementById('dt-inhalt').innerHTML=h;
   document.getElementById('dt-kopiert').classList.remove('on');
+  document.getElementById('dt-arch').textContent = r.archiv ? 'Wieder aktivieren' : 'Abschließen';
   auf('bd-det');
   merken(r.ks);
 }
@@ -510,6 +564,21 @@ function ersatzKopie(t,fertig){
   try{ document.execCommand('copy'); fertig(); }catch(e){ alert('Kostenstelle: '+t); }
   document.body.removeChild(ta);
 }
+// Abschließen blendet nur aus - der Eintrag bleibt erhalten und auffindbar.
+function archivUmschalten(){
+  if(!detKs) return;
+  const r=alle().find(function(x){return x.ks===detKs.ks;});
+  if(!r) return;
+  const neu=!r.archiv;
+  if(neu && !confirm('Kostenstelle '+r.ks+' abschließen?\n\n'+
+      'Sie verschwindet aus der Liste, bleibt aber unter „Abgeschlossen" und über die Suche auffindbar.')) return;
+  schreiben(r.ks, { ks:r.ks, bez:r.bez, str:r.str, ort:r.ort, ag:r.ag,
+                    kat:r.kat||artVon(r), archiv:neu, ts:Date.now() }, null);
+  if(neu){ favs=favs.filter(function(x){return x!==r.ks;});
+           try{ localStorage.setItem('ks_favs', JSON.stringify(favs)); }catch(e){} }
+  zu('bd-det'); draw();
+}
+
 function bearbeitenAusDetail(){
   if(!detKs) return;
   zu('bd-det');
@@ -531,8 +600,17 @@ function ksOeffnen(ks){
   document.getElementById('ks-str').value=r?r.str:'';
   document.getElementById('ks-ort').value=r?r.ort:'';
   document.getElementById('ks-ag').value=r?r.ag:'';
+  // Bei neuen Nummern die Kategorie vorschlagen, beim Ändern die gespeicherte zeigen
+  document.getElementById('ks-kat').value = r ? artVon(r) : 'bau';
   document.getElementById('ks-del').style.display=r?'':'none';
   auf('bd-ks');
+  if(!r){
+    const nrf=document.getElementById('ks-nr');
+    nrf.oninput=function(){
+      if(nrf.value.trim().length>=4) document.getElementById('ks-kat').value=artRaten(nrf.value.trim());
+    };
+    setTimeout(function(){ nrf.focus(); },120);
+  } else { document.getElementById('ks-nr').oninput=null; }
 }
 
 function ksSpeichern(){
@@ -543,10 +621,13 @@ function ksSpeichern(){
   if(!ksKey && alle().some(function(x){return x.ks===nr;})){
     alert('Die Kostenstelle '+nr+' gibt es schon.'); return;
   }
+  const vorher=ksKey?alle().find(function(x){return x.ks===ksKey;}):null;
   const e={ ks:nr, bez:bez,
     str:document.getElementById('ks-str').value.trim(),
     ort:document.getElementById('ks-ort').value.trim(),
     ag:document.getElementById('ks-ag').value.trim(),
+    kat:document.getElementById('ks-kat').value,
+    archiv:vorher?!!vorher.archiv:false,
     ts:Date.now() };
   schreiben(ksKey&&ksKey!==nr?ksKey:nr, e, ksKey&&ksKey!==nr?nr:null);
   zu('bd-ks'); draw();
@@ -601,8 +682,9 @@ document.getElementById('xl').addEventListener('change', function(ev){
         if(!nr||!/^\d{3,}$/.test(nr)) return;         // Kopfzeile und Leeres überspringen
         let ag=saeubern(z[4]);
         if(ag.toLowerCase().indexOf('keine zuordnung')===0) ag='';
-        const e2={ks:nr, bez:saeubern(z[1]), str:saeubern(z[2]), ort:saeubern(z[3]), ag:ag, ts:Date.now()};
         const alt=vorher[nr];
+        const e2={ks:nr, bez:saeubern(z[1]), str:saeubern(z[2]), ort:saeubern(z[3]), ag:ag,
+                  kat:(alt&&alt.kat)||'', archiv:!!(alt&&alt.archiv), ts:Date.now()};
         if(!alt){ neu++; }
         else if(alt.bez!==e2.bez||alt.str!==e2.str||alt.ort!==e2.ort||alt.ag!==e2.ag){ geaendert++; }
         else return;                                   // unverändert, nichts schreiben
